@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="1200" viewBox="0 0 900 1200" role="img" aria-labelledby="title desc">
+  <title id="title">Missing Rrena poster placeholder</title>
+  <desc id="desc">Temporary placeholder because the supplied asset set does not include the Rrena show poster.</desc>
+  <rect width="900" height="1200" fill="#151515"/>
+  <rect x="36" y="36" width="828" height="1128" fill="none" stroke="#a34f59" stroke-width="8"/>
+  <text x="450" y="520" fill="#f5f0ee" font-family="Arial, sans-serif" font-size="88" font-weight="700" text-anchor="middle">RRENA</text>
+  <text x="450" y="610" fill="#a34f59" font-family="Arial, sans-serif" font-size="38" text-anchor="middle">poster missing</text>
+  <text x="450" y="680" fill="#f5f0ee" font-family="Arial, sans-serif" font-size="28" text-anchor="middle">development placeholder</text>
+</svg>
