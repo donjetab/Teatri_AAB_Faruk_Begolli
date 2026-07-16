@@ -44,7 +44,10 @@ export function NewsletterForm({ language }) {
           required
         />
         <button type="submit" disabled={status === 'loading'} aria-label={t('newsletter.submit')}>
-          →
+          <svg className="newsletter-submit-icon" viewBox="0 0 28 20" aria-hidden="true" focusable="false">
+            <path d="M1.5 10H24.5" />
+            <path d="M17 2.5L24.5 10L17 17.5" />
+          </svg>
         </button>
       </div>
       {message && (

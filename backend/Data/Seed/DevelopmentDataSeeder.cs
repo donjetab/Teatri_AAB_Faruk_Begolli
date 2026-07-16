@@ -206,12 +206,12 @@ public static class DevelopmentDataSeeder
             theatreInfo,
             languages[Sq].Id,
             "Teatri AAB \"Faruk Begolli\"",
-            "Aty ku skena flet.",
-            "Teatri AAB \"Faruk Begolli\" eshte hapesire akademike dhe artistike per shfaqje, festivale dhe zhvillim te krijuesve te rinj.",
+            "Një skenë ku historitë marrin jetë, emocionet na bashkojnë dhe trashëgimia vazhdon.",
+            "Teatri AAB “Faruk Begolli” është themeluar në vitin 2015, si teatër i pavarur. Ёshtë një teatër me të gjitha komoditetet, i rrallë dhe i veçantë për hapësirën kosovare, i cili funksionon në kuadër të kampusit universitar të Kolegjit AAB, në qytetin e Prishtinës, Kosovë.",
             "Teatri AAB \"Faruk Begolli\" kultivon repertor bashkekohor, bashkepunime artistike dhe ngjarje teatrore per publikun ne Kosove.",
-            "PITF sjell ne skene artiste, studente dhe produksione teatrore ne nje program festivali nderkombetar.",
+            "Festivali Ndërkombëtar i Teatrit “Prishtina International Theater Festival” u themelua në ambientet e Teatrit AAB “Faruk Begolli” në qershor të vitit 2017. Ky teatër vepron brenda Kolegjit AAB në Prishtinë.",
             "Prishtine, Kosove",
-            "Rezervo vendin tend",
+            "Rezervo vendin tënd tani",
             "Zgjidh shfaqjen dhe siguro vendin per mbremjen e radhes ne teatrin tone.",
             "Teatri AAB Faruk Begolli",
             "Faqja zyrtare e Teatrit AAB Faruk Begolli ne Kosove.");
@@ -220,12 +220,12 @@ public static class DevelopmentDataSeeder
             theatreInfo,
             languages[En].Id,
             "AAB Theatre \"Faruk Begolli\"",
-            "Where the stage speaks.",
-            "AAB Theatre \"Faruk Begolli\" is an academic and artistic venue for performances, festivals, and emerging theatre makers.",
+            "A stage where stories come to life, emotions bring us together, and the legacy lives on.",
+            "The AAB “Faruk Begolli” Theater was founded in 2015, as an independent theater. It is a theater with all the amenities, rare and special for the Kosovar space, which operates within the university campus of the AAB College, in the city of Pristina, Kosovo.",
             "AAB Theatre \"Faruk Begolli\" develops contemporary repertoire, artistic collaborations, and theatre events for audiences in Kosovo.",
-            "PITF brings artists, students, and theatre productions together in an international festival program.",
+            "The International Theater Festival “Prishtina International Theater Festival” was founded in the premises of the AAB Theater “Faruk Begolli” in June 2017. This theater operates within the AAB College in Pristina.",
             "Pristina, Kosovo",
-            "Reserve your seat",
+            "Reserve your seat now",
             "Choose a performance and secure your place for the next evening at our theatre.",
             "AAB Theatre Faruk Begolli",
             "Official website of AAB Theatre Faruk Begolli in Kosovo.");
@@ -250,6 +250,7 @@ public static class DevelopmentDataSeeder
             new ShowDefinition("qeni-i-baskervileve", "qeniPoster", 75, false, "Qeni i Baskervileve", "The Hound of the Baskervilles", "Mister klasik ne skenen teatrore.", "A classic mystery brought to the stage.", "Jon Saqipi", new[] { 10 }),
             new ShowDefinition("rrena", "rrenaPoster", 70, false, "Rrena", "The Lie", "Shfaqje zhvillimore per testimin e karteles se trete ne balline.", "Development show for testing the third homepage card.", "Agon Myftari", new[] { 14 })
         };
+        var seededShows = new Dictionary<string, Show>();
 
         foreach (var definition in shows)
         {
@@ -283,20 +284,15 @@ public static class DevelopmentDataSeeder
             {
                 EnsurePerformance(show, location, performanceBase.AddDays(days), PerformanceStatus.Scheduled, "https://example.com/reservations");
             }
+
+            seededShows[definition.Slug] = show;
         }
 
-        var bretkosa = await db.Shows
-            .Include(x => x.Translations)
-            .Include(x => x.Performances)
-            .FirstAsync(x => x.Translations.Any(t => t.LanguageId == languages[Sq].Id && t.Slug == "bretkosa"), cancellationToken);
-
+        var bretkosa = seededShows["bretkosa"];
         EnsurePerformance(bretkosa, location, new DateTimeOffset(2024, 10, 31, 19, 0, 0, TimeSpan.Zero), PerformanceStatus.Completed, null);
         EnsurePerformance(bretkosa, location, new DateTimeOffset(2030, 10, 5, 19, 0, 0, TimeSpan.Zero), PerformanceStatus.Cancelled, null);
 
-        var qeni = await db.Shows
-            .Include(x => x.Translations)
-            .Include(x => x.Credits)
-            .FirstAsync(x => x.Translations.Any(t => t.LanguageId == languages[Sq].Id && t.Slug == "qeni-i-baskervileve"), cancellationToken);
+        var qeni = seededShows["qeni-i-baskervileve"];
         var secondDirector = await EnsurePersonAsync(db, languages, "Kastriot Saqipi", now, cancellationToken);
         EnsureShowCredit(qeni, secondDirector, directorCreditType);
 
@@ -346,8 +342,11 @@ public static class DevelopmentDataSeeder
         edition.IsFeatured = true;
         edition.UpdatedAt = now;
 
-        EnsurePitfTranslation(edition, languages[Sq].Id, "Prishtina International Theatre Festival 2024", "pitf-2024", "Edicion i vecante i festivalit teatror nderkombetar.", "PITF 2024 mbledh shfaqje dhe artiste nga skena vendore dhe nderkombetare.", "PITF 2024", "Edicioni i vitit 2024 i Prishtina International Theatre Festival.");
-        EnsurePitfTranslation(edition, languages[En].Id, "Prishtina International Theatre Festival 2024", "pitf-2024-en", "A featured edition of the international theatre festival.", "PITF 2024 gathers performances and artists from local and international stages.", "PITF 2024", "The 2024 edition of Prishtina International Theatre Festival.");
+        EnsurePitfTranslation(edition, languages[Sq].Id, "Prishtina International Theatre Festival 2024", "pitf-2024", "Festivali Ndërkombëtar i Teatrit “Prishtina International Theater Festival” u themelua në ambientet e Teatrit AAB “Faruk Begolli” në qershor të vitit 2017. Ky teatër vepron brenda Kolegjit AAB në Prishtinë", "PITF 2024 mbledh shfaqje dhe artiste nga skena vendore dhe nderkombetare.", "PITF 2024", "Edicioni i vitit 2024 i Prishtina International Theatre Festival.");
+        EnsurePitfTranslation(edition, languages[En].Id, "Prishtina International Theatre Festival 2024", 
+        "pitf-2024-en", 
+        "The International Theater Festival “Prishtina International Theater Festival” was founded in the premises of the AAB Theater “Faruk Begolli” in June 2017. This theater operates within the AAB College in Pristina.", 
+        "PITF 2024 gathers performances and artists from local and international stages.", "PITF 2024", "The 2024 edition of Prishtina International Theatre Festival.");
 
         await db.SaveChangesAsync(cancellationToken);
     }

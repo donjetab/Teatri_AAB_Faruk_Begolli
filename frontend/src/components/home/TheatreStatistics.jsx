@@ -1,4 +1,7 @@
 import { useTranslation } from 'react-i18next'
+import theatreIcon from '../../assets/theatre-icon.png'
+import actingIcon from '../../assets/acting-icon.png'
+import spectatorsIcon from '../../assets/spectators-icon.png'
 
 function formatCompact(value) {
   if (value >= 100000) {
@@ -20,19 +23,19 @@ export function TheatreStatistics({ statistics }) {
       key: 'founded',
       value: statistics.foundedYear,
       label: t('home.stats.founded'),
-      icon: '▦',
+      icon: theatreIcon,
     },
     {
       key: 'performances',
       value: formatCompact(statistics.performancesCount),
       label: t('home.stats.performances'),
-      icon: '◭',
+      icon: actingIcon,
     },
     {
       key: 'spectators',
       value: formatCompact(statistics.spectatorsCount),
       label: t('home.stats.spectators'),
-      icon: '≋',
+      icon: spectatorsIcon,
     },
   ]
 
@@ -40,11 +43,9 @@ export function TheatreStatistics({ statistics }) {
     <dl className="theatre-stats">
       {items.map((item) => (
         <div key={item.key} className="stat-item">
-          <dt>
-            <span aria-hidden="true">{item.icon}</span>
-            {item.label}
-          </dt>
+          <img src={item.icon} alt="" aria-hidden="true" />
           <dd>{item.value}</dd>
+          <dt>{item.label}</dt>
         </div>
       ))}
     </dl>

@@ -1,3 +1,5 @@
+@import url("https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap");
+
 :root {
   --color-black: #000000;
   --color-white: #f8f4f2;
@@ -7,11 +9,11 @@
   --color-red-deep: #2a0507;
   --color-gold: #d8b51e;
   --color-border: rgba(248, 244, 242, 0.82);
-  --content-width: 1236px;
-  --header-height: 112px;
+  --content-width: 90%;
+  --header-height: 125px;
   --footer-gap: 96px;
-  --font-display: "Arial Narrow", "Roboto Condensed", "HelveticaNeue-CondensedBold", Impact, sans-serif;
-  --font-body: Arial, Helvetica, sans-serif;
+  --font-display: "Bebas Neue", "Arial Narrow", "Roboto Condensed", "HelveticaNeue-CondensedBold", Impact, sans-serif;
+  --font-body: "Arial MT Pro", Arial, Helvetica, sans-serif;
 
   font-family: var(--font-body);
   color: var(--color-white);

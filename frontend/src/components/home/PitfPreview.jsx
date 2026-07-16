@@ -2,7 +2,8 @@ import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import curtain from '../../assets/curtain.png'
 import goldLines from '../../assets/decorative-gold-lines.png'
-import { resolveMediaUrl } from '../../api/client'
+import pitfHomepageImage from '../../assets/hp_pitf.jpg'
+import pitfWordImage from '../../assets/PITF-fading.png'
 import { getLocalizedPath } from '../../routes/localizedRoutes'
 
 export function PitfPreview({ pitf, language }) {
@@ -11,12 +12,21 @@ export function PitfPreview({ pitf, language }) {
     return null
   }
 
-  const pitfImage = resolveMediaUrl(pitf.image?.url)
-
   return (
     <section className="pitf-section" aria-labelledby="pitf-title">
       <img className="pitf-curtain" src={curtain} alt="" loading="lazy" aria-hidden="true" />
       <div className="pitf-inner">
+        <div className="pitf-image-wrap">
+          <img className="pitf-ghost" src={pitfWordImage} alt="" loading="lazy" aria-hidden="true" />
+          <img
+            className="pitf-main-image"
+            src={pitfHomepageImage}
+            alt={pitf.image?.altText ?? pitf.title}
+            loading="lazy"
+          />
+          <img className="pitf-gold-lines" src={goldLines} alt="" loading="lazy" aria-hidden="true" />
+        </div>
+
         <div className="pitf-copy">
           <h2 id="pitf-title">
             <span>Prishtina International</span>
@@ -27,18 +37,6 @@ export function PitfPreview({ pitf, language }) {
             <span>{t('home.pitfProgram')}</span>
             <span className="circle-arrow" aria-hidden="true">→</span>
           </Link>
-        </div>
-        <div className="pitf-image-wrap">
-          <span className="pitf-ghost" aria-hidden="true">PITF</span>
-          {pitfImage && (
-            <img
-              src={pitfImage}
-              alt={pitf.image?.altText ?? pitf.title}
-              loading="lazy"
-              onError={(event) => { event.currentTarget.hidden = true }}
-            />
-          )}
-          <img className="pitf-gold-lines" src={goldLines} alt="" loading="lazy" aria-hidden="true" />
         </div>
       </div>
     </section>
