@@ -144,7 +144,7 @@ export function AppLayout() {
   }, [language, routeKey])
 
   return (
-    <div className="site-shell">
+    <div className={`site-shell site-shell-${routeKey}`}>
       <Header language={language} reservationUrl={homepageMeta?.reservationUrl} />
       <main className="site-main" id="content">
         <Outlet context={{ setHomepageMeta }} />

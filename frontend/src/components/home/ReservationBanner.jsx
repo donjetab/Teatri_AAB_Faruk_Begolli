@@ -1,6 +1,8 @@
 import { useTranslation } from 'react-i18next'
 import logoScene from '../../assets/Teatri Logo/Teatri AAB - Scene Logo.png'
+import ctaBackgroundMobile from '../../assets/cta-background-mobile.png'
 import { resolveMediaUrl } from '../../api/client'
+import { ArrowRightIcon } from '../icons/ArrowRightIcon'
 
 function splitReservationTitle(title) {
   const parts = title.split(/\s+/)
@@ -17,7 +19,10 @@ export function ReservationBanner({ home }) {
     <section className="reservation-section" aria-labelledby="reservation-title">
       <div
         className="reservation-banner"
-        style={background ? { '--reservation-image': `url("${background}")` } : undefined}
+        style={{
+          ...(background ? { '--reservation-image': `url("${background}")` } : {}),
+          '--reservation-mobile-image': `url("${ctaBackgroundMobile}")`,
+        }}
       >
         <div className="reservation-content">
           <div className="reservation-heading">
@@ -30,7 +35,9 @@ export function ReservationBanner({ home }) {
           <p>{home.reservationText ?? t('home.reservationTextFallback')}</p>
           <a href={home.reservationUrl ?? '#'} className="reservation-button">
             <span>{t('home.reserveTicket')}</span>
-            <span className="circle-arrow" aria-hidden="true">→</span>
+            <span className="circle-arrow" aria-hidden="true">
+              <ArrowRightIcon className="arrow-icon" />
+            </span>
           </a>
         </div>
       </div>

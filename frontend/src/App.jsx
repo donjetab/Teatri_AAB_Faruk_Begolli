@@ -2,7 +2,9 @@ import { Navigate, Route, Routes, useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { AppLayout } from './components/layout/AppLayout'
 import { EmptyState } from './components/ui/EmptyState'
+import { AboutPage } from './pages/AboutPage'
 import { HomePage } from './pages/HomePage'
+import { ShowsPage } from './pages/ShowsPage'
 import { defaultLanguage, getLocalizedPath } from './routes/localizedRoutes'
 import './App.css'
 
@@ -23,10 +25,10 @@ function App() {
       <Route path="/" element={<Navigate to={getLocalizedPath('home', defaultLanguage)} replace />} />
       <Route path="/:language" element={<AppLayout />}>
         <Route index element={<HomePage />} />
-        <Route path="per-ne" element={<ShellPlaceholder />} />
-        <Route path="about" element={<ShellPlaceholder />} />
-        <Route path="shfaqjet" element={<ShellPlaceholder />} />
-        <Route path="shows" element={<ShellPlaceholder />} />
+        <Route path="per-ne" element={<AboutPage />} />
+        <Route path="about" element={<AboutPage />} />
+        <Route path="shfaqjet" element={<ShowsPage />} />
+        <Route path="shows" element={<ShowsPage />} />
         <Route path="lajme" element={<ShellPlaceholder />} />
         <Route path="news" element={<ShellPlaceholder />} />
         <Route path="pitf" element={<ShellPlaceholder />} />

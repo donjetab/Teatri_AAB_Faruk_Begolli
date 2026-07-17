@@ -65,7 +65,7 @@ public static class DevelopmentDataSeeder
             new MediaDefinition("bretkosaPoster", "/uploads/dev/shows/bretkosa-poster.png", "bretkosa-poster.png", "image/png", 2340, 3120, "Poster per shfaqjen Bretkosa", "Poster for the show Bretkosa"),
             new MediaDefinition("qeniPoster", "/uploads/dev/shows/qeni-i-baskervileve-poster.jpg", "qeni-i-baskervileve-poster.jpg", "image/jpeg", 595, 842, "Poster per shfaqjen Qeni i Baskervileve", "Poster for the show The Hound of the Baskervilles"),
             new MediaDefinition("gjirafaPoster", "/uploads/dev/shows/gjirafa-dhe-buburreci-poster.jpg", "gjirafa-dhe-buburreci-poster.jpg", "image/jpeg", 1242, 1713, "Poster per shfaqjen Gjirafa dhe Buburreci", "Poster for the show The Giraffe and the Ant"),
-            new MediaDefinition("rrenaPoster", "/uploads/dev/shows/missing-rrena-poster-placeholder.svg", "missing-rrena-poster-placeholder.svg", "image/svg+xml", 900, 1200, "Poster mungon per shfaqjen Rrena", "Missing poster placeholder for the show Rrena"),
+            new MediaDefinition("rrenaPoster", "/uploads/dev/shows/rrena-poster.jpg", "rrena-poster.jpg", "image/jpeg", 900, 1200, "Poster mungon per shfaqjen Rrena", "Missing poster placeholder for the show Rrena"),
             new MediaDefinition("pitfCover", "/uploads/dev/pitf/pitf-2024-cover.jpg", "pitf-2024-cover.jpg", "image/jpeg", 2048, 1365, "Imazh promovues per PITF 2024", "Promotional image for PITF 2024")
         };
 

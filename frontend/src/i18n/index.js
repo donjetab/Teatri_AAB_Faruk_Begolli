@@ -63,6 +63,47 @@ i18n.use(initReactI18next).init({
             spectators: 'Spektatorë',
           },
         },
+        aboutPage: {
+          heroTitle: 'Rreth Nesh',
+          heroSubtitle: 'Një skenë për emocionet. Një shtëpi për çdo histori. Një trashëgimi për të ardhmen.',
+          introLabel: 'Informacion rreth teatrit',
+          intro: {
+            paragraph1:
+              'Teatri AAB “Faruk Begolli” është themeluar në vitin 2015, si teatër i pavarur. Është një teatër me të gjitha komoditetet, i rrallë dhe i veçantë për hapësirën kosovare, i cili funksionon në kuadër të kampusit universitar të Kolegjit AAB, në qytetin e Prishtinës, Kosovë.',
+            paragraph2:
+              'Teatri mban emrin e aktorit emblematik Faruk Begolli, ndërsa është inauguruar më 31.03.2015 me shfaqjen “Jam talent...” me regji të Luan Dakës. Shumë artistë dhe artdashës e kanë mirëpritur hapjen e këtij teatri dhe vazhdojnë ta përkrahin maksimalisht.',
+            paragraph3:
+              'Gjithashtu edhe mediat e kanë përkrahur duke i dhënë publicitet të madh, si një vlerë sublime dhe fisnike, për një jetë teatrore në Kosovë e sidomos në kohën kur teatri gjithandej në botë po ballafaqohet me rënien e shikueshmërisë.',
+            imageAlt: 'Ulëset e teatrit AAB',
+          },
+          statsLabel: 'Statistikat e teatrit',
+          quoteLabel: 'Citat për teatrin',
+          quote: {
+            text:
+              'Ta ndërtosh një teatër, siç është Teatri “Faruk Begolli”, është si ta ndërtosh një xhami edhe një kishë, bile edhe më vështirë. Se për xhamia e kisha, njerëzit do të japin para, ndërsa teatrot i ndërtojnë mbretërit ose shtetet.',
+            author: 'Enver Petrovci',
+          },
+          galleryTitle: 'Galeria',
+          galleryImageAlt: 'Pamje nga galeria e teatrit {{number}}',
+          openGalleryImage: 'Hap pamjen {{number}} në galeri',
+          closeGalleryPreview: 'Mbyll pamjen e galerisë',
+          viewMoreGallery: 'Shiko më shumë',
+        },
+        showsPage: {
+          heroTitle: 'Shfaqjet',
+          heroSubtitle: 'Një skenë për emocionet. Një shtëpi për çdo histori. Një trashëgimi për të ardhmen.',
+          listLabel: 'Lista e shfaqjeve',
+          openShow: 'Hap shfaqjen {{title}}',
+          posterAlt: 'Posteri i shfaqjes {{title}}',
+          directorPlaceholder: 'Regjia: do të plotësohet',
+          filtersLabel: 'Filtro shfaqjet',
+          filters: {
+            all: 'Të gjitha',
+            drama: 'Drama',
+            comedy: 'Komedi',
+            children: 'Për fëmijë',
+          },
+        },
         months: {
           jan: 'Jan',
           feb: 'Shk',
@@ -144,6 +185,47 @@ i18n.use(initReactI18next).init({
             founded: 'Founded',
             performances: 'Performances',
             spectators: 'Spectators',
+          },
+        },
+        aboutPage: {
+          heroTitle: 'About Us',
+          heroSubtitle: 'A stage for emotion. A home for every story. A legacy for the future.',
+          introLabel: 'Theatre information',
+          intro: {
+            paragraph1:
+              'AAB Theatre “Faruk Begolli” was founded in 2015 as an independent theatre. It is a rare and distinctive theatre space in Kosovo, operating within the university campus of AAB College in Prishtina.',
+            paragraph2:
+              'The theatre bears the name of the emblematic actor Faruk Begolli and was inaugurated on 31.03.2015 with the performance “Jam talent...” directed by Luan Daka. Artists and theatre lovers warmly welcomed its opening and continue to support it.',
+            paragraph3:
+              'The media have also supported the theatre by giving it important visibility as a noble cultural value for theatrical life in Kosovo, especially at a time when theatres around the world face declining audiences.',
+            imageAlt: 'Seats inside AAB Theatre',
+          },
+          statsLabel: 'Theatre statistics',
+          quoteLabel: 'Theatre quote',
+          quote: {
+            text:
+              'To build a theatre such as “Faruk Begolli” Theatre is like building a mosque and a church, perhaps even harder. People will give money for mosques and churches, while theatres are built by kings or states.',
+            author: 'Enver Petrovci',
+          },
+          galleryTitle: 'Gallery',
+          galleryImageAlt: 'Theatre gallery preview {{number}}',
+          openGalleryImage: 'Open gallery image {{number}}',
+          closeGalleryPreview: 'Close gallery preview',
+          viewMoreGallery: 'View more',
+        },
+        showsPage: {
+          heroTitle: 'Shows',
+          heroSubtitle: 'A stage for emotion. A home for every story. A legacy for the future.',
+          listLabel: 'Shows list',
+          openShow: 'Open show {{title}}',
+          posterAlt: 'Poster for {{title}}',
+          directorPlaceholder: 'Director: to be added',
+          filtersLabel: 'Filter shows',
+          filters: {
+            all: 'All',
+            drama: 'Drama',
+            comedy: 'Comedy',
+            children: 'Children',
           },
         },
         months: {

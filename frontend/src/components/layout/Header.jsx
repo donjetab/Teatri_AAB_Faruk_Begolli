@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import logoWhite from '../../assets/Teatri Logo/Teatri White.png'
 import { getLocalizedPath } from '../../routes/localizedRoutes'
+import { ArrowRightIcon } from '../icons/ArrowRightIcon'
 import { DesktopNavigation } from './DesktopNavigation'
 import { LanguageSwitcher } from './LanguageSwitcher'
 import { MobileNavigation } from './MobileNavigation'
@@ -23,7 +24,9 @@ export function Header({ language, reservationUrl }) {
           <LanguageSwitcher language={language} />
           <a href={reservationUrl ?? getLocalizedPath('shows', language)} className="reserve-button">
             <span>{t('nav.reserveNow')}</span>
-            <span className="circle-arrow" aria-hidden="true">→</span>
+            <span className="circle-arrow" aria-hidden="true">
+              <ArrowRightIcon className="arrow-icon" />
+            </span>
           </a>
           <MobileNavigation language={language} />
         </div>

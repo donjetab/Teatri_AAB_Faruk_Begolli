@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { resolveMediaUrl } from '../../api/client'
+import { ArrowRightIcon } from '../icons/ArrowRightIcon'
 import { getLocalizedPath } from '../../routes/localizedRoutes'
 
 function splitTheatreName(name) {
@@ -34,7 +35,9 @@ export function HeroSection({ home, language }) {
           </p>
           <Link to={getLocalizedPath('shows', language)} className="home-button">
             <span>{t('home.viewProgram')}</span>
-            <span className="circle-arrow" aria-hidden="true">→</span>
+            <span className="circle-arrow" aria-hidden="true">
+              <ArrowRightIcon className="arrow-icon" />
+            </span>
           </Link>
         </div>
       </div>

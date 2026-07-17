@@ -4,6 +4,7 @@ import curtain from '../../assets/curtain.png'
 import goldLines from '../../assets/decorative-gold-lines.png'
 import pitfHomepageImage from '../../assets/hp_pitf.jpg'
 import pitfWordImage from '../../assets/PITF-fading.png'
+import { ArrowRightIcon } from '../icons/ArrowRightIcon'
 import { getLocalizedPath } from '../../routes/localizedRoutes'
 
 export function PitfPreview({ pitf, language }) {
@@ -35,7 +36,9 @@ export function PitfPreview({ pitf, language }) {
           <p>{pitf.shortDescription}</p>
           <Link to={getLocalizedPath('pitf', language)} className="home-button">
             <span>{t('home.pitfProgram')}</span>
-            <span className="circle-arrow" aria-hidden="true">→</span>
+            <span className="circle-arrow" aria-hidden="true">
+              <ArrowRightIcon className="arrow-icon" />
+            </span>
           </Link>
         </div>
       </div>
