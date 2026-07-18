@@ -15,6 +15,7 @@ public sealed class Show
     public int ShowCategoryId { get; set; }
     public int? PosterMediaAssetId { get; set; }
     public int? DurationMinutes { get; set; }
+    public DateOnly? PremiereDate { get; set; }
     public ShowStatus Status { get; set; } = ShowStatus.Draft;
     public bool IsFeatured { get; set; }
     public DateTimeOffset CreatedAt { get; set; }

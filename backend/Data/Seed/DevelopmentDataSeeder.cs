@@ -16,10 +16,10 @@ public static class DevelopmentDataSeeder
         var media = await EnsureMediaAssetsAsync(db, environment, languages, now, cancellationToken);
         var location = await EnsureLocationAsync(db, languages, cancellationToken);
         var category = await EnsureShowCategoryAsync(db, languages, cancellationToken);
-        var directorCreditType = await EnsureCreditTypeAsync(db, languages, cancellationToken);
+        var creditTypes = await EnsureCreditTypesAsync(db, languages, cancellationToken);
 
         await EnsureTheatreInformationAsync(db, languages, media, now, cancellationToken);
-        await EnsureShowsAsync(db, languages, media, category, directorCreditType, location, now, cancellationToken);
+        await EnsureShowsAsync(db, languages, media, category, creditTypes, location, now, cancellationToken);
         await EnsurePitfEditionAsync(db, languages, media, now, cancellationToken);
     }
 
@@ -148,24 +148,43 @@ public static class DevelopmentDataSeeder
         return category;
     }
 
-    private static async Task<CreditType> EnsureCreditTypeAsync(AppDbContext db, IReadOnlyDictionary<string, Language> languages, CancellationToken cancellationToken)
+    private static async Task<Dictionary<string, CreditType>> EnsureCreditTypesAsync(AppDbContext db, IReadOnlyDictionary<string, Language> languages, CancellationToken cancellationToken)
     {
-        var creditType = await db.CreditTypes
+        var existing = await db.CreditTypes
             .Include(x => x.Translations)
-            .FirstOrDefaultAsync(x => x.Code == "director", cancellationToken);
-
-        if (creditType is null)
+            .ToDictionaryAsync(x => x.Code, cancellationToken);
+        var definitions = new[]
         {
-            creditType = new CreditType { Code = "director" };
-            db.CreditTypes.Add(creditType);
+            ("director", "Regjia", "Director"), ("cast", "Luajnë", "Cast"), ("author", "Autor/e", "Author"),
+            ("producer", "Producent/e", "Producer"), ("dramaturge", "Dramaturg/e", "Dramaturge"),
+            ("music", "Muzika", "Music"), ("orchestration", "Orkestrimi", "Orchestration"),
+            ("scenography", "Skenografia", "Scenography"), ("costumes", "Kostumet", "Costumes"),
+            ("lighting", "Ndriçimi", "Lighting"), ("sound", "Toni/Zërimi", "Sound"),
+            ("organizer", "Organizator/e", "Organizer"), ("coordinator", "Koordinator/e", "Coordinator"),
+            ("choreography", "Koreografia", "Choreography"), ("translation", "Përkthimi", "Translation"),
+            ("design", "Dizajni", "Design"), ("photography", "Fotografia", "Photography"),
+            ("makeup", "Grimi", "Makeup"), ("adaptation", "Adaptimi", "Adaptation"),
+            ("illustration", "Ilustrimi", "Illustration"), ("art-director", "Drejtor artistik", "Art director"),
+            ("technical", "Realizimi teknik", "Technical realization")
+        };
+
+        for (var index = 0; index < definitions.Length; index++)
+        {
+            var definition = definitions[index];
+            if (!existing.TryGetValue(definition.Item1, out var creditType))
+            {
+                creditType = new CreditType { Code = definition.Item1 };
+                db.CreditTypes.Add(creditType);
+                existing[definition.Item1] = creditType;
+            }
+
+            creditType.DisplayOrder = index + 1;
+            EnsureCreditTypeTranslation(creditType, languages[Sq].Id, definition.Item2);
+            EnsureCreditTypeTranslation(creditType, languages[En].Id, definition.Item3);
         }
 
-        creditType.DisplayOrder = 1;
-        EnsureCreditTypeTranslation(creditType, languages[Sq].Id, "Regjia");
-        EnsureCreditTypeTranslation(creditType, languages[En].Id, "Director");
-
         await db.SaveChangesAsync(cancellationToken);
-        return creditType;
+        return existing;
     }
 
     private static async Task EnsureTheatreInformationAsync(
@@ -238,27 +257,49 @@ public static class DevelopmentDataSeeder
         IReadOnlyDictionary<string, Language> languages,
         IReadOnlyDictionary<string, MediaAsset> media,
         ShowCategory category,
-        CreditType directorCreditType,
+        IReadOnlyDictionary<string, CreditType> creditTypes,
         Location location,
         DateTimeOffset now,
         CancellationToken cancellationToken)
     {
-        var performanceBase = new DateTimeOffset(2030, 9, 1, 19, 0, 0, TimeSpan.Zero);
         var shows = new[]
         {
-            new ShowDefinition("bretkosa", "bretkosaPoster", 85, true, "Bretkosa", "Bretkosa", "Satire e erret per identitetin dhe pushtetin.", "A dark satire about identity and power.", "Burbqe Berisha", new[] { 7, 21 }),
-            new ShowDefinition("qeni-i-baskervileve", "qeniPoster", 75, false, "Qeni i Baskervileve", "The Hound of the Baskervilles", "Mister klasik ne skenen teatrore.", "A classic mystery brought to the stage.", "Jon Saqipi", new[] { 10 }),
-            new ShowDefinition("rrena", "rrenaPoster", 70, false, "Rrena", "The Lie", "Shfaqje zhvillimore per testimin e karteles se trete ne balline.", "Development show for testing the third homepage card.", "Agon Myftari", new[] { 14 })
+            Show("profesor-jam-talent", null, "Profesor, jam talent...", new(2016, 3, 31), "“Profesor, jam talent…” është një komedi e gjallë që paraqet të rinj ambiciozë, të cilët përpiqen të dëshmojnë talentin e tyre në aktrim. Përmes audicioneve, ushtrimeve teatrale, personazheve të ekzagjeruara dhe keqkuptimeve komike, shfaqja trajton me humor ëndrrat, pasiguritë dhe rivalitetin mes aktorëve të rinj. Në thelb, ajo promovon talentin e ri dhe rëndësinë e teatrit në zhvillimin e krijimtarisë dhe jetës kulturore.",
+                C("director", "Luan Daka"), C("cast", "Alban Zogaj", "Gani Morina", "Edita Dula", "Arta Lahu", "Valmir Krasniqi"), C("sound", "Amir Petrovci"), C("lighting", "Amir Petrovci"), C("coordinator", "Agnesa Bajgora")),
+            Show("dy-gjitare-enderrimtare", null, "Dy gjitarë ëndërrimtarë", new(2016, 4, 15), "Maçok Mustaçoku e Minuk Bishtolli, të frymëzuar nga kënga e bukur e fëmijëve shkollarë, vetë, pa asnjë ditë shkolle, ëndërrojnë se janë bërë shkencëtarë të famshëm, por realiteti i kthjell. Ata e kuptojnë se pa dije, sinqeritet dhe punë nuk arrihet asgjë.",
+                C("director", "Melihate Qena"), C("author", "Shaip Grabovci"), C("cast", "Edon Bërveniku", "Qëndresa Kajtazi", "Roza Berisha Fejzullahu"), C("music", "Alzan Gashi"), C("orchestration", "Ylber Krasniqi"), C("scenography", "Merita Behluli"), C("costumes", "Merita Behluli", "Ridvan Lahi"), C("lighting", "Asllan Hyseni")),
+            Show("per-caj-te-hillary", null, "Për çaj të Hillary", new(2016, 5, 30), "Pasdite e këndshme në Shtëpinë e Bardhë. Zonja e Parë, Hillary, ka ftuar për çaj një grua jo fort në zë të mirë, Monikën. Aty nis e tëra. Gjakrat vlojnë ndërsa ato farkohen mbi kudhrën e përvojës. Mediat e kanë nuhatur se aty diçka po zihet. Është e habitshme të mendosh se ç'mund të ndodhë prapa dyerve të mbyllura dhe dritareve të hapura të shtëpisë më të famshme të kryeqytetit amerikan.",
+                C("director", "Burbuqe Berisha"), C("cast", "Shengyl Ismaili", "Rabije Rozi Kryeziu"), C("author", "Johan Mucci"), C("music", "Trimor Dhomi"), C("costumes", "Linda Metaj Tafa"), C("scenography", "Yll Selmani"), C("choreography", "Rudina Berdynaj-Jakupi"), C("lighting", "Asllan Hyseni"), C("translation", "Gazmend Bërlajolli")),
+            Show("bretkosa", "bretkosaPoster", "Bretkosa", new(2018, 12, 26), "“Bretkosa” është një dramë që trajton pasojat psikologjike dhe shoqërore të luftës në Kosovë. Përmes historive dhe përballjeve të personazheve, shfaqja paraqet trauma të pazgjidhura, dëshpërimin, vështirësitë ekonomike dhe mungesën e komunikimit në shoqërinë e pasluftës. Duke ndërthurur momente tragjike me humor të errët, ajo sjell një pasqyrim të dhimbshëm, por realist, të jetës në Kosovë dhe të njerëzve që vazhdojnë të luftojnë me të kaluarën e tyre.",
+                C("director", "Burbuqe Berisha"), C("cast", "Ilir Tafa", "Valmir Krasniqi", "Basri Shala", "Lum Veseli"), C("dramaturge", "Seadet Beqiri"), C("author", "Dubravko Mihanovic"), C("organizer", "Amir Petrovci"), C("scenography", "Petrit Bakalli"), C("coordinator", "Agnesa Bajgora")),
+            Show("hana-dhe-dielli", null, "Hana dhe Dielli", new(2020, 2, 15), "“Hana dhe Dielli” është një shfaqje edukative dhe argëtuese për fëmijë, e cila përmes aventurave të personazheve përcjell mesazhe për respektin, ndershmërinë dhe përgjegjësinë. Shfaqja i mëson fëmijët të respektojnë familjen, mësuesit dhe njëri-tjetrin, të ndihmojnë në shtëpi, të tregojnë të vërtetën dhe të kujdesen për sigurinë e tyre.",
+                C("director", "Kaltërim Balaj"), C("cast", "Besnike Arifi", "Burim Koprani"), C("scenography", "Argjira Hoxha"), C("costumes", "Argjira Hoxha"), C("author", "Ekipi i Shfaqjes"), C("organizer", "Amir Petrovci"), C("sound", "Amir Petrovci"), C("lighting", "Amir Petrovci")),
+            Show("brinat", null, "BRINAT", new(2021, 10, 21), "“Brinat” flet për raportet mes tre kolegëve dhe shefit të tyre, të cilët duke ia njohur të metat dhe karakterin njëri-tjetrit arrijnë t’i shkaktojnë presion dhe dhunë psikologjike njëri-tjetrit. Vepra trajton këtë gjendje, që ndikon në shkatërrimin e marrëdhënieve profesionale, dhe ngacmimi çon deri te momenti kur personazhet humbin toruan. Kjo situatë ndikon që të shpërfaqet edhe e kaluara e errët e personazheve të shfaqjes.",
+                C("director", "Butrint Pasha"), C("cast", "Valmir Krasniqi", "Tristan Halilaj", "Arta Lahu", "Blin Sylejmani"), C("art-director", "Alma Krasniqi"), C("producer", "Ilir Bytyçi"), C("organizer", "Amir Petrovci"), C("sound", "Gëzim Hyseni"), C("lighting", "Gëzim Hyseni"), C("design", "Lirigëzon Selimi"), C("photography", "Kushtrim Tërnava"), C("translation", "Butrint Pasha"), C("music", "Butrint Pasha")),
+            Show("tjetri", null, "Tjetri", new(2024, 3, 7), "“Tjetri” trajton me mjeshtëri problemet e përhapura si abuzimi me pushtetin, ngacmimi seksual, racizmi dhe bullizmi. Përmes skenave të saj prekëse, shfaqja vuri në dukje sfidat me të cilat përballen grupet e margjinalizuara, veçanërisht gratë dhe pakicat kombëtare. Duke përdorur formatin e forum teatrit, narrativa angazhoi në mënyrë efektive audiencën, duke i lejuar ata të hyjnë në këpucët e personazheve dhe të diskutojnë çështjet e paraqitura në skenë.",
+                C("author", "Valmira Thaqi"), C("director", "Kreshnike Osmani"), C("cast", "Ryva Kajtazi", "Avni Dalipi", "Vedat Haxhiislami", "Alban Goranci", "Fitore Rama", "Ammar Havziji", "Florenta Bajraktari"), C("music", "Memli Kelmendi"), C("scenography", "Artan Hasani"), C("costumes", "Elma Azemi"), C("lighting", "Amir Petrovci"), C("makeup", "Zeprostudio"), C("producer", "Valmira Thaqi", "Ilir Bytyçi")),
+            Show("qeni-i-baskervileve", "qeniPoster", "Qeni i Baskërvilëve", new(2024, 2, 29), "“Qeni i Baskervileve” është një shfaqje misterioze e bazuar në veprën e Arthur Conan Doyle. Sherlock Holmes dhe Dr. Watson hetojnë vdekjen e pazakontë të Sir Charles Baskerville, e cila lidhet me legjendën e një qeni të frikshëm që thuhet se ndjek familjen Baskerville. Mes dyshimeve, sekreteve dhe ngjarjeve të errëta, ata përpiqen të zbulojnë nëse familja kërcënohet nga një mallkim i mbinatyrshëm apo nga një plan i mirëmenduar kriminal.",
+                C("director", "Jon Saqipi", "Kastriot Saqipi"), C("cast", "Blerina Veseli", "Djellza Dema", "Bleron Hevziu"), C("costumes", "Adelinë Mëziu"), C("scenography", "Artan Hasani"), C("lighting", "Amir Petrovci"), C("coordinator", "Agnesa Bajgora"), C("art-director", "Ilir Bytyçi")),
+            Show("venera-ne-gezof", null, "Venera në Gëzof", new(2024, 5, 2), "“Venera në gëzof” është një dramë provokuese që zhvillohet gjatë audicionit të një aktoreje të quajtur Vanda për rolin kryesor në shfaqjen e regjisorit Thomas. Ndërsa prova vazhdon, kufiri mes personazheve dhe realitetit fillon të zbehet, ndërsa raporti i pushtetit mes tyre ndryshon vazhdimisht. Përmes humorit të errët dhe tensionit psikologjik, shfaqja trajton dominimin, dëshirën, identitetin dhe marrëdhëniet mes burrit dhe gruas.",
+                C("director", "Agon Myftari"), C("cast", "Albina Krasniqi", "Redon Kika"), C("author", "David Ives"), C("producer", "Ilir Bytyçi"), C("organizer", "Amir Petrovci"), C("design", "Jeta Veseli"), C("coordinator", "Besike Arifi"), C("sound", "Amir Petrovci"), C("lighting", "Amir Petrovci")),
+            Show("gjirafa-dhe-buburreci", "gjirafaPoster", "Gjirafa dhe Buburreci", new(2024, 10, 25), "“Gjirafa dhe Buburreci” është një shfaqje për fëmijë që sjell në skenë botën e kafshëve përmes humorit, imagjinatës dhe aventurave argëtuese. Përmes dy personazheve shumë të ndryshme, shfaqja përcjell mesazhe për miqësinë, mirëkuptimin, pranimin e dallimeve dhe rëndësinë e bashkëpunimit. Ajo synon t’i argëtojë fëmijët, duke i nxitur njëkohësisht të tregojnë respekt dhe dashamirësi ndaj njëri-tjetrit.",
+                C("director", "Ben Apolloni"), C("cast", "Arbesa Azemi", "Erza Sejdiu"), C("producer", "Ilir Bytyçi"), C("costumes", "Xheneta Krasniqi"), C("scenography", "Xheneta Krasniqi"), C("music", "Ben Apolloni"), C("organizer", "Amir Petrovci"), C("coordinator", "Agnesa Bajgora"), C("lighting", "Altin Mehmeti"), C("sound", "Altin Mehmeti")),
+            Show("rrena", "rrenaPoster", "Rrèna", new(2024, 12, 5), "“Rrèna” nga Florian Zeller është një komedi e mprehtë dhe plot humor që eksploron kompleksitetin e së vërtetës dhe mashtrimit në marrëdhënie martesore. Ajo trajton temën e dukjes, fasadës dhe iluzionit përballë thelbit, brendësisë dhe realitetit. Teksa mbrëmja zhvillohet gjatë një darke mes dy çifteve, tensionet rriten, kufijtë mjegullohen dhe keqkuptimet e çuditshme pasojnë, duke lënë të gjithë të pyesin për rolin e gënjeshtrave në dashuri dhe nëse ndershmëria është gjithmonë politika më e mirë. Me humor therës dhe dialog të zgjuar, drama ofron një eksplorim argëtues të besimit, tradhtisë dhe ekuilibrit delikat që mban marrëdhëniet së bashku. Audienca mund të presë një mbrëmje plot të qeshura, kthesa të papritura dhe mendime që nxisin reflektim.",
+                C("director", "Agon Myftari"), C("author", "Florian Zeller"), C("cast", "Blend Sadiku", "Vjosë Tasholli", "Agan Asllani", "Albina Krasniqi"), C("producer", "Ilir Bytyçi", "Agon Myftari"), C("scenography", "Doruntina Bislimi", "Fiona Beqiri", "Tringa Blakaj"), C("costumes", "Doruntina Bislimi"), C("translation", "Qerim Ondozi"), C("lighting", "Altin Mehmeti"), C("sound", "Altin Mehmeti"), C("organizer", "Amir Petrovci"), C("coordinator", "Agnesa Bajgora"), C("photography", "Manushaqe Ibrahimi"), C("design", "Dardan Luta")),
+            Show("mersieri-dhe-kamieri", null, "Mersieri dhe Kamieri", new(2024, 12, 19), "Dy heronjtë tanë, Mersieri dhe Kamieri, pas shumë hezitimesh nisen me kurajë në një udhëtim të paqartë dhe pa adresë, vetëm që të largohen përfundimisht nga qyteti. Ata janë njerëz të pavullnetshëm në një shfaqje që nuk e kuptojnë. Një çadër, një çantë, një mushama dhe një biçikletë janë garanci për këtë udhëtim të pafund, që del të jetë zbulues për vetminë e tyre të dëshpëruar. Me pak bukë, pak mallkim, pak prostitucion, pak sëmundje e pak metafizikë, kjo shfaqje zhvesh një të vërtetë kritike mbi njeriun modern.",
+                C("director", "Butrint Pasha"), C("author", "Samuel Beckett"), C("cast", "Zhaneta Xhemajli", "Blin Mani"), C("producer", "Ilir Bytyqi", "Zhaneta Xhemajli"), C("adaptation", "Zhaneta Xhemajli"), C("music", "Butrint Pasha"), C("lighting", "Altin Mehmeti"), C("organizer", "Amir Petrovci"), C("coordinator", "Agnesa Bajgora"), C("design", "Vlerë Ibrahimi"), C("illustration", "Diella Valla"))
         };
-        var seededShows = new Dictionary<string, Show>();
 
         foreach (var definition in shows)
         {
+            var previousSlug = definition.Slug == "dy-gjitare-enderrimtare" ? "macok-mustacoku-dhe-minuk-bishtolli" : null;
             var show = await db.Shows
                 .Include(x => x.Translations)
                 .Include(x => x.Credits)
                 .Include(x => x.Performances)
-                .FirstOrDefaultAsync(x => x.Translations.Any(t => t.LanguageId == languages[Sq].Id && t.Slug == definition.Slug), cancellationToken);
+                .FirstOrDefaultAsync(x => x.Translations.Any(t =>
+                    t.LanguageId == languages[Sq].Id &&
+                    (t.Slug == definition.Slug || (previousSlug != null && t.Slug == previousSlug))), cancellationToken);
 
             if (show is null)
             {
@@ -267,53 +308,70 @@ public static class DevelopmentDataSeeder
             }
 
             show.ShowCategory = category;
-            show.PosterMediaAsset = media[definition.PosterKey];
-            show.DurationMinutes = definition.DurationMinutes;
+            show.PosterMediaAsset = definition.PosterKey is null ? null : media[definition.PosterKey];
+            show.DurationMinutes = null;
+            show.PremiereDate = definition.PremiereDate;
             show.Status = ShowStatus.Published;
-            show.IsFeatured = definition.IsFeatured;
+            show.IsFeatured = definition.Slug == "bretkosa";
             show.PublishedAt ??= now;
             show.UpdatedAt = now;
 
-            EnsureShowTranslation(show, languages[Sq].Id, definition.TitleSq, definition.Slug, definition.ShortSq, $"{definition.ShortSq} Ky tekst sherben si permbajtje zhvillimore per testim te faqes.", definition.TitleSq, definition.ShortSq);
-            EnsureShowTranslation(show, languages[En].Id, definition.TitleEn, $"{definition.Slug}-en", definition.ShortEn, $"{definition.ShortEn} This text is development content for testing the website.", definition.TitleEn, definition.ShortEn);
+            var shortDescription = definition.Synopsis.Length <= 320 ? definition.Synopsis : $"{definition.Synopsis[..317]}...";
+            EnsureShowTranslation(show, languages[Sq].Id, definition.Title, definition.Slug, shortDescription, definition.Synopsis, definition.Title, shortDescription);
+            EnsureShowTranslation(show, languages[En].Id, definition.Title, $"{definition.Slug}-en", shortDescription, definition.Synopsis, definition.Title, shortDescription);
 
-            var director = await EnsurePersonAsync(db, languages, definition.DirectorName, now, cancellationToken);
-            EnsureShowCredit(show, director, directorCreditType);
-
-            foreach (var days in definition.FuturePerformanceOffsets)
+            var displayOrder = 1;
+            foreach (var credit in definition.Credits)
             {
-                EnsurePerformance(show, location, performanceBase.AddDays(days), PerformanceStatus.Scheduled, "https://example.com/reservations");
+                foreach (var name in credit.Names)
+                {
+                    var person = await EnsurePersonAsync(db, languages, name, creditTypes[credit.TypeCode], now, cancellationToken);
+                    EnsureShowCredit(show, person, creditTypes[credit.TypeCode], displayOrder++);
+                }
             }
 
-            seededShows[definition.Slug] = show;
+            if (definition.Slug == "bretkosa")
+            {
+                var incorrectPremieres = show.Performances
+                    .Where(x =>
+                        x.Status == PerformanceStatus.Completed &&
+                        x.StartDateTimeUtc == new DateTimeOffset(2016, 3, 31, 19, 0, 0, TimeSpan.Zero))
+                    .ToList();
+                db.ShowPerformances.RemoveRange(incorrectPremieres);
+            }
+
+            EnsurePerformance(show, location, new DateTimeOffset(definition.PremiereDate, TimeOnly.FromTimeSpan(TimeSpan.FromHours(19)), TimeSpan.Zero), PerformanceStatus.Completed, null);
         }
 
-        var bretkosa = seededShows["bretkosa"];
-        EnsurePerformance(bretkosa, location, new DateTimeOffset(2024, 10, 31, 19, 0, 0, TimeSpan.Zero), PerformanceStatus.Completed, null);
-        EnsurePerformance(bretkosa, location, new DateTimeOffset(2030, 10, 5, 19, 0, 0, TimeSpan.Zero), PerformanceStatus.Cancelled, null);
-
-        var qeni = seededShows["qeni-i-baskervileve"];
-        var secondDirector = await EnsurePersonAsync(db, languages, "Kastriot Saqipi", now, cancellationToken);
-        EnsureShowCredit(qeni, secondDirector, directorCreditType);
-
         await db.SaveChangesAsync(cancellationToken);
+
+        static CreditDefinition C(string typeCode, params string[] names) => new(typeCode, names);
+        static ShowDefinition Show(string slug, string? posterKey, string title, DateOnly premiereDate, string synopsis, params CreditDefinition[] credits) =>
+            new(slug, posterKey, title, premiereDate, synopsis, credits);
     }
 
-    private static async Task<Person> EnsurePersonAsync(AppDbContext db, IReadOnlyDictionary<string, Language> languages, string fullName, DateTimeOffset now, CancellationToken cancellationToken)
+    private static async Task<Person> EnsurePersonAsync(AppDbContext db, IReadOnlyDictionary<string, Language> languages, string fullName, CreditType creditType, DateTimeOffset now, CancellationToken cancellationToken)
     {
-        var person = await db.People
+        var normalizedFullName = fullName.Trim();
+        var person = db.People.Local
+            .FirstOrDefault(x => string.Equals(x.FullName, normalizedFullName, StringComparison.OrdinalIgnoreCase));
+
+        person ??= await db.People
             .Include(x => x.Translations)
-            .FirstOrDefaultAsync(x => x.FullName == fullName, cancellationToken);
+            .FirstOrDefaultAsync(x => x.FullName == normalizedFullName, cancellationToken);
 
         if (person is null)
         {
-            person = new Person { FullName = fullName, CreatedAt = now };
+            person = new Person { FullName = normalizedFullName, CreatedAt = now };
             db.People.Add(person);
         }
 
+        person.FullName = normalizedFullName;
         person.UpdatedAt = now;
-        EnsurePersonTranslation(person, languages[Sq].Id, "Regjisor/e", $"Biografi zhvillimore per {fullName}.");
-        EnsurePersonTranslation(person, languages[En].Id, "Director", $"Development biography for {fullName}.");
+        var sqTitle = creditType.Translations.First(x => x.LanguageId == languages[Sq].Id).Name;
+        var enTitle = creditType.Translations.First(x => x.LanguageId == languages[En].Id).Name;
+        EnsurePersonTranslation(person, languages[Sq].Id, sqTitle, null);
+        EnsurePersonTranslation(person, languages[En].Id, enTitle, null);
         return person;
     }
 
@@ -440,7 +498,7 @@ public static class DevelopmentDataSeeder
         translation.MetaDescription = metaDescription;
     }
 
-    private static void EnsurePersonTranslation(Person person, int languageId, string professionalTitle, string biography)
+    private static void EnsurePersonTranslation(Person person, int languageId, string professionalTitle, string? biography)
     {
         var translation = person.Translations.FirstOrDefault(x => x.LanguageId == languageId);
         if (translation is null)
@@ -453,9 +511,11 @@ public static class DevelopmentDataSeeder
         translation.Biography = biography;
     }
 
-    private static void EnsureShowCredit(Show show, Person person, CreditType creditType)
+    private static void EnsureShowCredit(Show show, Person person, CreditType creditType, int displayOrder)
     {
-        if (show.Credits.Any(x => x.Person == person || x.PersonId == person.Id))
+        if (show.Credits.Any(x =>
+                (x.Person == person || (person.Id != 0 && x.PersonId == person.Id)) &&
+                (x.CreditType == creditType || (creditType.Id != 0 && x.CreditTypeId == creditType.Id))))
         {
             return;
         }
@@ -464,7 +524,7 @@ public static class DevelopmentDataSeeder
         {
             Person = person,
             CreditType = creditType,
-            DisplayOrder = show.Credits.Count + 1
+            DisplayOrder = displayOrder
         });
     }
 
@@ -511,5 +571,6 @@ public static class DevelopmentDataSeeder
     }
 
     private sealed record MediaDefinition(string Key, string FileUrl, string FileName, string MimeType, int Width, int Height, string AltTextSq, string AltTextEn);
-    private sealed record ShowDefinition(string Slug, string PosterKey, int DurationMinutes, bool IsFeatured, string TitleSq, string TitleEn, string ShortSq, string ShortEn, string DirectorName, int[] FuturePerformanceOffsets);
+    private sealed record ShowDefinition(string Slug, string? PosterKey, string Title, DateOnly PremiereDate, string Synopsis, CreditDefinition[] Credits);
+    private sealed record CreditDefinition(string TypeCode, string[] Names);
 }

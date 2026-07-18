@@ -5,6 +5,7 @@ import { EmptyState } from './components/ui/EmptyState'
 import { AboutPage } from './pages/AboutPage'
 import { HomePage } from './pages/HomePage'
 import { ShowsPage } from './pages/ShowsPage'
+import { ShowDetailPage } from './pages/ShowDetailPage'
 import { defaultLanguage, getLocalizedPath } from './routes/localizedRoutes'
 import './App.css'
 
@@ -28,7 +29,9 @@ function App() {
         <Route path="per-ne" element={<AboutPage />} />
         <Route path="about" element={<AboutPage />} />
         <Route path="shfaqjet" element={<ShowsPage />} />
+        <Route path="shfaqjet/:slug" element={<ShowDetailPage />} />
         <Route path="shows" element={<ShowsPage />} />
+        <Route path="shows/:slug" element={<ShowDetailPage />} />
         <Route path="lajme" element={<ShellPlaceholder />} />
         <Route path="news" element={<ShellPlaceholder />} />
         <Route path="pitf" element={<ShellPlaceholder />} />

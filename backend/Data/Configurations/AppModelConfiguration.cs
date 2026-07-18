@@ -27,6 +27,7 @@ internal sealed class ShowConfiguration : IEntityTypeConfiguration<Show>
     public void Configure(EntityTypeBuilder<Show> builder)
     {
         builder.Property(x => x.Status).HasConversion<string>().HasMaxLength(32).IsRequired();
+        builder.Property(x => x.PremiereDate).HasColumnType("date");
 
         builder.HasOne(x => x.ShowCategory)
             .WithMany(x => x.Shows)
@@ -40,6 +41,7 @@ internal sealed class ShowConfiguration : IEntityTypeConfiguration<Show>
 
         builder.HasIndex(x => x.Status);
         builder.HasIndex(x => x.PublishedAt);
+        builder.HasIndex(x => x.PremiereDate);
     }
 }
 
@@ -133,7 +135,7 @@ internal sealed class PersonConfiguration : IEntityTypeConfiguration<Person>
             .HasForeignKey(x => x.ProfileMediaAssetId)
             .OnDelete(DeleteBehavior.Restrict);
 
-        builder.HasIndex(x => x.FullName);
+        builder.HasIndex(x => x.FullName).IsUnique();
     }
 }
 

@@ -18,8 +18,10 @@ export function getLanguageFromPath(pathname) {
 
 export function getRouteKey(pathname) {
   return (
-    Object.entries(routeKeys).find(([, localized]) =>
-      Object.values(localized).includes(pathname),
+    Object.entries(routeKeys).find(([routeKey, localized]) =>
+      Object.values(localized).some(
+        (path) => pathname === path || (routeKey !== 'home' && pathname.startsWith(`${path}/`)),
+      ),
     )?.[0] ?? 'home'
   )
 }

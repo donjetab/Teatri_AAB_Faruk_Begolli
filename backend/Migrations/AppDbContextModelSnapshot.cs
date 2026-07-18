@@ -613,7 +613,8 @@ namespace Theatre.Api.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("FullName");
+                    b.HasIndex("FullName")
+                        .IsUnique();
 
                     b.HasIndex("ProfileMediaAssetId");
 
@@ -775,6 +776,9 @@ namespace Theatre.Api.Migrations
                     b.Property<int?>("PosterMediaAssetId")
                         .HasColumnType("int");
 
+                    b.Property<DateOnly?>("PremiereDate")
+                        .HasColumnType("date");
+
                     b.Property<DateTimeOffset?>("PublishedAt")
                         .HasColumnType("datetimeoffset");
 
@@ -792,6 +796,8 @@ namespace Theatre.Api.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("PosterMediaAssetId");
+
+                    b.HasIndex("PremiereDate");
 
                     b.HasIndex("PublishedAt");
 
