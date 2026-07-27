@@ -7,6 +7,7 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "oxlint",
+    "update-demo-data": "node scripts/update-demo-data.mjs",
     "preview": "vite preview"
   },
   "dependencies": {

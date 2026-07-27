@@ -37,6 +37,21 @@ export async function getDemoShow(language, slug, signal) {
   return data[language]?.showDetails?.[slug] ?? data.sq.showDetails[slug]
 }
 
+export async function getDemoNews(language, signal) {
+  const data = await loadDemoData(signal)
+  return data[language]?.news ?? data.sq.news
+}
+
+export async function getDemoNewsArticle(language, slug, signal) {
+  const data = await loadDemoData(signal)
+  return data[language]?.newsDetails?.[slug] ?? data.sq.newsDetails[slug]
+}
+
+export async function getDemoReserve(language, signal) {
+  const data = await loadDemoData(signal)
+  return data[language]?.reserve ?? data.sq.reserve
+}
+
 export function isCanceledRequest(error) {
   return error?.name === 'CanceledError' ||
     error?.name === 'AbortError' ||
