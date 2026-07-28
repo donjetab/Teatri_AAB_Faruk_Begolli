@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 import { useEffect, useState } from 'react'
+=======
+import { useState } from 'react'
+>>>>>>> 1ae7f1b (respo)
 import { Link, useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import reserveHeader from '../assets/teatri/perne-bg.jpg'
@@ -8,7 +12,10 @@ import smoke from '../assets/smoke_3.png'
 import theatreIcon from '../assets/acting-icon-gold.png'
 import { ArrowRightIcon } from '../components/icons/ArrowRightIcon'
 import { getLocalizedPath } from '../routes/localizedRoutes'
+<<<<<<< HEAD
 import { getDemoReserve } from '../api/demo'
+=======
+>>>>>>> 1ae7f1b (respo)
 
 function CalendarIcon() {
   return (
@@ -38,6 +45,7 @@ export function ReservePage() {
   const { t } = useTranslation()
   const { language = 'sq' } = useParams()
   const [selectedDate, setSelectedDate] = useState('')
+<<<<<<< HEAD
   const [activeShows, setActiveShows] = useState([])
 
   useEffect(() => {
@@ -51,6 +59,26 @@ export function ReservePage() {
       })
     return () => controller.abort()
   }, [language])
+=======
+  const activeShows = [
+    {
+      id: 1,
+      title: 'Bretkosa',
+      date: '2026-09-10',
+      venue: language === 'sq' ? 'Teatri Kombëtar' : 'National Theatre',
+      time: '19:30',
+      poster: postersBySlug.bretkosa,
+    },
+    {
+      id: 2,
+      title: 'Bretkosa',
+      date: '2026-09-17',
+      venue: language === 'sq' ? 'Teatri Kamertal AAB' : 'AAB Chamber Theatre',
+      time: '19:30',
+      poster: postersBySlug.bretkosa,
+    },
+  ]
+>>>>>>> 1ae7f1b (respo)
   const hasActiveShows = activeShows.length > 0
   const visibleShows = selectedDate
     ? activeShows.filter((show) => show.date === selectedDate)
@@ -101,7 +129,11 @@ export function ReservePage() {
               const date = new Date(`${show.date}T12:00:00`)
               return (
                 <article className="reserve-show-card" key={show.id}>
+<<<<<<< HEAD
                   <img className="reserve-show-poster" src={postersBySlug[show.slug]} alt="" />
+=======
+                  <img className="reserve-show-poster" src={show.poster} alt="" />
+>>>>>>> 1ae7f1b (respo)
                   <div className="reserve-show-date">
                     <strong>{date.getDate()}</strong>
                     <span>{new Intl.DateTimeFormat(language === 'sq' ? 'sq-AL' : 'en-GB', { month: 'long' }).format(date)}</span>
@@ -117,14 +149,24 @@ export function ReservePage() {
                       <i aria-hidden="true" />
                       {language === 'sq' ? 'Ka vende të lira' : 'Seats available'}
                     </span>
+<<<<<<< HEAD
                     <a href={show.reservationUrl} className="reserve-seat-button">
+=======
+                    <a href="#" className="reserve-seat-button">
+>>>>>>> 1ae7f1b (respo)
                       <span>{language === 'sq' ? 'Rezervo vendin' : 'Reserve seat'}</span>
                       <ArrowRightIcon />
                     </a>
                     <small>{language === 'sq' ? 'ose na kontakto' : 'or contact us'}</small>
+<<<<<<< HEAD
                     <a className="reserve-phone-button" href={show.phoneUrl}>
                       <span aria-hidden="true">☎</span>
                       {show.phone}
+=======
+                    <a className="reserve-phone-button" href="tel:+38348999000">
+                      <span aria-hidden="true">☎</span>
+                      048 999 000
+>>>>>>> 1ae7f1b (respo)
                     </a>
                   </div>
                 </article>
