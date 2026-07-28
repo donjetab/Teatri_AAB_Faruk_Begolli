@@ -116,18 +116,22 @@ export function AppLayout() {
   const routeKey = getRouteKey(location.pathname)
   const [homepageMeta, setHomepageMeta] = useState(null)
   const [showBackToTop, setShowBackToTop] = useState(false)
+  const [isHeaderScrolled, setIsHeaderScrolled] = useState(false)
 
   useEffect(() => {
     window.scrollTo({ top: 0, left: 0, behavior: 'auto' })
   }, [location.pathname])
 
   useEffect(() => {
-    const updateBackToTopVisibility = () => setShowBackToTop(window.scrollY > 300)
+    const updateScrollState = () => {
+      setShowBackToTop(window.scrollY > 300)
+      setIsHeaderScrolled(window.scrollY > 16)
+    }
 
-    updateBackToTopVisibility()
-    window.addEventListener('scroll', updateBackToTopVisibility, { passive: true })
+    updateScrollState()
+    window.addEventListener('scroll', updateScrollState, { passive: true })
 
-    return () => window.removeEventListener('scroll', updateBackToTopVisibility)
+    return () => window.removeEventListener('scroll', updateScrollState)
   }, [])
 
   const scrollToTop = () => {
@@ -188,9 +192,84 @@ export function AppLayout() {
     })
   }, [language, routeKey])
 
+  useEffect(() => {
+    const main = document.querySelector('.site-main')
+    if (!main || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      return undefined
+    }
+
+    const revealSelector = [
+      '.site-main > * > section',
+      '.show-card',
+      '.shows-page-card',
+      '.news-card',
+      '.gallery-page-item',
+      '.about-gallery-item',
+      '.reserve-show-card',
+      '.contact-direct-grid > a',
+    ].join(', ')
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('is-revealed')
+            observer.unobserve(entry.target)
+          }
+        })
+      },
+      { threshold: 0.01, rootMargin: '0px 0px -3% 0px' },
+    )
+
+    const revealVisibleElements = () => {
+      main.querySelectorAll('.scroll-reveal:not(.is-revealed)').forEach((element) => {
+        const bounds = element.getBoundingClientRect()
+        if (bounds.top < window.innerHeight * 0.92 && bounds.bottom > 0) {
+          element.classList.add('is-revealed')
+          observer.unobserve(element)
+        }
+      })
+    }
+
+    const registerRevealElements = () => {
+      const firstPageSection = main.querySelector('section')
+
+      main.querySelectorAll(revealSelector).forEach((element, index) => {
+        if (element.classList.contains('scroll-reveal')) {
+          return
+        }
+
+        element.classList.add('scroll-reveal')
+        element.style.setProperty('--reveal-index', index % 6)
+
+        if (element === firstPageSection) {
+          element.classList.add('is-revealed', 'reveal-immediate')
+        } else {
+          observer.observe(element)
+        }
+      })
+
+      window.requestAnimationFrame(revealVisibleElements)
+    }
+
+    registerRevealElements()
+
+    const mutationObserver = new MutationObserver(registerRevealElements)
+    mutationObserver.observe(main, { childList: true, subtree: true })
+    window.addEventListener('scroll', revealVisibleElements, { passive: true })
+    window.addEventListener('resize', revealVisibleElements)
+
+    return () => {
+      mutationObserver.disconnect()
+      observer.disconnect()
+      window.removeEventListener('scroll', revealVisibleElements)
+      window.removeEventListener('resize', revealVisibleElements)
+    }
+  }, [location.pathname])
+
   return (
     <div className={`site-shell site-shell-${routeKey}`}>
-      <Header language={language} reservationUrl={homepageMeta?.reservationUrl} />
+      <Header language={language} isScrolled={isHeaderScrolled} />
       <main className="site-main" id="content">
         <Outlet />
       </main>

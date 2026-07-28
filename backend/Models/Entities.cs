@@ -14,9 +14,16 @@ public sealed class Show
     public int Id { get; set; }
     public int ShowCategoryId { get; set; }
     public int? PosterMediaAssetId { get; set; }
+    public int? FeaturedMediaAssetId { get; set; }
     public int? DurationMinutes { get; set; }
+    public int? ProductionYear { get; set; }
+    public int? AgeRecommendation { get; set; }
+    public string? OriginalLanguage { get; set; }
+    public string? TrailerUrl { get; set; }
+    public string? VideoUrl { get; set; }
     public DateOnly? PremiereDate { get; set; }
     public ShowStatus Status { get; set; } = ShowStatus.Draft;
+    public ShowLifecycleStatus LifecycleStatus { get; set; } = ShowLifecycleStatus.Upcoming;
     public bool IsFeatured { get; set; }
     public DateTimeOffset CreatedAt { get; set; }
     public DateTimeOffset UpdatedAt { get; set; }
@@ -24,6 +31,7 @@ public sealed class Show
 
     public ShowCategory ShowCategory { get; set; } = null!;
     public MediaAsset? PosterMediaAsset { get; set; }
+    public MediaAsset? FeaturedMediaAsset { get; set; }
     public ICollection<ShowTranslation> Translations { get; set; } = [];
     public ICollection<ShowPerformance> Performances { get; set; } = [];
     public ICollection<ShowCredit> Credits { get; set; } = [];
@@ -74,7 +82,12 @@ public sealed class ShowPerformance
     public int ShowId { get; set; }
     public int? LocationId { get; set; }
     public DateTimeOffset StartDateTimeUtc { get; set; }
+    public DateTimeOffset? EndDateTimeUtc { get; set; }
     public string? TicketUrl { get; set; }
+    public string? ContactPhone { get; set; }
+    public string? Hall { get; set; }
+    public string? InternalNotes { get; set; }
+    public bool IsPublished { get; set; }
     public PerformanceStatus Status { get; set; } = PerformanceStatus.Scheduled;
     public DateTimeOffset CreatedAt { get; set; }
     public DateTimeOffset UpdatedAt { get; set; }
@@ -136,6 +149,8 @@ public sealed class ShowCredit
     public int PersonId { get; set; }
     public int CreditTypeId { get; set; }
     public string? CharacterName { get; set; }
+    public string? CustomRoleSq { get; set; }
+    public string? CustomRoleEn { get; set; }
     public int DisplayOrder { get; set; }
 
     public Show Show { get; set; } = null!;
@@ -314,6 +329,13 @@ public sealed class TheatreInformation
     public int? AboutPreviewMediaAssetId { get; set; }
     public int? ReservationBannerMediaAssetId { get; set; }
     public int? PitfFeatureMediaAssetId { get; set; }
+    public int? LogoMediaAssetId { get; set; }
+    public int? FaviconMediaAssetId { get; set; }
+    public int? SocialSharingMediaAssetId { get; set; }
+    public bool HeroIsVisible { get; set; } = true;
+    public bool ReservationBannerIsVisible { get; set; } = true;
+    public bool PitfFeatureIsVisible { get; set; } = true;
+    public int LatestNewsCount { get; set; } = 3;
     public string Address { get; set; } = string.Empty;
     public string Phone { get; set; } = string.Empty;
     public string Email { get; set; } = string.Empty;
@@ -328,6 +350,9 @@ public sealed class TheatreInformation
     public MediaAsset? AboutPreviewMediaAsset { get; set; }
     public MediaAsset? ReservationBannerMediaAsset { get; set; }
     public MediaAsset? PitfFeatureMediaAsset { get; set; }
+    public MediaAsset? LogoMediaAsset { get; set; }
+    public MediaAsset? FaviconMediaAsset { get; set; }
+    public MediaAsset? SocialSharingMediaAsset { get; set; }
     public ICollection<TheatreInformationTranslation> Translations { get; set; } = [];
 }
 
@@ -338,12 +363,20 @@ public sealed class TheatreInformationTranslation
     public int LanguageId { get; set; }
     public string TheatreName { get; set; } = string.Empty;
     public string HeroSlogan { get; set; } = string.Empty;
+    public string HeroSupportingText { get; set; } = string.Empty;
+    public string HeroButtonText { get; set; } = string.Empty;
+    public string AboutTitle { get; set; } = string.Empty;
+    public string AboutButtonText { get; set; } = string.Empty;
     public string AboutShort { get; set; } = string.Empty;
     public string AboutFull { get; set; } = string.Empty;
     public string PitfShortDescription { get; set; } = string.Empty;
     public string AddressDisplayText { get; set; } = string.Empty;
     public string ReservationCallToActionTitle { get; set; } = string.Empty;
     public string ReservationCallToActionText { get; set; } = string.Empty;
+    public string ReservationButtonText { get; set; } = string.Empty;
+    public string PitfFeatureTitle { get; set; } = string.Empty;
+    public string PitfFeatureButtonText { get; set; } = string.Empty;
+    public string FooterCopyrightText { get; set; } = string.Empty;
     public string? MetaTitle { get; set; }
     public string? MetaDescription { get; set; }
 
@@ -384,7 +417,10 @@ public sealed class ContactMessage
     public string Message { get; set; } = string.Empty;
     public string LanguageCode { get; set; } = string.Empty;
     public bool IsRead { get; set; }
+    public ContactMessageStatus Status { get; set; } = ContactMessageStatus.New;
+    public string? InternalNotes { get; set; }
     public DateTimeOffset CreatedAt { get; set; }
+    public DateTimeOffset UpdatedAt { get; set; }
 }
 
 public sealed class NewsletterSubscriber
@@ -392,7 +428,33 @@ public sealed class NewsletterSubscriber
     public int Id { get; set; }
     public string Email { get; set; } = string.Empty;
     public string PreferredLanguageCode { get; set; } = string.Empty;
+    public string? Source { get; set; }
     public bool IsActive { get; set; } = true;
     public DateTimeOffset SubscribedAt { get; set; }
     public DateTimeOffset? UnsubscribedAt { get; set; }
+}
+
+public sealed class AdminUser
+{
+    public int Id { get; set; }
+    public string Email { get; set; } = string.Empty;
+    public string DisplayName { get; set; } = string.Empty;
+    public string PasswordHash { get; set; } = string.Empty;
+    public AdminRole Role { get; set; } = AdminRole.ContentEditor;
+    public bool IsActive { get; set; } = true;
+    public DateTimeOffset CreatedAt { get; set; }
+    public DateTimeOffset UpdatedAt { get; set; }
+    public DateTimeOffset? LastLoginAt { get; set; }
+}
+
+public sealed class AdminActivity
+{
+    public long Id { get; set; }
+    public int? AdminUserId { get; set; }
+    public string Action { get; set; } = string.Empty;
+    public string EntityType { get; set; } = string.Empty;
+    public string? EntityId { get; set; }
+    public string? Summary { get; set; }
+    public DateTimeOffset CreatedAt { get; set; }
+    public AdminUser? AdminUser { get; set; }
 }

@@ -1,0 +1,25 @@
+import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
+import { resolveMediaUrl } from '../../api/client'
+import { adminApi } from '../api'
+import { LoadingSkeleton, PageHeader, StatusBadge } from '../components/AdminUi'
+
+const configs = {
+  news: { eyebrow: 'Content', title: 'News', description: 'Existing imported and authored theatre news from the database.', singular: 'article', preview: item => `#/sq/lajme/${item.slugSq}` },
+  pitf: { eyebrow: 'Festival', title: 'PITF Editions', description: 'Existing Prishtina International Theater Festival editions and related media.', singular: 'edition', preview: () => '#/sq/pitf' },
+  gallery: { eyebrow: 'Media', title: 'General Gallery', description: 'Existing database gallery albums associated with plays, news and PITF.', singular: 'album', preview: () => '#/sq/galeria' },
+}
+
+export function ExistingContentPage({ type }) {
+  const config = configs[type]
+  const [filters, setFilters] = useState({ search: '', status: '', page: 1, pageSize: 25 })
+  const [data, setData] = useState(null); const [error, setError] = useState('')
+  const load = () => { setError(''); return adminApi.existingContent(type, filters).then(setData).catch(e => setError(e.response?.data?.detail ?? `The ${config.title.toLowerCase()} could not be loaded.`)) }
+  useEffect(() => { setData(null); const timer = setTimeout(() => { void load() }, filters.search ? 180 : 0); return () => clearTimeout(timer) }, [type, filters.search, filters.status, filters.page])
+  const totalPages = Math.max(1, Math.ceil((data?.totalCount ?? 0) / filters.pageSize))
+  return <><PageHeader eyebrow={config.eyebrow} title={config.title} description={config.description} />
+    <section className="existing-content-stats"><article><strong>{data?.totalCount ?? '—'}</strong><span>Total {config.singular}s</span></article><article><strong>{data?.publishedCount ?? '—'}</strong><span>Published</span></article><article><strong>{data?.draftCount ?? '—'}</strong><span>Drafts</span></article></section>
+    <section className="admin-panel"><div className="communication-summary"><input placeholder={`Search ${config.title.toLowerCase()}…`} value={filters.search} onChange={e => setFilters({ ...filters, search: e.target.value, page: 1 })} /><select value={filters.status} onChange={e => setFilters({ ...filters, status: e.target.value, page: 1 })}><option value="">All publication states</option><option value="published">Published</option><option value="draft">Draft</option></select><span>{data?.totalCount ?? 0} records</span></div></section>
+    {error ? <section className="admin-panel admin-request-error"><div>!</div><h2>Content unavailable</h2><p>{error}</p><button className="admin-primary-button" onClick={load}>Try again</button></section> : !data ? <LoadingSkeleton rows={6} /> : type === 'news' ? <><section className="admin-news-grid">{data.items.map(item => <article key={item.id}><Link className="admin-news-image" to={`/admin/news/${item.id}`}>{item.imageUrl ? <img src={resolveMediaUrl(item.imageUrl)} alt="" /> : <span>NEWS</span>}<StatusBadge status={item.status} /></Link><div><small>{item.secondaryText} · {new Date(item.publishedAt ?? item.updatedAt).toLocaleDateString()}</small><h2><Link to={`/admin/news/${item.id}`}>{item.titleSq}</Link></h2><p>{item.titleEn}</p><footer>{item.isFeatured && <span>Featured</span>}<Link to={`/admin/news/${item.id}`}>View and edit →</Link></footer></div></article>)}</section><div className="admin-pagination"><span>{data.totalCount} articles</span><div><button disabled={filters.page <= 1} onClick={() => setFilters({ ...filters, page: filters.page - 1 })}>← Previous</button><span>Page {filters.page} of {totalPages}</span><button disabled={filters.page >= totalPages} onClick={() => setFilters({ ...filters, page: filters.page + 1 })}>Next →</button></div></div></> : <section className="admin-panel"><div className="admin-table-wrap"><table className="admin-table"><thead><tr><th>Content</th><th>Type / Year</th><th>Related</th><th>Publication</th><th>Updated</th><th /></tr></thead><tbody>{data.items.map(item => <tr key={item.id}><td><div className="show-list-title">{item.imageUrl ? <img src={resolveMediaUrl(item.imageUrl)} alt="" /> : <span className="show-poster-empty">◇</span>}<div><strong>{item.titleSq}</strong><small>{item.titleEn}{item.isFeatured ? ' · Featured' : ''}</small></div></div></td><td>{item.secondaryText ?? '—'}</td><td>{item.relatedCount}</td><td><StatusBadge status={item.status} /></td><td>{new Date(item.updatedAt).toLocaleDateString()}</td><td><div className="table-actions"><a href={config.preview(item)} target="_blank">Preview</a></div></td></tr>)}</tbody></table></div><div className="admin-pagination"><span>{data.totalCount} {config.singular}s</span><div><button disabled={filters.page <= 1} onClick={() => setFilters({ ...filters, page: filters.page - 1 })}>← Previous</button><span>Page {filters.page} of {totalPages}</span><button disabled={filters.page >= totalPages} onClick={() => setFilters({ ...filters, page: filters.page + 1 })}>Next →</button></div></div></section>}
+  </>
+}

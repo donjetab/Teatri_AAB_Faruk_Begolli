@@ -1,9 +1,11 @@
 import { useTranslation } from 'react-i18next'
+import { Link, useParams } from 'react-router-dom'
 import logoScene from '../../assets/Teatri Logo/Teatri AAB - Scene Logo.png'
 import ctaBackground from '../../assets/cta-background.png'
 import ctaBackgroundMobile from '../../assets/cta-background-mobile.png'
 import { resolveMediaUrl } from '../../api/client'
 import { ArrowRightIcon } from '../icons/ArrowRightIcon'
+import { defaultLanguage, getLocalizedPath, languages } from '../../routes/localizedRoutes'
 
 function splitReservationTitle(title) {
   const parts = title.split(/\s+/)
@@ -13,6 +15,8 @@ function splitReservationTitle(title) {
 
 export function ReservationBanner({ home }) {
   const { t } = useTranslation()
+  const { language: languageParam } = useParams()
+  const language = languages.includes(languageParam) ? languageParam : defaultLanguage
   const background = resolveMediaUrl(home.reservationBanner?.url) || ctaBackground
   const [firstLine, secondLine] = splitReservationTitle(home.reservationTitle ?? t('home.reservationTitleFallback'))
 
@@ -34,12 +38,12 @@ export function ReservationBanner({ home }) {
             </h2>
           </div>
           <p>{home.reservationText ?? t('home.reservationTextFallback')}</p>
-          <a href={home.reservationUrl ?? '#'} className="reservation-button">
+          <Link to={getLocalizedPath('reserve', language)} className="reservation-button">
             <span>{t('home.reserveTicket')}</span>
             <span className="circle-arrow" aria-hidden="true">
               <ArrowRightIcon className="arrow-icon" />
             </span>
-          </a>
+          </Link>
         </div>
       </div>
     </section>

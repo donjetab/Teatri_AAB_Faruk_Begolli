@@ -6,6 +6,33 @@
   color: var(--color-white);
 }
 
+.scroll-reveal {
+  opacity: 0;
+  transform: translateY(2rem) scale(0.98);
+  transition:
+    opacity 550ms ease,
+    transform 650ms cubic-bezier(0.22, 1, 0.36, 1);
+  transition-delay: calc(var(--reveal-index, 0) * 75ms);
+}
+
+.scroll-reveal.is-revealed {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+.scroll-reveal.reveal-immediate {
+  transition: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scroll-reveal,
+  .scroll-reveal.is-revealed {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+}
+
 .skip-link {
   position: absolute;
   left: 24px;
@@ -24,12 +51,20 @@
 
 .site-header {
   min-height: var(--header-height);
-  position: absolute;
+  position: fixed;
   top: 0;
   left: 0;
   right: 0;
   z-index: 10;
   background: transparent;
+  transition: background-color 180ms ease, box-shadow 180ms ease, backdrop-filter 180ms ease;
+}
+
+.site-header.scrolled {
+  background: rgba(0, 0, 0, 0.88);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.24);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
 }
 
 .site-header::before {
@@ -41,6 +76,11 @@
   background:
     linear-gradient(180deg, rgba(0, 0, 0, 0.54) 0%, rgba(0, 0, 0, 0.18) 58%, rgba(0, 0, 0, 0) 100%),
     linear-gradient(90deg, rgba(0, 0, 0, 0.48) 0%, rgba(0, 0, 0, 0.14) 44%, rgba(0, 0, 0, 0) 78%);
+  transition: opacity 180ms ease;
+}
+
+.site-header.scrolled::before {
+  opacity: 0;
 }
 
 .site-shell-about .site-header::before,
@@ -3280,6 +3320,36 @@
 
 .news-detail-body p + p {
   margin-top: 1.6rem;
+}
+
+.news-rich-content h2,
+.news-rich-content h3 {
+  margin: 2.2rem 0 0.8rem;
+  color: #fff;
+  font-family: var(--font-display, Georgia, serif);
+  line-height: 1.2;
+}
+
+.news-rich-content ul,
+.news-rich-content ol {
+  padding-left: 1.5rem;
+}
+
+.news-rich-content li + li { margin-top: 0.5rem; }
+
+.news-rich-content a {
+  color: #d8aa59;
+  text-decoration: underline;
+  text-underline-offset: 0.18em;
+}
+
+.news-rich-content blockquote {
+  margin: 2rem 0;
+  padding-left: 1.4rem;
+  border-left: 2px solid #9a2630;
+  color: rgba(248, 244, 242, 0.72);
+  font-family: var(--font-display, Georgia, serif);
+  font-size: 1.2em;
 }
 
 .news-detail-videos,

@@ -1,11 +1,9 @@
-import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import curtain from '../../assets/curtain.png'
 import goldLines from '../../assets/decorative-gold-lines.png'
 import pitfHomepageImage from '../../assets/hp_pitf.jpg'
 import pitfWordImage from '../../assets/PITF-fading.png'
 import { ArrowRightIcon } from '../icons/ArrowRightIcon'
-import { getLocalizedPath } from '../../routes/localizedRoutes'
 
 export function PitfPreview({ pitf, language }) {
   const { t } = useTranslation()
@@ -34,12 +32,17 @@ export function PitfPreview({ pitf, language }) {
             <span>Theatre Festival</span>
           </h2>
           <p>{pitf.shortDescription}</p>
-          <Link to={getLocalizedPath('pitf', language)} className="home-button">
+          <a
+            href="https://pitf.teatriaab.com/"
+            target="_blank"
+            rel="noreferrer"
+            className="home-button"
+          >
             <span>{t('home.pitfProgram')}</span>
             <span className="circle-arrow" aria-hidden="true">
               <ArrowRightIcon className="arrow-icon" />
             </span>
-          </Link>
+          </a>
         </div>
       </div>
     </section>

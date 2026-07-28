@@ -1,0 +1,24 @@
+import { useEffect, useMemo, useState } from 'react'
+import { Link, useParams } from 'react-router-dom'
+import { adminApi } from '../api'
+import { LanguageTabs, LoadingSkeleton, PageHeader, StatusBadge, Toast } from '../components/AdminUi'
+import { MediaPicker } from '../components/MediaPicker'
+import { RichTextEditor } from '../components/RichTextEditor'
+
+export function NewsEditorPage() {
+  const { id } = useParams(); const [form, setForm] = useState(null); const [saved, setSaved] = useState(''); const [lang, setLang] = useState('sq'); const [preview, setPreview] = useState(false); const [toast, setToast] = useState('')
+  useEffect(() => { adminApi.newsArticle(id).then(x => { setForm(x); setSaved(JSON.stringify(x)) }) }, [id])
+  const dirty = useMemo(() => form && JSON.stringify(form) !== saved, [form, saved])
+  useEffect(() => { const warn = e => { if (dirty) { e.preventDefault(); e.returnValue = '' } }; addEventListener('beforeunload', warn); return () => removeEventListener('beforeunload', warn) }, [dirty])
+  if (!form) return <LoadingSkeleton rows={7} />
+  const tr = form.translations.find(x => x.languageCode === lang)
+  const change = (key, value) => setForm({ ...form, [key]: value })
+  const changeTr = (key, value) => setForm({ ...form, translations: form.translations.map(x => x.languageCode === lang ? { ...x, [key]: value } : x) })
+  const save = async e => { e?.preventDefault(); const result = await adminApi.saveNewsArticle(id, form); setForm(result); setSaved(JSON.stringify(result)); setToast('News article saved safely.') }
+  return <><PageHeader eyebrow="News" title={tr.title} description="Edit bilingual article content, publication settings, source information and search metadata." actions={<><Link className="admin-outline-button" to="/admin/news">Back to news</Link><StatusBadge status={form.isPublished ? 'Published' : 'Draft'} /></>} />
+    <form className="admin-form" onSubmit={save}><section className="admin-panel"><div className="news-editor-top"><LanguageTabs active={lang} onChange={setLang} /><button type="button" className="admin-text-button" onClick={() => setPreview(!preview)}>{preview ? 'Return to editor' : 'Preview article'}</button></div>
+      {preview ? <article className="news-admin-preview"><h1>{tr.title}</h1><p>{tr.summary}</p><div dangerouslySetInnerHTML={{ __html: tr.content }} /></article> : <div className="form-grid"><label>Title *<input required value={tr.title} onChange={e => changeTr('title', e.target.value)} /></label><label>Slug *<input required value={tr.slug} onChange={e => changeTr('slug', e.target.value)} /></label><label className="full">Summary *<textarea rows="4" value={tr.summary} onChange={e => changeTr('summary', e.target.value)} /></label><label className="full">Article content *<RichTextEditor value={tr.content} onChange={value => changeTr('content', value)} /></label><label>SEO title<input value={tr.metaTitle ?? ''} onChange={e => changeTr('metaTitle', e.target.value)} /></label><label>SEO description<textarea rows="3" value={tr.metaDescription ?? ''} onChange={e => changeTr('metaDescription', e.target.value)} /></label></div>}</section>
+      <section className="admin-panel"><h2>Article settings</h2><div className="form-grid"><MediaPicker label="Cover image" value={form.coverMediaAssetId} onChange={value => change('coverMediaAssetId', value)} /><label>Article type<select value={form.articleType} onChange={e => change('articleType', e.target.value)}><option>Authored</option><option>External</option></select></label>{form.articleType === 'External' && <><label>External source name<input value={form.externalSourceName ?? ''} onChange={e => change('externalSourceName', e.target.value)} /></label><label>Original article URL<input type="url" required value={form.externalUrl ?? ''} onChange={e => change('externalUrl', e.target.value)} /></label></>}<label>Publication date<input type="datetime-local" value={form.publishedAt ? new Date(form.publishedAt).toISOString().slice(0,16) : ''} onChange={e => change('publishedAt', e.target.value ? new Date(e.target.value).toISOString() : null)} /></label><label className="admin-switch-row"><input type="checkbox" checked={form.isFeatured} onChange={e => change('isFeatured', e.target.checked)} /> Featured article</label><label className="admin-switch-row"><input type="checkbox" checked={form.isPublished} onChange={e => change('isPublished', e.target.checked)} /> Published on website</label></div></section>
+      <div className="sticky-save"><button className="admin-primary-button" disabled={!dirty}>Save article</button><span className={dirty ? 'unsaved-chip' : 'saved-chip'}>{dirty ? 'Unsaved changes' : 'All changes saved'}</span><a className="admin-outline-button" href={`#/sq/lajme/${form.translations.find(x => x.languageCode === 'sq').slug}`} target="_blank" rel="noreferrer">Public preview →</a></div>
+    </form><Toast message={toast} onClose={() => setToast('')} /></>
+}

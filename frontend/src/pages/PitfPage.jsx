@@ -140,7 +140,12 @@ export function PitfPage() {
           ))}
         </ol>
 
-        <a className="pitf-reserve-button" href={homeMeta?.reservationUrl ?? '#'}>
+        <a
+          className="pitf-reserve-button"
+          href="https://pitf.teatriaab.com/"
+          target="_blank"
+          rel="noreferrer"
+        >
           <span>{t('pitfPage.learnMore')}</span>
           <span className="circle-arrow" aria-hidden="true">
             <ArrowRightIcon className="arrow-icon" />

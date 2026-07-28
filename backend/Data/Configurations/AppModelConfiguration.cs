@@ -26,6 +26,10 @@ internal sealed class ShowConfiguration : IEntityTypeConfiguration<Show>
 {
     public void Configure(EntityTypeBuilder<Show> builder)
     {
+        builder.Property(x => x.OriginalLanguage).HasMaxLength(80);
+        builder.Property(x => x.TrailerUrl).HasMaxLength(1000);
+        builder.Property(x => x.VideoUrl).HasMaxLength(1000);
+        builder.Property(x => x.LifecycleStatus).HasConversion<string>().HasMaxLength(32);
         builder.Property(x => x.Status).HasConversion<string>().HasMaxLength(32).IsRequired();
         builder.Property(x => x.PremiereDate).HasColumnType("date");
 
@@ -37,6 +41,11 @@ internal sealed class ShowConfiguration : IEntityTypeConfiguration<Show>
         builder.HasOne(x => x.PosterMediaAsset)
             .WithMany()
             .HasForeignKey(x => x.PosterMediaAssetId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.HasOne(x => x.FeaturedMediaAsset)
+            .WithMany()
+            .HasForeignKey(x => x.FeaturedMediaAssetId)
             .OnDelete(DeleteBehavior.Restrict);
 
         builder.HasIndex(x => x.Status);
@@ -106,6 +115,9 @@ internal sealed class ShowPerformanceConfiguration : IEntityTypeConfiguration<Sh
     public void Configure(EntityTypeBuilder<ShowPerformance> builder)
     {
         builder.Property(x => x.TicketUrl).HasMaxLength(500);
+        builder.Property(x => x.ContactPhone).HasMaxLength(80);
+        builder.Property(x => x.Hall).HasMaxLength(180);
+        builder.Property(x => x.InternalNotes).HasMaxLength(2000);
         builder.Property(x => x.Status).HasConversion<string>().HasMaxLength(32).IsRequired();
 
         builder.HasOne(x => x.Show)
@@ -120,6 +132,7 @@ internal sealed class ShowPerformanceConfiguration : IEntityTypeConfiguration<Sh
 
         builder.HasIndex(x => x.StartDateTimeUtc);
         builder.HasIndex(x => x.Status);
+        builder.HasIndex(x => x.IsPublished);
         builder.HasIndex(x => x.ShowId);
     }
 }
@@ -194,6 +207,8 @@ internal sealed class ShowCreditConfiguration : IEntityTypeConfiguration<ShowCre
     public void Configure(EntityTypeBuilder<ShowCredit> builder)
     {
         builder.Property(x => x.CharacterName).HasMaxLength(180);
+        builder.Property(x => x.CustomRoleSq).HasMaxLength(180);
+        builder.Property(x => x.CustomRoleEn).HasMaxLength(180);
 
         builder.HasOne(x => x.Show)
             .WithMany(x => x.Credits)
@@ -466,11 +481,15 @@ internal sealed class TheatreInformationConfiguration : IEntityTypeConfiguration
         builder.Property(x => x.FacebookUrl).HasMaxLength(500);
         builder.Property(x => x.InstagramUrl).HasMaxLength(500);
         builder.Property(x => x.ReservationUrl).HasMaxLength(500);
+        builder.Property(x => x.LatestNewsCount).HasDefaultValue(3);
 
         builder.HasOne(x => x.HeroBackgroundMediaAsset).WithMany().HasForeignKey(x => x.HeroBackgroundMediaAssetId).OnDelete(DeleteBehavior.Restrict);
         builder.HasOne(x => x.AboutPreviewMediaAsset).WithMany().HasForeignKey(x => x.AboutPreviewMediaAssetId).OnDelete(DeleteBehavior.Restrict);
         builder.HasOne(x => x.ReservationBannerMediaAsset).WithMany().HasForeignKey(x => x.ReservationBannerMediaAssetId).OnDelete(DeleteBehavior.Restrict);
         builder.HasOne(x => x.PitfFeatureMediaAsset).WithMany().HasForeignKey(x => x.PitfFeatureMediaAssetId).OnDelete(DeleteBehavior.Restrict);
+        builder.HasOne(x => x.LogoMediaAsset).WithMany().HasForeignKey(x => x.LogoMediaAssetId).OnDelete(DeleteBehavior.Restrict);
+        builder.HasOne(x => x.FaviconMediaAsset).WithMany().HasForeignKey(x => x.FaviconMediaAssetId).OnDelete(DeleteBehavior.Restrict);
+        builder.HasOne(x => x.SocialSharingMediaAsset).WithMany().HasForeignKey(x => x.SocialSharingMediaAssetId).OnDelete(DeleteBehavior.Restrict);
     }
 }
 
@@ -480,12 +499,20 @@ internal sealed class TheatreInformationTranslationConfiguration : IEntityTypeCo
     {
         builder.Property(x => x.TheatreName).HasMaxLength(180).IsRequired();
         builder.Property(x => x.HeroSlogan).HasMaxLength(250).IsRequired();
+        builder.Property(x => x.HeroSupportingText).HasMaxLength(500);
+        builder.Property(x => x.HeroButtonText).HasMaxLength(100);
+        builder.Property(x => x.AboutTitle).HasMaxLength(180);
+        builder.Property(x => x.AboutButtonText).HasMaxLength(100);
         builder.Property(x => x.AboutShort).HasMaxLength(700).IsRequired();
         builder.Property(x => x.AboutFull).IsRequired();
         builder.Property(x => x.PitfShortDescription).HasMaxLength(700).IsRequired();
         builder.Property(x => x.AddressDisplayText).HasMaxLength(300).IsRequired();
         builder.Property(x => x.ReservationCallToActionTitle).HasMaxLength(180).IsRequired();
         builder.Property(x => x.ReservationCallToActionText).HasMaxLength(500).IsRequired();
+        builder.Property(x => x.ReservationButtonText).HasMaxLength(100);
+        builder.Property(x => x.PitfFeatureTitle).HasMaxLength(180);
+        builder.Property(x => x.PitfFeatureButtonText).HasMaxLength(100);
+        builder.Property(x => x.FooterCopyrightText).HasMaxLength(300);
         builder.Property(x => x.MetaTitle).HasMaxLength(220);
         builder.Property(x => x.MetaDescription).HasMaxLength(320);
 
@@ -544,6 +571,8 @@ internal sealed class ContactMessageConfiguration : IEntityTypeConfiguration<Con
         builder.Property(x => x.Subject).HasMaxLength(220).IsRequired();
         builder.Property(x => x.Message).IsRequired();
         builder.Property(x => x.LanguageCode).HasMaxLength(8).IsRequired();
+        builder.Property(x => x.Status).HasConversion<string>().HasMaxLength(32);
+        builder.Property(x => x.InternalNotes).HasMaxLength(4000);
 
         builder.HasIndex(x => x.CreatedAt);
         builder.HasIndex(x => x.IsRead);
@@ -556,9 +585,36 @@ internal sealed class NewsletterSubscriberConfiguration : IEntityTypeConfigurati
     {
         builder.Property(x => x.Email).HasMaxLength(180).IsRequired();
         builder.Property(x => x.PreferredLanguageCode).HasMaxLength(8).IsRequired();
+        builder.Property(x => x.Source).HasMaxLength(120);
 
         builder.HasIndex(x => x.Email).IsUnique();
         builder.HasIndex(x => x.IsActive);
         builder.HasIndex(x => x.SubscribedAt);
+    }
+}
+
+internal sealed class AdminUserConfiguration : IEntityTypeConfiguration<AdminUser>
+{
+    public void Configure(EntityTypeBuilder<AdminUser> builder)
+    {
+        builder.Property(x => x.Email).HasMaxLength(180).IsRequired();
+        builder.Property(x => x.DisplayName).HasMaxLength(160).IsRequired();
+        builder.Property(x => x.PasswordHash).HasMaxLength(700).IsRequired();
+        builder.Property(x => x.Role).HasConversion<string>().HasMaxLength(40);
+        builder.HasIndex(x => x.Email).IsUnique();
+        builder.HasIndex(x => x.IsActive);
+    }
+}
+
+internal sealed class AdminActivityConfiguration : IEntityTypeConfiguration<AdminActivity>
+{
+    public void Configure(EntityTypeBuilder<AdminActivity> builder)
+    {
+        builder.Property(x => x.Action).HasMaxLength(100).IsRequired();
+        builder.Property(x => x.EntityType).HasMaxLength(100).IsRequired();
+        builder.Property(x => x.EntityId).HasMaxLength(100);
+        builder.Property(x => x.Summary).HasMaxLength(600);
+        builder.HasOne(x => x.AdminUser).WithMany().HasForeignKey(x => x.AdminUserId).OnDelete(DeleteBehavior.SetNull);
+        builder.HasIndex(x => x.CreatedAt);
     }
 }

@@ -37,7 +37,8 @@ export function NewsDetailPage() {
   }
 
   const locale = i18n.language === 'sq' ? 'sq-AL' : 'en-GB'
-  const bodyParagraphs = article.content.split(/\r?\n+/).filter(Boolean)
+  const contentIsHtml = /<\/?[a-z][\s\S]*>/i.test(article.content)
+  const bodyParagraphs = contentIsHtml ? [] : article.content.split(/\r?\n+/).filter(Boolean)
   const media = article.media.filter((item) => !item.isCover)
   const videos = media.filter((item) => item.mimeType.startsWith('video/'))
   const galleryImages = media.filter((item) => item.mimeType.startsWith('image/'))
@@ -76,7 +77,9 @@ export function NewsDetailPage() {
       )}
 
       <div className="news-detail-body">
-        {bodyParagraphs.map((paragraph, index) => <p key={`${index}-${paragraph.slice(0, 20)}`}>{paragraph}</p>)}
+        {contentIsHtml
+          ? <div className="news-rich-content" dangerouslySetInnerHTML={{ __html: article.content }} />
+          : bodyParagraphs.map((paragraph, index) => <p key={`${index}-${paragraph.slice(0, 20)}`}>{paragraph}</p>)}
       </div>
 
       {videos.length > 0 && (

@@ -1,9 +1,12 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Identity;
 using System.Reflection;
 using Theatre.Api.Data;
 using Theatre.Api.Data.Seed;
 using Theatre.Api.Middleware;
 using Theatre.Api.Services;
+using Theatre.Api.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -22,6 +25,30 @@ builder.Services.AddScoped<IHomepageService, HomepageService>();
 builder.Services.AddScoped<INewsletterService, NewsletterService>();
 builder.Services.AddScoped<IContactService, ContactService>();
 builder.Services.AddSingleton<IClock, SystemClock>();
+builder.Services.AddScoped<IPasswordHasher<AdminUser>, PasswordHasher<AdminUser>>();
+builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
+    .AddCookie(options =>
+    {
+        options.Cookie.Name = "TeatriAab.Admin";
+        options.Cookie.HttpOnly = true;
+        options.Cookie.SameSite = SameSiteMode.Strict;
+        options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
+        options.SlidingExpiration = true;
+        options.ExpireTimeSpan = TimeSpan.FromHours(8);
+        options.Events.OnRedirectToLogin = context =>
+        {
+            context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+            return Task.CompletedTask;
+        };
+        options.Events.OnRedirectToAccessDenied = context =>
+        {
+            context.Response.StatusCode = StatusCodes.Status403Forbidden;
+            return Task.CompletedTask;
+        };
+    });
+builder.Services.AddAuthorizationBuilder()
+    .AddPolicy("Admin", policy => policy.RequireRole(nameof(AdminRole.SuperAdmin), nameof(AdminRole.ContentEditor)))
+    .AddPolicy("SuperAdmin", policy => policy.RequireRole(nameof(AdminRole.SuperAdmin)));
 
 builder.Services.AddCors(options =>
 {
@@ -33,7 +60,8 @@ builder.Services.AddCors(options =>
         policy
             .WithOrigins(allowedOrigins)
             .AllowAnyHeader()
-            .AllowAnyMethod();
+            .AllowAnyMethod()
+            .AllowCredentials();
     });
 });
 
@@ -55,6 +83,8 @@ if (app.Environment.IsDevelopment())
 app.UseStaticFiles();
 app.UseMiddleware<ErrorHandlingMiddleware>();
 app.UseCors("FrontendDevelopment");
+app.UseAuthentication();
+app.UseAuthorization();
 app.MapControllers();
 
 if (app.Environment.IsDevelopment() && app.Configuration.GetValue("Seed:EnableDevelopmentSeed", true))
@@ -63,6 +93,27 @@ if (app.Environment.IsDevelopment() && app.Configuration.GetValue("Seed:EnableDe
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     await db.Database.MigrateAsync();
     await DevelopmentDataSeeder.SeedAsync(db, app.Environment);
+
+    var bootstrapEmail = app.Configuration["AdminBootstrap:Email"]?.Trim().ToLowerInvariant();
+    var bootstrapPassword = app.Configuration["AdminBootstrap:Password"];
+    if (!string.IsNullOrWhiteSpace(bootstrapEmail) && !string.IsNullOrWhiteSpace(bootstrapPassword)
+        && !await db.AdminUsers.AnyAsync())
+    {
+        if (bootstrapPassword.Length < 12)
+            throw new InvalidOperationException("AdminBootstrap:Password must contain at least 12 characters.");
+        var admin = new AdminUser
+        {
+            Email = bootstrapEmail,
+            DisplayName = app.Configuration["AdminBootstrap:DisplayName"] ?? "Super Admin",
+            Role = AdminRole.SuperAdmin,
+            IsActive = true,
+            CreatedAt = DateTimeOffset.UtcNow,
+            UpdatedAt = DateTimeOffset.UtcNow
+        };
+        admin.PasswordHash = new PasswordHasher<AdminUser>().HashPassword(admin, bootstrapPassword);
+        db.AdminUsers.Add(admin);
+        await db.SaveChangesAsync();
+    }
 }
 
 app.Run();

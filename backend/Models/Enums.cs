@@ -30,3 +30,26 @@ public enum NewsArticleType
     Authored,
     External
 }
+
+public enum ShowLifecycleStatus
+{
+    Upcoming,
+    Active,
+    Completed,
+    SoldOut
+}
+
+public enum AdminRole
+{
+    ContentEditor,
+    SuperAdmin
+}
+
+public enum ContactMessageStatus
+{
+    New,
+    Read,
+    Resolved,
+    Archived,
+    Spam
+}

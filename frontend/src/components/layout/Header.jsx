@@ -7,11 +7,11 @@ import { DesktopNavigation } from './DesktopNavigation'
 import { LanguageSwitcher } from './LanguageSwitcher'
 import { MobileNavigation } from './MobileNavigation'
 
-export function Header({ language }) {
+export function Header({ language, isScrolled = false }) {
   const { t } = useTranslation()
 
   return (
-    <header className="site-header">
+    <header className={`site-header${isScrolled ? ' scrolled' : ''}`}>
       <a href="#content" className="skip-link">
         {t('a11y.skipToContent')}
       </a>

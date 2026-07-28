@@ -45,6 +45,7 @@ public sealed class NewsletterService(AppDbContext db, IClock clock) : INewslett
                 Email = normalizedEmail,
                 PreferredLanguageCode = languageCode,
                 IsActive = true,
+                Source = "Website footer",
                 SubscribedAt = clock.UtcNow,
                 UnsubscribedAt = null
             });

@@ -5,6 +5,8 @@ namespace Theatre.Api.Data;
 
 public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(options)
 {
+    public DbSet<AdminUser> AdminUsers => Set<AdminUser>();
+    public DbSet<AdminActivity> AdminActivities => Set<AdminActivity>();
     public DbSet<ContactMessage> ContactMessages => Set<ContactMessage>();
     public DbSet<CreditType> CreditTypes => Set<CreditType>();
     public DbSet<CreditTypeTranslation> CreditTypeTranslations => Set<CreditTypeTranslation>();

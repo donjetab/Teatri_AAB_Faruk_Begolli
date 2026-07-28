@@ -23,7 +23,9 @@ public sealed class ContactService(AppDbContext db, IClock clock) : IContactServ
             Message = request.Message.Trim(),
             LanguageCode = request.LanguageCode.Trim().ToLowerInvariant(),
             IsRead = false,
-            CreatedAt = clock.UtcNow
+            Status = ContactMessageStatus.New,
+            CreatedAt = clock.UtcNow,
+            UpdatedAt = clock.UtcNow
         });
 
         await db.SaveChangesAsync(cancellationToken);
