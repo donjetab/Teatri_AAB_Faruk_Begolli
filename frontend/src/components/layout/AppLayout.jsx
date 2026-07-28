@@ -35,6 +35,13 @@ const seoContent = {
       title: 'Kontakti | Teatri AAB “Faruk Begolli”',
       description: 'Kontaktoni Teatrin AAB “Faruk Begolli” në Kosovë.',
     },
+<<<<<<< HEAD
+=======
+    reserve: {
+      title: 'Rezervo biletën | Teatri AAB “Faruk Begolli”',
+      description: 'Rezervoni biletën për shfaqjet e ardhshme të Teatrit AAB “Faruk Begolli”.',
+    },
+>>>>>>> 6f8afa3 (front pages almost done)
   },
   en: {
     home: {
@@ -65,6 +72,13 @@ const seoContent = {
       title: 'Contact | AAB Theatre “Faruk Begolli”',
       description: 'Contact AAB Theatre “Faruk Begolli” in Kosovo.',
     },
+<<<<<<< HEAD
+=======
+    reserve: {
+      title: 'Reserve a ticket | AAB Theatre “Faruk Begolli”',
+      description: 'Reserve a ticket for upcoming performances at AAB Theatre “Faruk Begolli”.',
+    },
+>>>>>>> 6f8afa3 (front pages almost done)
   },
 }
 
@@ -100,12 +114,38 @@ function setMetaDescription(description) {
 }
 
 export function AppLayout() {
+<<<<<<< HEAD
   const { i18n } = useTranslation()
+=======
+  const { i18n, t } = useTranslation()
+>>>>>>> 6f8afa3 (front pages almost done)
   const params = useParams()
   const location = useLocation()
   const language = params.language ?? getLanguageFromPath(location.pathname)
   const routeKey = getRouteKey(location.pathname)
   const [homepageMeta, setHomepageMeta] = useState(null)
+<<<<<<< HEAD
+=======
+  const [showBackToTop, setShowBackToTop] = useState(false)
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'auto' })
+  }, [location.pathname])
+
+  useEffect(() => {
+    const updateBackToTopVisibility = () => setShowBackToTop(window.scrollY > 300)
+
+    updateBackToTopVisibility()
+    window.addEventListener('scroll', updateBackToTopVisibility, { passive: true })
+
+    return () => window.removeEventListener('scroll', updateBackToTopVisibility)
+  }, [])
+
+  const scrollToTop = () => {
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    window.scrollTo({ top: 0, left: 0, behavior: prefersReducedMotion ? 'auto' : 'smooth' })
+  }
+>>>>>>> 6f8afa3 (front pages almost done)
 
   useEffect(() => {
     if (i18n.language !== language) {
@@ -150,6 +190,20 @@ export function AppLayout() {
         <Outlet context={{ setHomepageMeta }} />
       </main>
       <Footer language={language} homepageMeta={homepageMeta} />
+<<<<<<< HEAD
+=======
+      <button
+        type="button"
+        className={`back-to-top${showBackToTop ? ' visible' : ''}`}
+        onClick={scrollToTop}
+        aria-label={t('a11y.backToTop')}
+        tabIndex={showBackToTop ? 0 : -1}
+      >
+        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <path d="M5 15l7-7 7 7" />
+        </svg>
+      </button>
+>>>>>>> 6f8afa3 (front pages almost done)
     </div>
   )
 }

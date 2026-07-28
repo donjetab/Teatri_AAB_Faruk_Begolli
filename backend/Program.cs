@@ -20,6 +20,10 @@ builder.Services.AddSwaggerGen(options =>
 });
 builder.Services.AddScoped<IHomepageService, HomepageService>();
 builder.Services.AddScoped<INewsletterService, NewsletterService>();
+<<<<<<< HEAD
+=======
+builder.Services.AddScoped<IContactService, ContactService>();
+>>>>>>> 6f8afa3 (front pages almost done)
 builder.Services.AddSingleton<IClock, SystemClock>();
 
 builder.Services.AddCors(options =>

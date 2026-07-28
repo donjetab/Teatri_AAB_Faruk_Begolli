@@ -467,12 +467,31 @@ namespace Theatre.Api.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
+<<<<<<< HEAD
+=======
+                    b.Property<string>("ArticleType")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("nvarchar(32)");
+
+>>>>>>> 6f8afa3 (front pages almost done)
                     b.Property<int?>("CoverMediaAssetId")
                         .HasColumnType("int");
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("datetimeoffset");
 
+<<<<<<< HEAD
+=======
+                    b.Property<string>("ExternalSourceName")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("ExternalUrl")
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+>>>>>>> 6f8afa3 (front pages almost done)
                     b.Property<bool>("IsFeatured")
                         .HasColumnType("bit");
 
@@ -487,6 +506,11 @@ namespace Theatre.Api.Migrations
 
                     b.HasKey("Id");
 
+<<<<<<< HEAD
+=======
+                    b.HasIndex("ArticleType");
+
+>>>>>>> 6f8afa3 (front pages almost done)
                     b.HasIndex("CoverMediaAssetId");
 
                     b.HasIndex("IsFeatured");
@@ -495,7 +519,14 @@ namespace Theatre.Api.Migrations
 
                     b.HasIndex("PublishedAt");
 
+<<<<<<< HEAD
                     b.ToTable("NewsArticles");
+=======
+                    b.ToTable("NewsArticles", t =>
+                        {
+                            t.HasCheckConstraint("CK_NewsArticles_ArticleType_ExternalUrl", "([ArticleType] = 'Authored' AND [ExternalUrl] IS NULL) OR ([ArticleType] = 'External' AND [ExternalUrl] IS NOT NULL)");
+                        });
+>>>>>>> 6f8afa3 (front pages almost done)
                 });
 
             modelBuilder.Entity("Theatre.Api.Models.NewsArticleTranslation", b =>
@@ -550,6 +581,52 @@ namespace Theatre.Api.Migrations
                     b.ToTable("NewsArticleTranslations");
                 });
 
+<<<<<<< HEAD
+=======
+            modelBuilder.Entity("Theatre.Api.Models.NewsExternalLink", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<int>("DisplayOrder")
+                        .HasColumnType("int");
+
+                    b.Property<int>("NewsArticleId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTimeOffset?>("PublishedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("SourceName")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("Url")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Url");
+
+                    b.HasIndex("NewsArticleId", "DisplayOrder");
+
+                    b.ToTable("NewsExternalLinks");
+                });
+
+>>>>>>> 6f8afa3 (front pages almost done)
             modelBuilder.Entity("Theatre.Api.Models.NewsletterSubscriber", b =>
                 {
                     b.Property<int>("Id")
@@ -1302,6 +1379,20 @@ namespace Theatre.Api.Migrations
                     b.Navigation("NewsArticle");
                 });
 
+<<<<<<< HEAD
+=======
+            modelBuilder.Entity("Theatre.Api.Models.NewsExternalLink", b =>
+                {
+                    b.HasOne("Theatre.Api.Models.NewsArticle", "NewsArticle")
+                        .WithMany("RelatedExternalLinks")
+                        .HasForeignKey("NewsArticleId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("NewsArticle");
+                });
+
+>>>>>>> 6f8afa3 (front pages almost done)
             modelBuilder.Entity("Theatre.Api.Models.Person", b =>
                 {
                     b.HasOne("Theatre.Api.Models.MediaAsset", "ProfileMediaAsset")
@@ -1550,6 +1641,11 @@ namespace Theatre.Api.Migrations
                 {
                     b.Navigation("GalleryAlbums");
 
+<<<<<<< HEAD
+=======
+                    b.Navigation("RelatedExternalLinks");
+
+>>>>>>> 6f8afa3 (front pages almost done)
                     b.Navigation("Translations");
                 });
 

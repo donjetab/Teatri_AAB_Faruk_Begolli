@@ -17,6 +17,10 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
     public DbSet<MediaAsset> MediaAssets => Set<MediaAsset>();
     public DbSet<MediaAssetTranslation> MediaAssetTranslations => Set<MediaAssetTranslation>();
     public DbSet<NewsArticle> NewsArticles => Set<NewsArticle>();
+<<<<<<< HEAD
+=======
+    public DbSet<NewsExternalLink> NewsExternalLinks => Set<NewsExternalLink>();
+>>>>>>> 6f8afa3 (front pages almost done)
     public DbSet<NewsArticleTranslation> NewsArticleTranslations => Set<NewsArticleTranslation>();
     public DbSet<NewsletterSubscriber> NewsletterSubscribers => Set<NewsletterSubscriber>();
     public DbSet<Person> People => Set<Person>();

@@ -6,6 +6,15 @@ import { AboutPage } from './pages/AboutPage'
 import { HomePage } from './pages/HomePage'
 import { ShowsPage } from './pages/ShowsPage'
 import { ShowDetailPage } from './pages/ShowDetailPage'
+<<<<<<< HEAD
+=======
+import { PitfPage } from './pages/PitfPage'
+import { GalleryPage } from './pages/GalleryPage'
+import { ContactPage } from './pages/ContactPage'
+import { ReservePage } from './pages/ReservePage'
+import { NewsPage } from './pages/NewsPage'
+import { NewsDetailPage } from './pages/NewsDetailPage'
+>>>>>>> 6f8afa3 (front pages almost done)
 import { defaultLanguage, getLocalizedPath } from './routes/localizedRoutes'
 import './App.css'
 
@@ -32,6 +41,7 @@ function App() {
         <Route path="shfaqjet/:slug" element={<ShowDetailPage />} />
         <Route path="shows" element={<ShowsPage />} />
         <Route path="shows/:slug" element={<ShowDetailPage />} />
+<<<<<<< HEAD
         <Route path="lajme" element={<ShellPlaceholder />} />
         <Route path="news" element={<ShellPlaceholder />} />
         <Route path="pitf" element={<ShellPlaceholder />} />
@@ -39,6 +49,19 @@ function App() {
         <Route path="gallery" element={<ShellPlaceholder />} />
         <Route path="kontakti" element={<ShellPlaceholder />} />
         <Route path="contact" element={<ShellPlaceholder />} />
+=======
+        <Route path="lajme" element={<NewsPage />} />
+        <Route path="lajme/:slug" element={<NewsDetailPage />} />
+        <Route path="news" element={<NewsPage />} />
+        <Route path="news/:slug" element={<NewsDetailPage />} />
+        <Route path="pitf" element={<PitfPage />} />
+        <Route path="galeria" element={<GalleryPage />} />
+        <Route path="gallery" element={<GalleryPage />} />
+        <Route path="kontakti" element={<ContactPage />} />
+        <Route path="contact" element={<ContactPage />} />
+        <Route path="rezervo" element={<ReservePage />} />
+        <Route path="reserve" element={<ReservePage />} />
+>>>>>>> 6f8afa3 (front pages almost done)
       </Route>
       <Route path="*" element={<Navigate to={getLocalizedPath('home', defaultLanguage)} replace />} />
     </Routes>

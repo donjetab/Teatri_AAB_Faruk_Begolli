@@ -146,7 +146,14 @@ public sealed class ShowCredit
 public sealed class NewsArticle
 {
     public int Id { get; set; }
+<<<<<<< HEAD
     public int? CoverMediaAssetId { get; set; }
+=======
+    public NewsArticleType ArticleType { get; set; } = NewsArticleType.Authored;
+    public int? CoverMediaAssetId { get; set; }
+    public string? ExternalUrl { get; set; }
+    public string? ExternalSourceName { get; set; }
+>>>>>>> 6f8afa3 (front pages almost done)
     public bool IsPublished { get; set; }
     public bool IsFeatured { get; set; }
     public DateTimeOffset? PublishedAt { get; set; }
@@ -155,6 +162,10 @@ public sealed class NewsArticle
 
     public MediaAsset? CoverMediaAsset { get; set; }
     public ICollection<NewsArticleTranslation> Translations { get; set; } = [];
+<<<<<<< HEAD
+=======
+    public ICollection<NewsExternalLink> RelatedExternalLinks { get; set; } = [];
+>>>>>>> 6f8afa3 (front pages almost done)
     public ICollection<GalleryAlbum> GalleryAlbums { get; set; } = [];
 }
 
@@ -174,6 +185,23 @@ public sealed class NewsArticleTranslation
     public Language Language { get; set; } = null!;
 }
 
+<<<<<<< HEAD
+=======
+public sealed class NewsExternalLink
+{
+    public int Id { get; set; }
+    public int NewsArticleId { get; set; }
+    public string Title { get; set; } = string.Empty;
+    public string Url { get; set; } = string.Empty;
+    public string? SourceName { get; set; }
+    public DateTimeOffset? PublishedAt { get; set; }
+    public int DisplayOrder { get; set; }
+    public DateTimeOffset CreatedAt { get; set; }
+
+    public NewsArticle NewsArticle { get; set; } = null!;
+}
+
+>>>>>>> 6f8afa3 (front pages almost done)
 public sealed class PitfEdition
 {
     public int Id { get; set; }

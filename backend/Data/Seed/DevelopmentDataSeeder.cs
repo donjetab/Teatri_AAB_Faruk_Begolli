@@ -21,6 +21,10 @@ public static class DevelopmentDataSeeder
         await EnsureTheatreInformationAsync(db, languages, media, now, cancellationToken);
         await EnsureShowsAsync(db, languages, media, category, creditTypes, location, now, cancellationToken);
         await EnsurePitfEditionAsync(db, languages, media, now, cancellationToken);
+<<<<<<< HEAD
+=======
+        await NewsImportSeeder.SeedAsync(db, environment, languages, now, cancellationToken);
+>>>>>>> 6f8afa3 (front pages almost done)
     }
 
     private static async Task<Dictionary<string, Language>> EnsureLanguagesAsync(AppDbContext db, CancellationToken cancellationToken)

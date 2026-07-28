@@ -1,5 +1,9 @@
 import { useTranslation } from 'react-i18next'
 import logoScene from '../../assets/Teatri Logo/Teatri AAB - Scene Logo.png'
+<<<<<<< HEAD
+=======
+import ctaBackground from '../../assets/cta-background.png'
+>>>>>>> 6f8afa3 (front pages almost done)
 import ctaBackgroundMobile from '../../assets/cta-background-mobile.png'
 import { resolveMediaUrl } from '../../api/client'
 import { ArrowRightIcon } from '../icons/ArrowRightIcon'
@@ -12,7 +16,11 @@ function splitReservationTitle(title) {
 
 export function ReservationBanner({ home }) {
   const { t } = useTranslation()
+<<<<<<< HEAD
   const background = resolveMediaUrl(home.reservationBanner?.url)
+=======
+  const background = resolveMediaUrl(home.reservationBanner?.url) || ctaBackground
+>>>>>>> 6f8afa3 (front pages almost done)
   const [firstLine, secondLine] = splitReservationTitle(home.reservationTitle ?? t('home.reservationTitleFallback'))
 
   return (

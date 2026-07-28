@@ -36,7 +36,11 @@ html {
 body {
   margin: 0;
   min-width: 320px;
+<<<<<<< HEAD
   min-height: 100vh;
+=======
+  min-height: 100svh;
+>>>>>>> 6f8afa3 (front pages almost done)
   background: var(--color-black);
 }
 
@@ -50,5 +54,9 @@ a {
 }
 
 #root {
+<<<<<<< HEAD
   min-height: 100vh;
+=======
+  min-height: 100svh;
+>>>>>>> 6f8afa3 (front pages almost done)
 }
