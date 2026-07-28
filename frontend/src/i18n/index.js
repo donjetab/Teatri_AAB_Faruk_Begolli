@@ -122,8 +122,6 @@ i18n.use(initReactI18next).init({
           videoUnsupported: 'Shfletuesi juaj nuk e mbështet videon.',
           backToShows: 'Kthehu te shfaqjet',
         },
-<<<<<<< HEAD
-=======
         pitfPage: {
           fullName: 'Prishtina International Theatre Festival',
           aboutLabel: 'Rreth festivalit PITF',
@@ -200,7 +198,6 @@ i18n.use(initReactI18next).init({
           previousPage: 'Faqja e mëparshme',
           nextPage: 'Faqja e radhës',
         },
->>>>>>> 6f8afa3 (front pages almost done)
         months: {
           jan: 'Jan',
           feb: 'Shk',
@@ -229,10 +226,7 @@ i18n.use(initReactI18next).init({
           mobileNavigation: 'Navigimi mobil',
           languageSwitcher: 'Ndrysho gjuhën',
           menu: 'Hap menynë',
-<<<<<<< HEAD
-=======
           backToTop: 'Kthehu në krye të faqes',
->>>>>>> 6f8afa3 (front pages almost done)
         },
       },
     },
@@ -347,8 +341,6 @@ i18n.use(initReactI18next).init({
           videoUnsupported: 'Your browser does not support this video.',
           backToShows: 'Back to shows',
         },
-<<<<<<< HEAD
-=======
         pitfPage: {
           fullName: 'Prishtina International Theatre Festival',
           aboutLabel: 'About the PITF festival',
@@ -425,7 +417,6 @@ i18n.use(initReactI18next).init({
           previousPage: 'Previous page',
           nextPage: 'Next page',
         },
->>>>>>> 6f8afa3 (front pages almost done)
         months: {
           jan: 'Jan',
           feb: 'Feb',
@@ -454,10 +445,7 @@ i18n.use(initReactI18next).init({
           mobileNavigation: 'Mobile navigation',
           languageSwitcher: 'Change language',
           menu: 'Open menu',
-<<<<<<< HEAD
-=======
           backToTop: 'Back to top',
->>>>>>> 6f8afa3 (front pages almost done)
         },
       },
     },

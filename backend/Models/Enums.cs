@@ -24,12 +24,9 @@ public enum GalleryAlbumType
     NewsArticle,
     PitfEdition
 }
-<<<<<<< HEAD
-=======
 
 public enum NewsArticleType
 {
     Authored,
     External
 }
->>>>>>> 6f8afa3 (front pages almost done)

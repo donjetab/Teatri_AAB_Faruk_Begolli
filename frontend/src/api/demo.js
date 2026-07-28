@@ -23,13 +23,9 @@ export async function getDemoHome(language, signal) {
 
 export async function getDemoShows(language, signal) {
   const data = await loadDemoData(signal)
-<<<<<<< HEAD
-  return data[language]?.shows ?? data.sq.shows
-=======
   const shows = data[language]?.shows ?? data.sq.shows
 
   return Array.isArray(shows) ? shows : shows.value
->>>>>>> 6f8afa3 (front pages almost done)
 }
 
 export async function getDemoShow(language, slug, signal) {

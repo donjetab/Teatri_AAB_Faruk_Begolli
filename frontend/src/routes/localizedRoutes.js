@@ -9,10 +9,7 @@ export const routeKeys = {
   pitf: { sq: '/sq/pitf', en: '/en/pitf' },
   gallery: { sq: '/sq/galeria', en: '/en/gallery' },
   contact: { sq: '/sq/kontakti', en: '/en/contact' },
-<<<<<<< HEAD
-=======
   reserve: { sq: '/sq/rezervo', en: '/en/reserve' },
->>>>>>> 6f8afa3 (front pages almost done)
 }
 
 export function getLanguageFromPath(pathname) {

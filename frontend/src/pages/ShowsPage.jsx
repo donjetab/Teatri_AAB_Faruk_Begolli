@@ -111,17 +111,6 @@ export function ShowsPage() {
                     {show.director && <p>{t('showsPage.directedBy', { director: show.director })}</p>}
                   </div>
                 </Link>
-<<<<<<< HEAD
-                <div className="shows-page-card-actions">
-                  <Link to={`/${language}/${language === 'en' ? 'shows' : 'shfaqjet'}/${show.slug}`}>
-                    {t('showsPage.read')}
-                  </Link>
-                  {show.nextPerformanceDateUtc && (
-                    <a href={show.reservationUrl || '#'}>{t('showsPage.reserve')}</a>
-                  )}
-                </div>
-=======
->>>>>>> 6f8afa3 (front pages almost done)
               </article>
             ))}
           </div>

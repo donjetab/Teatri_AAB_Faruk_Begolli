@@ -220,8 +220,6 @@ internal sealed class NewsArticleConfiguration : IEntityTypeConfiguration<NewsAr
 {
     public void Configure(EntityTypeBuilder<NewsArticle> builder)
     {
-<<<<<<< HEAD
-=======
         builder.Property(x => x.ArticleType).HasConversion<string>().HasMaxLength(32).IsRequired();
         builder.Property(x => x.ExternalUrl).HasMaxLength(2000);
         builder.Property(x => x.ExternalSourceName).HasMaxLength(200);
@@ -231,7 +229,6 @@ internal sealed class NewsArticleConfiguration : IEntityTypeConfiguration<NewsAr
             "([ArticleType] = 'Authored' AND [ExternalUrl] IS NULL) OR " +
             "([ArticleType] = 'External' AND [ExternalUrl] IS NOT NULL)"));
 
->>>>>>> 6f8afa3 (front pages almost done)
         builder.HasOne(x => x.CoverMediaAsset)
             .WithMany()
             .HasForeignKey(x => x.CoverMediaAssetId)
@@ -240,10 +237,7 @@ internal sealed class NewsArticleConfiguration : IEntityTypeConfiguration<NewsAr
         builder.HasIndex(x => x.PublishedAt);
         builder.HasIndex(x => x.IsPublished);
         builder.HasIndex(x => x.IsFeatured);
-<<<<<<< HEAD
-=======
         builder.HasIndex(x => x.ArticleType);
->>>>>>> 6f8afa3 (front pages almost done)
     }
 }
 
@@ -273,8 +267,6 @@ internal sealed class NewsArticleTranslationConfiguration : IEntityTypeConfigura
     }
 }
 
-<<<<<<< HEAD
-=======
 internal sealed class NewsExternalLinkConfiguration : IEntityTypeConfiguration<NewsExternalLink>
 {
     public void Configure(EntityTypeBuilder<NewsExternalLink> builder)
@@ -293,7 +285,6 @@ internal sealed class NewsExternalLinkConfiguration : IEntityTypeConfiguration<N
     }
 }
 
->>>>>>> 6f8afa3 (front pages almost done)
 internal sealed class PitfEditionConfiguration : IEntityTypeConfiguration<PitfEdition>
 {
     public void Configure(EntityTypeBuilder<PitfEdition> builder)
