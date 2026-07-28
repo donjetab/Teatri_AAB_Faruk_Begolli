@@ -42,12 +42,16 @@ export function Footer({ language, homepageMeta }) {
         <section className="footer-column social-column">
           <h2>{t('footer.follow')}</h2>
           <div className="social-links">
-            <a href={homepageMeta?.facebookUrl ?? 'https://www.facebook.com/aabtheatre'} aria-label="Facebook">
-              <span className="social-facebook">f</span>
-            </a>
-            <a href={homepageMeta?.instagramUrl ?? 'https://www.instagram.com/aabtheatre'} aria-label="Instagram">
-              <span className="social-instagram" />
-            </a>
+            {homepageMeta?.facebookUrl && (
+              <a href={homepageMeta.facebookUrl} target="_blank" rel="noreferrer" aria-label="Facebook">
+                <span className="social-facebook">f</span>
+              </a>
+            )}
+            {homepageMeta?.instagramUrl && (
+              <a href={homepageMeta.instagramUrl} target="_blank" rel="noreferrer" aria-label="Instagram">
+                <span className="social-instagram" />
+              </a>
+            )}
           </div>
         </section>
 

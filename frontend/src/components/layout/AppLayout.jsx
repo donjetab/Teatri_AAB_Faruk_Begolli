@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Footer } from './Footer'
 import { Header } from './Header'
+import { getHome } from '../../api/home'
 import { getLanguageFromPath, getLocalizedPath, getRouteKey } from '../../routes/localizedRoutes'
 
 const seoContent = {
@@ -156,7 +157,24 @@ export function AppLayout() {
   }, [i18n, language])
 
   useEffect(() => {
+    const controller = new AbortController()
+
     setHomepageMeta(null)
+    getHome(language, controller.signal)
+      .then((data) => {
+        setHomepageMeta({
+          reservationUrl: data.reservationUrl,
+          facebookUrl: data.facebookUrl,
+          instagramUrl: data.instagramUrl,
+        })
+      })
+      .catch((error) => {
+        if (error.name !== 'CanceledError' && error.code !== 'ERR_CANCELED') {
+          setHomepageMeta(null)
+        }
+      })
+
+    return () => controller.abort()
   }, [language])
 
   useEffect(() => {
@@ -187,7 +205,7 @@ export function AppLayout() {
     <div className={`site-shell site-shell-${routeKey}`}>
       <Header language={language} reservationUrl={homepageMeta?.reservationUrl} />
       <main className="site-main" id="content">
-        <Outlet context={{ setHomepageMeta }} />
+        <Outlet />
       </main>
       <Footer language={language} homepageMeta={homepageMeta} />
 <<<<<<< HEAD
