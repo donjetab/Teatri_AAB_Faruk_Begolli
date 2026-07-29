@@ -65,6 +65,12 @@ public sealed class HomepageService(AppDbContext db, IClock clock) : IHomepageSe
                 x.PerformancesCount,
                 x.SpectatorsCount,
                 x.ReservationUrl,
+                x.PrimaryButtonLink,
+                x.AboutButtonLink,
+                x.PitfDestinationUrl,
+                x.HeroIsVisible,
+                x.ReservationBannerIsVisible,
+                x.PitfFeatureIsVisible,
                 x.Address,
                 x.Phone,
                 x.Email,
@@ -76,12 +82,20 @@ public sealed class HomepageService(AppDbContext db, IClock clock) : IHomepageSe
                     .Select(t => new
                     {
                         t.LanguageId,
+                        t.Language.Code,
                         t.TheatreName,
                         t.HeroSlogan,
+                        t.HeroSupportingText,
+                        t.HeroButtonText,
+                        t.AboutTitle,
+                        t.AboutButtonText,
                         t.AboutShort,
                         t.PitfShortDescription,
+                        t.PitfFeatureTitle,
+                        t.PitfFeatureButtonText,
                         t.ReservationCallToActionTitle,
                         t.ReservationCallToActionText,
+                        t.ReservationButtonText,
                         t.AddressDisplayText
                     })
                     .FirstOrDefault(),
@@ -143,8 +157,14 @@ public sealed class HomepageService(AppDbContext db, IClock clock) : IHomepageSe
             query.Translation.TheatreName,
             query.Translation.LanguageId != languageId,
             query.Translation.HeroSlogan,
+            query.Translation.HeroSupportingText,
+            ValueOrDefault(query.Translation.HeroButtonText, query.Translation.Code, "Shiko programin", "View program"),
+            query.PrimaryButtonLink ?? "#/sq/shfaqjet",
             ToDto(query.Hero),
+            ValueOrDefault(query.Translation.AboutTitle, query.Translation.Code, "Për Ne", "About"),
             query.Translation.AboutShort,
+            ValueOrDefault(query.Translation.AboutButtonText, query.Translation.Code, "Mëso më shumë", "Learn more"),
+            query.AboutButtonLink ?? "#/sq/per-ne",
             ToDto(query.About),
             new TheatreStatisticsDto(query.FoundedYear, query.PerformancesCount, query.SpectatorsCount),
             [],
@@ -152,13 +172,29 @@ public sealed class HomepageService(AppDbContext db, IClock clock) : IHomepageSe
             ToDto(query.Reservation),
             query.Translation.ReservationCallToActionTitle,
             query.Translation.ReservationCallToActionText,
-            query.ReservationUrl,
+            ValueOrDefault(query.Translation.ReservationButtonText, query.Translation.Code, "Rezervo biletën", "Reserve ticket"),
+            NormalizeReservationUrl(query.ReservationUrl),
+            ValueOrDefault(query.Translation.PitfFeatureTitle, query.Translation.Code, "Prishtina International Theatre Festival", "Prishtina International Theatre Festival"),
+            ValueOrDefault(query.Translation.PitfFeatureButtonText, query.Translation.Code, "Programi PITF", "PITF program"),
+            query.PitfDestinationUrl ?? "https://pitf.teatriaab.com/",
+            query.HeroIsVisible,
+            query.ReservationBannerIsVisible,
+            query.PitfFeatureIsVisible,
             string.IsNullOrWhiteSpace(query.Translation.AddressDisplayText) ? query.Address : query.Translation.AddressDisplayText,
             query.Phone,
             query.Email,
             query.FacebookUrl,
             query.InstagramUrl);
     }
+
+    private static string ValueOrDefault(string? value, string languageCode, string sq, string en) =>
+        string.IsNullOrWhiteSpace(value) ? (languageCode == "sq" ? sq : en) : value;
+
+    private static string? NormalizeReservationUrl(string? value) =>
+        string.IsNullOrWhiteSpace(value) ||
+        value.Equals("https://example.com/reservations", StringComparison.OrdinalIgnoreCase)
+            ? "#/sq/rezervo"
+            : value;
 
     private async Task<IReadOnlyList<UpcomingShowDto>> GetUpcomingShowsAsync(int languageId, int fallbackLanguageId, CancellationToken cancellationToken)
     {

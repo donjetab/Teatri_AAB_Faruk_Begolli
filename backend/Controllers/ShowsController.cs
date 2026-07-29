@@ -103,6 +103,7 @@ public sealed class ShowsController(AppDbContext db) : ControllerBase
         var show = await db.Shows
             .AsNoTracking()
             .Include(x => x.PosterMediaAsset)
+            .Include(x => x.GalleryAlbums).ThenInclude(x => x.GalleryAlbumMedia).ThenInclude(x => x.MediaAsset).ThenInclude(x => x.Translations)
             .Include(x => x.Translations)
             .Include(x => x.Credits)
                 .ThenInclude(x => x.Person)
@@ -157,6 +158,17 @@ public sealed class ShowsController(AppDbContext db) : ControllerBase
                 : translation.Slug,
             translation.FullDescription,
             show.PosterMediaAsset?.FileUrl,
+            show.TrailerUrl,
+            show.GalleryAlbums.Where(a => a.IsPublished).SelectMany(a => a.GalleryAlbumMedia)
+                .OrderBy(x => x.DisplayOrder).Select(x => new ShowMediaDto(
+                    x.MediaAssetId,
+                    x.MediaAsset.FileUrl,
+                    x.MediaAsset.Translations.FirstOrDefault(t => t.LanguageId == requestedLanguage.Id)?.AltText
+                        ?? x.MediaAsset.Translations.FirstOrDefault(t => t.LanguageId == fallbackLanguage.Id)?.AltText
+                        ?? string.Empty,
+                    x.MediaAsset.Translations.FirstOrDefault(t => t.LanguageId == requestedLanguage.Id)?.Caption
+                        ?? x.MediaAsset.Translations.FirstOrDefault(t => t.LanguageId == fallbackLanguage.Id)?.Caption)).ToList(),
+            show.UseLocalGalleryFallback,
             show.PremiereDate,
             credits,
             nextPerformance?.StartDateTimeUtc,

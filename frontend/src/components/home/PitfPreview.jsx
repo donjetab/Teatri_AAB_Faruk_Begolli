@@ -1,12 +1,17 @@
 import { useTranslation } from 'react-i18next'
+import { Link, useParams } from 'react-router-dom'
 import curtain from '../../assets/curtain.png'
 import goldLines from '../../assets/decorative-gold-lines.png'
 import pitfHomepageImage from '../../assets/hp_pitf.jpg'
 import pitfWordImage from '../../assets/PITF-fading.png'
 import { ArrowRightIcon } from '../icons/ArrowRightIcon'
+import { defaultLanguage, getManagedDestination, languages } from '../../routes/localizedRoutes'
 
-export function PitfPreview({ pitf, language }) {
+export function PitfPreview({ pitf, title, buttonText, destinationUrl }) {
   const { t } = useTranslation()
+  const { language: languageParam } = useParams()
+  const language = languages.includes(languageParam) ? languageParam : defaultLanguage
+  const buttonTarget = getManagedDestination(destinationUrl, language, 'pitf')
   if (!pitf) {
     return null
   }
@@ -28,21 +33,15 @@ export function PitfPreview({ pitf, language }) {
 
         <div className="pitf-copy">
           <h2 id="pitf-title">
-            <span>Prishtina International</span>
-            <span>Theatre Festival</span>
+            <span>{title || pitf.title}</span>
           </h2>
           <p>{pitf.shortDescription}</p>
-          <a
-            href="https://pitf.teatriaab.com/"
-            target="_blank"
-            rel="noreferrer"
-            className="home-button"
-          >
-            <span>{t('home.pitfProgram')}</span>
+          {buttonTarget.startsWith('http') ? <a href={buttonTarget} target="_blank" rel="noreferrer" className="home-button">
+            <span>{buttonText || t('home.pitfProgram')}</span>
             <span className="circle-arrow" aria-hidden="true">
               <ArrowRightIcon className="arrow-icon" />
             </span>
-          </a>
+          </a> : <Link to={buttonTarget} className="home-button"><span>{buttonText || t('home.pitfProgram')}</span><span className="circle-arrow" aria-hidden="true"><ArrowRightIcon className="arrow-icon" /></span></Link>}
         </div>
       </div>
     </section>

@@ -66,11 +66,11 @@ export function HomePage() {
 
   return (
     <div className="homepage">
-      <HeroSection home={home} language={language} />
+      {home.heroIsVisible !== false && <HeroSection home={home} language={language} />}
       <AboutPreview home={home} />
       <UpcomingShows shows={home.upcomingShows ?? []} language={language} reservationUrl={home.reservationUrl} />
-      <PitfPreview pitf={home.pitfFeatured} language={language} />
-      <ReservationBanner home={home} />
+      {home.pitfFeatureIsVisible !== false && <PitfPreview pitf={home.pitfFeatured} title={home.pitfFeatureTitle} buttonText={home.pitfFeatureButtonText} destinationUrl={home.pitfDestinationUrl} />}
+      {home.reservationBannerIsVisible !== false && <ReservationBanner home={home} />}
     </div>
   )
 }

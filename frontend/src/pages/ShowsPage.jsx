@@ -9,6 +9,7 @@ import showsHeaderBackground from '../assets/shows-header.jpg'
 import smoke from '../assets/smoke_3.png'
 import theatreIcon from '../assets/acting-icon-gold.png'
 import { postersBySlug } from '../assets/shows/showAssets'
+import { resolveMediaUrl } from '../api/client'
 
 const categoriesBySlug = {
   'profesor-jam-talent': 'comedy',
@@ -100,11 +101,11 @@ export function ShowsPage() {
                   to={`/${language}/${language === 'en' ? 'shows' : 'shfaqjet'}/${show.slug}`}
                   aria-label={t('showsPage.openShow', { title: show.title })}
                 >
-                  <img
-                    src={postersBySlug[show.slug]}
+                  {(show.posterUrl || postersBySlug[show.slug]) && <img
+                    src={show.posterUrl ? resolveMediaUrl(show.posterUrl) : postersBySlug[show.slug]}
                     alt={t('showsPage.posterAlt', { title: show.title })}
                     loading="lazy"
-                  />
+                  />}
                   <span className="shows-page-card-overlay" aria-hidden="true" />
                   <div className="shows-page-card-copy">
                     <h2>{show.title}</h2>

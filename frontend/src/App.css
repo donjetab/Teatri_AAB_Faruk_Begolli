@@ -1389,7 +1389,7 @@
   position: relative;
   background:
     linear-gradient(90deg, #000 0%, #000 23%, rgba(0, 0, 0, 0.78) 33%, rgba(0, 0, 0, 0.16) 60%, #000 100%),
-    linear-gradient(180deg, rgba(0, 0, 0, 0) 0%, rgba(0, 0, 0, 0.05) 58%, #000 80%),
+    linear-gradient(180deg, rgba(0, 0, 0, 0) 0%, rgba(0, 0, 0, 0.05) 58%, #000 100%),
     var(--hero-image) max(360px, 25vw) top / auto 730px no-repeat,
     #000
 }
@@ -2509,7 +2509,7 @@
 }
 
 .reserve-page-hero.page-hero {
-  min-height: 440px;
+  min-height: 369px;
   background:
     linear-gradient(180deg, rgba(112, 24, 33, 0.96) 0%, rgba(112, 24, 33, 0.9) 30%, rgba(48, 6, 10, 0.68) 58%, rgba(0, 0, 0, 0.92) 88%, #000 100%),
     linear-gradient(90deg, rgba(0, 0, 0, 0.6), transparent 48%, rgba(0, 0, 0, 0.65)),
@@ -2520,7 +2520,7 @@
 .reserve-upcoming-section {
   width: min(80rem, calc(100% - 6rem));
   min-height: 34rem;
-  margin: 0 auto;
+  margin: 80px auto 0 auto;
   padding: 0 0 clamp(7rem, 12vw, 11rem);
 }
 
@@ -2655,6 +2655,50 @@
   box-shadow: 0 0 0.75rem rgba(50, 213, 132, 0.55);
 }
 
+.reserve-availability.sold-out {
+  color: #ff9ca5;
+}
+
+.reserve-availability.sold-out i {
+  background: #ef6f79;
+  box-shadow: 0 0 0.75rem rgba(239, 111, 121, 0.52);
+}
+
+.reserve-availability.postponed {
+  color: #f0c96b;
+}
+
+.reserve-availability.postponed i {
+  background: #dda837;
+  box-shadow: 0 0 0.75rem rgba(221, 168, 55, 0.5);
+}
+
+.reserve-show-date.postponed strong,
+.reserve-show-date.postponed span {
+  color: #f0c96b;
+}
+
+.reserve-show-date.postponed small {
+  background: #dda837;
+  color: #2a1903;
+}
+
+.reserve-availability.cancelled,
+.reserve-show-date.cancelled strong,
+.reserve-show-date.cancelled span {
+  color: #ff9ca5;
+}
+
+.reserve-availability.cancelled i {
+  background: #ef6f79;
+  box-shadow: 0 0 0.75rem rgba(239, 111, 121, 0.52);
+}
+
+.reserve-show-date.cancelled small {
+  background: #ef6f79;
+  color: #2d070b;
+}
+
 .reserve-seat-button,
 .reserve-phone-button {
   width: 100%;
@@ -2771,6 +2815,34 @@
   color: var(--color-gold);
   cursor: pointer;
   transition: border-color 180ms ease, box-shadow 180ms ease, background 180ms ease;
+}
+
+.reserve-date-filter {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.75rem;
+}
+
+.reserve-date-filter .reserve-calendar-pill {
+  width: min(25rem, 100%);
+}
+
+.reserve-date-clear {
+  height: 3rem;
+  padding: 0 1.15rem;
+  border: 1px solid rgba(248, 244, 242, 0.32);
+  border-radius: 999px;
+  background: transparent;
+  color: #f8f4f2;
+  cursor: pointer;
+  font: inherit;
+  text-transform: uppercase;
+}
+
+.reserve-date-clear:hover {
+  border-color: var(--color-gold);
+  color: var(--color-gold);
 }
 
 .reserve-calendar-pill:hover,

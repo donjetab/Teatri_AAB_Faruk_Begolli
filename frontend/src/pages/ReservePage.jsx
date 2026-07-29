@@ -4,21 +4,12 @@ import { useTranslation } from 'react-i18next'
 import reserveHeader from '../assets/teatri/perne-bg.jpg'
 import emptyShowsImage from '../assets/teatri-pitf-2024.jpg'
 import { postersBySlug } from '../assets/shows/showAssets'
+import { resolveMediaUrl } from '../api/client'
 import smoke from '../assets/smoke_3.png'
 import theatreIcon from '../assets/acting-icon-gold.png'
 import { ArrowRightIcon } from '../components/icons/ArrowRightIcon'
 import { getLocalizedPath } from '../routes/localizedRoutes'
-import { getDemoReserve } from '../api/demo'
-
-function CalendarIcon() {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <rect x="3" y="5" width="18" height="16" rx="2" />
-      <path d="M8 3v4M16 3v4M3 10h18" />
-      <path d="M7 14h2M11 14h2M15 14h2M7 17h2M11 17h2M15 17h2" />
-    </svg>
-  )
-}
+import { getUpcomingPerformances } from '../api/performances'
 
 function DetailIcon({ type }) {
   return type === 'location' ? (
@@ -34,6 +25,17 @@ function DetailIcon({ type }) {
   )
 }
 
+const localDateKey = value => {
+  const date = new Date(value)
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
+const albanianMonths = ['Janar', 'Shkurt', 'Mars', 'Prill', 'Maj', 'Qershor', 'Korrik', 'Gusht', 'Shtator', 'Tetor', 'Nëntor', 'Dhjetor']
+const albanianWeekdays = ['E diel', 'E hënë', 'E martë', 'E mërkurë', 'E enjte', 'E premte', 'E shtunë']
+
 export function ReservePage() {
   const { t } = useTranslation()
   const { language = 'sq' } = useParams()
@@ -42,8 +44,8 @@ export function ReservePage() {
 
   useEffect(() => {
     const controller = new AbortController()
-    getDemoReserve(language, controller.signal)
-      .then((data) => setActiveShows(data?.activeShows ?? []))
+    getUpcomingPerformances(language, controller.signal)
+      .then(setActiveShows)
       .catch((error) => {
         if (error.name !== 'AbortError') {
           setActiveShows([])
@@ -53,7 +55,7 @@ export function ReservePage() {
   }, [language])
   const hasActiveShows = activeShows.length > 0
   const visibleShows = selectedDate
-    ? activeShows.filter((show) => show.date === selectedDate)
+    ? activeShows.filter((show) => localDateKey(show.startDateTimeUtc) === selectedDate)
     : activeShows
 
   return (
@@ -82,50 +84,53 @@ export function ReservePage() {
         {hasActiveShows && (
           <header className="reserve-upcoming-heading">
             <h2 id="reserve-upcoming-title">{t('reservePage.upcomingTitle')}</h2>
-            <label className="reserve-calendar-pill">
-              <CalendarIcon />
+            <div className="reserve-date-filter"><label className="reserve-calendar-pill">
               <span className="sr-only">{t('reservePage.dateFilter')}</span>
-              <input
-                type="date"
-                value={selectedDate}
-                onChange={(event) => setSelectedDate(event.target.value)}
-                aria-label={t('reservePage.dateFilter')}
-              />
-            </label>
+              <input type="date" value={selectedDate} onChange={(event) => setSelectedDate(event.target.value)} aria-label={t('reservePage.dateFilter')} />
+            </label>{selectedDate && <button type="button" className="reserve-date-clear" onClick={() => setSelectedDate('')}>{language === 'sq' ? 'Pastro' : 'Clear'}</button>}</div>
           </header>
         )}
 
         {hasActiveShows ? (
           <div className="reserve-show-list">
             {visibleShows.map((show) => {
-              const date = new Date(`${show.date}T12:00:00`)
+              const date = new Date(show.startDateTimeUtc)
+              const poster = resolveMediaUrl(show.posterUrl) || postersBySlug[show.showSlug]
+              const phoneUrl = show.contactPhone ? `tel:${show.contactPhone.replace(/[^\d+]/g, '')}` : null
+              const isPostponed = show.status === 'Postponed'
+              const isCancelled = show.status === 'Cancelled'
+              const isInactive = isPostponed || isCancelled
+              const monthLabel = language === 'sq' ? albanianMonths[date.getMonth()] : new Intl.DateTimeFormat('en-GB', { month: 'long' }).format(date)
+              const originalSchedule = language === 'sq'
+                ? `${date.getDate()} ${albanianMonths[date.getMonth()]} ${date.getFullYear()}, ${new Intl.DateTimeFormat('sq-AL', { hour: '2-digit', minute: '2-digit' }).format(date)}`
+                : new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' }).format(date)
               return (
                 <article className="reserve-show-card" key={show.id}>
-                  <img className="reserve-show-poster" src={postersBySlug[show.slug]} alt="" />
-                  <div className="reserve-show-date">
+                  {poster && <img className="reserve-show-poster" src={poster} alt="" />}
+                  <div className={`reserve-show-date${isPostponed ? ' postponed' : isCancelled ? ' cancelled' : ''}`}>
                     <strong>{date.getDate()}</strong>
-                    <span>{new Intl.DateTimeFormat(language === 'sq' ? 'sq-AL' : 'en-GB', { month: 'long' }).format(date)}</span>
-                    <small>{language === 'sq' ? 'E enjte' : 'Thursday'}</small>
+                    <span>{monthLabel}</span>
+                    <small>{isPostponed ? (language === 'sq' ? 'E shtyrë' : 'Postponed') : isCancelled ? (language === 'sq' ? 'E anuluar' : 'Cancelled') : language === 'sq' ? albanianWeekdays[date.getDay()] : new Intl.DateTimeFormat('en-GB', { weekday: 'long' }).format(date)}</small>
                   </div>
                   <div className="reserve-show-info">
-                    <h3>{show.title}</h3>
-                    <p><DetailIcon type="location" />{show.venue}</p>
-                    <p><DetailIcon type="time" />{show.time}</p>
+                    <h3>{show.showTitle}</h3>
+                    <p><DetailIcon type="location" />{show.venue ? `${show.venue}${show.venueAddress ? `, ${show.venueAddress}` : ''}${show.hall ? ` · ${show.hall}` : ''}` : show.hall || (language === 'sq' ? 'Lokacioni do të njoftohet' : 'Venue to be announced')}</p>
+                    <p><DetailIcon type="time" />{isPostponed ? (language === 'sq' ? `Ishte planifikuar për ${originalSchedule}. Data e re do të njoftohet.` : `Originally scheduled for ${originalSchedule}. A new date will be announced.`) : isCancelled ? (language === 'sq' ? `Ishte planifikuar për ${originalSchedule}.` : `Originally scheduled for ${originalSchedule}.`) : new Intl.DateTimeFormat(language === 'sq' ? 'sq-AL' : 'en-GB', { hour: '2-digit', minute: '2-digit' }).format(date)}</p>
                   </div>
                   <div className="reserve-show-booking">
-                    <span className="reserve-availability">
+                    <span className={`reserve-availability${show.status === 'SoldOut' ? ' sold-out' : isPostponed ? ' postponed' : isCancelled ? ' cancelled' : ''}`}>
                       <i aria-hidden="true" />
-                      {language === 'sq' ? 'Ka vende të lira' : 'Seats available'}
+                      {show.status === 'SoldOut' ? (language === 'sq' ? 'E shitur' : 'Sold out') : isPostponed ? (language === 'sq' ? 'Shfaqja është shtyrë' : 'Performance postponed') : isCancelled ? (language === 'sq' ? 'Shfaqja është anuluar' : 'Performance cancelled') : (language === 'sq' ? 'E hapur për rezervim' : 'Open for booking')}
                     </span>
-                    <a href={show.reservationUrl} className="reserve-seat-button">
+                    {show.ticketUrl && show.status !== 'SoldOut' && !isInactive && <a href={show.ticketUrl} className="reserve-seat-button" target="_blank" rel="noopener noreferrer">
                       <span>{language === 'sq' ? 'Rezervo vendin' : 'Reserve seat'}</span>
                       <ArrowRightIcon />
-                    </a>
-                    <small>{language === 'sq' ? 'ose na kontakto' : 'or contact us'}</small>
-                    <a className="reserve-phone-button" href={show.phoneUrl}>
-                      <span aria-hidden="true">☎</span>
-                      {show.phone}
-                    </a>
+                    </a>}
+                    {phoneUrl && show.status !== 'SoldOut' && !isInactive && <><small>{show.ticketUrl ? (language === 'sq' ? 'Ose na kontakto' : 'Or contact us') : (language === 'sq' ? 'Na kontakto' : 'Contact us')}</small>
+                      <a className="reserve-phone-button" href={phoneUrl}>
+                        <span aria-hidden="true">☎</span>
+                        {show.contactPhone}
+                      </a></>}
                   </div>
                 </article>
               )

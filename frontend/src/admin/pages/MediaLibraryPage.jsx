@@ -1,16 +1,18 @@
 import { useEffect, useRef, useState } from 'react'
 import { resolveMediaUrl } from '../../api/client'
 import { adminApi } from '../api'
+import { useAdminDialog } from '../components/AdminDialog'
 import { PageHeader, Toast } from '../components/AdminUi'
 
 export function MediaLibraryPage() {
+  const dialog = useAdminDialog()
   const [filters, setFilters] = useState({ search: '', type: '' }); const [data, setData] = useState(null); const [selected, setSelected] = useState(null)
   const [toast, setToast] = useState(''); const [uploading, setUploading] = useState(false); const input = useRef(null)
   const load = () => adminApi.media(filters).then(setData)
   useEffect(() => { const timer = setTimeout(load, 200); return () => clearTimeout(timer) }, [filters.search, filters.type])
   const upload = async files => { setUploading(true); try { for (const file of files) await adminApi.uploadMedia(file); setToast(`${files.length} file${files.length === 1 ? '' : 's'} uploaded.`); load() } finally { setUploading(false) } }
   const save = async e => { e.preventDefault(); await adminApi.saveMedia(selected.id, selected); setToast('Media details saved.'); setSelected(null); load() }
-  const remove = async item => { if (!window.confirm(`Remove “${item.fileName}” from the Media Library?`)) return; try { await adminApi.deleteMedia(item.id); setToast('Unused media removed.'); load() } catch (e) { setToast(e.response?.data?.detail ?? 'This media cannot be removed.') } }
+  const remove = async item => { if (!await dialog.confirm({ title: 'Remove media file?', message: `“${item.fileName}” will be permanently removed from the Media Library.`, confirmLabel: 'Remove file', danger: true })) return; try { await adminApi.deleteMedia(item.id); setToast('Unused media removed.'); load() } catch (e) { setToast(e.response?.data?.detail ?? 'This media cannot be removed.') } }
   return <><PageHeader eyebrow="Website" title="Media Library" description="Upload once and reuse theatre images, posters, videos, programmes and documents across the website." actions={<><input ref={input} hidden multiple type="file" accept=".jpg,.jpeg,.png,.webp,.svg,.mp4,.pdf,.doc,.docx" onChange={e => upload([...e.target.files])} /><button className="admin-primary-button" disabled={uploading} onClick={() => input.current.click()}>{uploading ? 'Uploading…' : 'Upload media'}</button></>} />
     <section className="admin-panel"><div className="media-filters"><input value={filters.search} onChange={e => setFilters({ ...filters, search: e.target.value })} placeholder="Search files…" /><select value={filters.type} onChange={e => setFilters({ ...filters, type: e.target.value })}><option value="">All file types</option><option value="image/">Images</option><option value="video/">Videos</option><option value="application/pdf">PDF programmes</option><option value="application/">Documents</option></select><span>{data?.totalCount ?? 0} assets</span></div></section>
     <section className="media-grid">{data?.items?.map(item => <article key={item.id}><button className="media-preview" onClick={() => setSelected(item)}>{item.mimeType.startsWith('image/') ? <img src={resolveMediaUrl(item.fileUrl)} alt={item.altTextSq ?? ''} /> : <span>{item.mimeType === 'application/pdf' ? 'PDF' : item.mimeType.startsWith('video/') ? 'VIDEO' : 'FILE'}</span>}<i>{item.usageCount} use{item.usageCount === 1 ? '' : 's'}</i></button><div><strong title={item.fileName}>{item.fileName}</strong><small>{item.width && item.height ? `${item.width} × ${item.height} · ` : ''}{item.fileSize ? `${(item.fileSize / 1024 / 1024).toFixed(1)} MB` : 'Unknown size'}</small><div><button onClick={() => navigator.clipboard.writeText(resolveMediaUrl(item.fileUrl)).then(() => setToast('URL copied.'))}>Copy URL</button><button onClick={() => setSelected(item)}>Edit</button><button disabled={item.usageCount > 0} onClick={() => remove(item)}>Delete</button></div></div></article>)}</section>

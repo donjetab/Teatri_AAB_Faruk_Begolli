@@ -61,6 +61,7 @@ function App() {
           <Route path="shows/:id" element={<ShowEditorPage />} />
           <Route path="performances" element={<PerformancesPage />} />
           <Route path="news" element={<ExistingContentPage type="news" />} />
+          <Route path="news/new" element={<NewsEditorPage />} />
           <Route path="news/:id" element={<NewsEditorPage />} />
           <Route path="pitf" element={<ExistingContentPage type="pitf" />} />
           <Route path="gallery" element={<ExistingContentPage type="gallery" />} />

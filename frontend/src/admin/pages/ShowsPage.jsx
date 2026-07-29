@@ -3,15 +3,20 @@ import { Link, useSearchParams } from 'react-router-dom'
 import { resolveMediaUrl } from '../../api/client'
 import { adminApi } from '../api'
 import { EmptyState, LoadingSkeleton, PageHeader, StatusBadge, Toast } from '../components/AdminUi'
+import { postersBySlug } from '../../assets/shows/showAssets'
+import { useAdminDialog } from '../components/AdminDialog'
 
 const initialFilters = { search: '', categoryId: '', status: '', lifecycleStatus: '', year: '', featured: '', sort: 'updated', page: 1, pageSize: 20 }
 
 export function AdminShowsPage() {
+  const dialog = useAdminDialog()
   const [searchParams, setSearchParams] = useSearchParams()
   const [filters, setFilters] = useState(() => ({ ...initialFilters, ...Object.fromEntries(searchParams) }))
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(true)
   const [toast, setToast] = useState('')
+  const [toastType, setToastType] = useState('success')
+  const [refreshKey, setRefreshKey] = useState(0)
   const queryKey = JSON.stringify(filters)
 
   useEffect(() => {
@@ -22,16 +27,31 @@ export function AdminShowsPage() {
       adminApi.shows(params).then(setData).finally(() => setLoading(false))
     }, filters.search ? 250 : 0)
     return () => clearTimeout(timer)
-  }, [queryKey, setSearchParams])
+  }, [queryKey, refreshKey, setSearchParams])
 
   const update = (key, value) => setFilters(current => ({ ...current, [key]: value, page: key === 'page' ? value : 1 }))
   const clear = () => setFilters(initialFilters)
   const action = async (show, nextAction) => {
     const question = nextAction === 'archive' ? `Archive “${show.titleSq}”?` : nextAction === 'publish' ? `Publish “${show.titleSq}”?` : null
-    if (question && !window.confirm(question)) return
+    if (question && !await dialog.confirm({ title: `${nextAction[0].toUpperCase() + nextAction.slice(1)} play?`, message: question, confirmLabel: nextAction[0].toUpperCase() + nextAction.slice(1), danger: nextAction === 'archive' })) return
     await adminApi.showAction(show.id, nextAction)
+    setToastType('success')
     setToast(`Play ${nextAction === 'publish' ? 'published' : nextAction === 'unpublish' ? 'unpublished' : nextAction + 'd'}.`)
-    setFilters(current => ({ ...current }))
+    setRefreshKey(current => current + 1)
+  }
+  const deletePlay = async show => {
+    if (!await dialog.confirm({ title: 'Delete play permanently?', message: `“${show.titleSq}” and its managed content will be removed. This cannot be undone.`, confirmLabel: 'Delete permanently', danger: true })) return
+    try {
+      await adminApi.deleteShow(show.id, true)
+      setToastType('success')
+      setToast('Play deleted permanently.')
+      setData(current => current ? { ...current, items: current.items.filter(item => item.id !== show.id), totalCount: Math.max(0, current.totalCount - 1) } : current)
+      setRefreshKey(current => current + 1)
+    } catch (error) {
+      const errors = error.response?.data?.errors
+      setToastType('warning')
+      setToast(errors ? Object.values(errors).flat().join(' ') : error.response?.data?.detail ?? error.response?.data?.title ?? 'The play could not be deleted.')
+    }
   }
   const totalPages = Math.max(1, Math.ceil((data?.totalCount ?? 0) / Number(filters.pageSize)))
 
@@ -50,10 +70,10 @@ export function AdminShowsPage() {
     </section>
     {loading ? <LoadingSkeleton rows={6} /> : !data?.items?.length ? <EmptyState title="No plays found" text="Try clearing the filters or create the first play." /> :
       <section className="admin-panel shows-table-panel"><div className="admin-table-wrap"><table className="admin-table shows-table"><thead><tr><th>Play</th><th>Category</th><th>Year</th><th>Publication</th><th>Performance</th><th>Updated</th><th aria-label="Actions" /></tr></thead><tbody>{data.items.map(show => <tr key={show.id}>
-        <td><div className="show-list-title">{show.posterUrl ? <img src={resolveMediaUrl(show.posterUrl)} alt="" /> : <span className="show-poster-empty">◇</span>}<div><strong>{show.titleSq}</strong><small>{show.titleEn}{show.isFeatured ? ' · Featured' : ''}</small></div></div></td>
+        <td><div className="show-list-title">{(show.posterUrl || postersBySlug[show.slugSq]) ? <img src={show.posterUrl ? resolveMediaUrl(show.posterUrl) : postersBySlug[show.slugSq]} alt="" /> : <span className="show-poster-empty">◇</span>}<div><strong>{show.titleSq}</strong><small>{show.titleEn}{show.isFeatured ? ' · Featured' : ''}</small></div></div></td>
         <td>{show.category}</td><td>{show.productionYear ?? '—'}</td><td><StatusBadge status={show.status} /></td><td><StatusBadge status={show.lifecycleStatus} /></td><td>{new Date(show.updatedAt).toLocaleDateString()}</td>
-        <td><div className="table-actions"><Link to={`/admin/shows/${show.id}`}>Edit</Link><a href={`#/sq/shfaqjet/${show.slugSq}`} target="_blank">Preview</a>{show.status === 'Published' ? <button onClick={() => action(show, 'unpublish')}>Unpublish</button> : show.status === 'Archived' ? <button onClick={() => action(show, 'restore')}>Restore</button> : <button onClick={() => action(show, 'publish')}>Publish</button>}{show.status !== 'Archived' && <button onClick={() => action(show, 'archive')}>Archive</button>}</div></td>
+        <td><div className="table-actions"><Link to={`/admin/shows/${show.id}`}>Edit</Link><a href={`#/sq/shfaqjet/${show.slugSq}`} target="_blank">Preview</a>{show.status === 'Published' ? <button onClick={() => action(show, 'unpublish')}>Unpublish</button> : show.status === 'Archived' ? <button onClick={() => action(show, 'restore')}>Restore</button> : <button onClick={() => action(show, 'publish')}>Publish</button>}{show.status !== 'Archived' && <button onClick={() => action(show, 'archive')}>Archive</button>}<button className="danger" onClick={() => deletePlay(show)}>Delete</button></div></td>
       </tr>)}</tbody></table></div>
       <div className="admin-pagination"><span>{data.totalCount} plays</span><div><button disabled={Number(filters.page) <= 1} onClick={() => update('page', Number(filters.page) - 1)}>← Previous</button><span>Page {filters.page} of {totalPages}</span><button disabled={Number(filters.page) >= totalPages} onClick={() => update('page', Number(filters.page) + 1)}>Next →</button></div></div></section>}
-    <Toast message={toast} onClose={() => setToast('')} /></>
+    <Toast message={toast} type={toastType} onClose={() => setToast('')} /></>
 }

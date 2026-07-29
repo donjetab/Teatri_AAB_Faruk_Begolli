@@ -983,6 +983,11 @@ namespace Theatre.Api.Migrations
                     b.Property<DateTimeOffset>("UpdatedAt")
                         .HasColumnType("datetimeoffset");
 
+                    b.Property<bool>("UseLocalGalleryFallback")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(true);
+
                     b.Property<string>("VideoUrl")
                         .HasMaxLength(1000)
                         .HasColumnType("nvarchar(1000)");
@@ -1228,6 +1233,10 @@ namespace Theatre.Api.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<string>("AboutButtonLink")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
                     b.Property<int?>("AboutPreviewMediaAssetId")
                         .HasColumnType("int");
 
@@ -1285,11 +1294,19 @@ namespace Theatre.Api.Migrations
                         .HasMaxLength(80)
                         .HasColumnType("nvarchar(80)");
 
+                    b.Property<string>("PitfDestinationUrl")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
                     b.Property<bool>("PitfFeatureIsVisible")
                         .HasColumnType("bit");
 
                     b.Property<int?>("PitfFeatureMediaAssetId")
                         .HasColumnType("int");
+
+                    b.Property<string>("PrimaryButtonLink")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
 
                     b.Property<bool>("ReservationBannerIsVisible")
                         .HasColumnType("bit");

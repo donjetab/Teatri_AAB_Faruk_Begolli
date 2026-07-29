@@ -12,7 +12,12 @@ export function ShowCard({ show, language, reservationUrl }) {
   const posterUrl = resolveMediaUrl(show.posterUrl)
   const date = new Date(show.nearestPerformanceDateUtc)
   const monthKey = date.toLocaleString('en-US', { month: 'short', timeZone: 'UTC' }).toLowerCase()
-  const ticketUrl = show.ticketUrl || reservationUrl || getShowUrl(language, show.slug)
+  const reservePageUrl = `#${getLocalizedPath('reserve', language)}`
+  const normalizeTicketUrl = (url) =>
+    !url || url === '#/sq/rezervo' || url === 'https://example.com/reservations'
+      ? reservePageUrl
+      : url
+  const ticketUrl = normalizeTicketUrl(show.ticketUrl || reservationUrl) || getShowUrl(language, show.slug)
 
   return (
     <article className="show-card">

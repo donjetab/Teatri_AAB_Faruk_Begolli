@@ -81,6 +81,11 @@ internal static partial class NewsImportSeeder
                 db.NewsArticles.Add(article);
                 articlesBySlug[slug] = article;
             }
+            else
+            {
+                // Imported files are bootstrap data only. Never overwrite content subsequently edited in Admin.
+                continue;
+            }
 
             article!.ArticleType = string.IsNullOrWhiteSpace(externalUrl)
                 ? NewsArticleType.Authored

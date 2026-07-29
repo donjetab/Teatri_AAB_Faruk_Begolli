@@ -25,6 +25,7 @@ builder.Services.AddScoped<IHomepageService, HomepageService>();
 builder.Services.AddScoped<INewsletterService, NewsletterService>();
 builder.Services.AddScoped<IContactService, ContactService>();
 builder.Services.AddSingleton<IClock, SystemClock>();
+builder.Services.AddHostedService<PerformanceStatusUpdater>();
 builder.Services.AddScoped<IPasswordHasher<AdminUser>, PasswordHasher<AdminUser>>();
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(options =>
@@ -87,12 +88,13 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 
-if (app.Environment.IsDevelopment() && app.Configuration.GetValue("Seed:EnableDevelopmentSeed", true))
+if (app.Environment.IsDevelopment())
 {
     using var scope = app.Services.CreateScope();
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     await db.Database.MigrateAsync();
-    await DevelopmentDataSeeder.SeedAsync(db, app.Environment);
+    if (app.Configuration.GetValue("Seed:EnableDevelopmentSeed", false))
+        await DevelopmentDataSeeder.SeedAsync(db, app.Environment);
 
     var bootstrapEmail = app.Configuration["AdminBootstrap:Email"]?.Trim().ToLowerInvariant();
     var bootstrapPassword = app.Configuration["AdminBootstrap:Password"];

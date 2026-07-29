@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useAdminAuth } from '../AuthContext'
 import logo from '../../assets/theatre-icon.png'
+import { AdminDialogProvider } from './AdminDialog'
 
 const groups = [
   { label: 'Overview', items: [['Dashboard', '/admin', '⌂'], ['Reservations', '/admin/reservations', '▣']] },
@@ -69,7 +70,7 @@ export function AdminLayout() {
         </div>
       </header>
       <div className="admin-breadcrumb">Admin <span>/</span> {title}</div>
-      <main className="admin-main"><Outlet /></main>
+      <main className="admin-main"><AdminDialogProvider><Outlet /></AdminDialogProvider></main>
     </div>
   </div>
 }

@@ -29,6 +29,7 @@ internal sealed class ShowConfiguration : IEntityTypeConfiguration<Show>
         builder.Property(x => x.OriginalLanguage).HasMaxLength(80);
         builder.Property(x => x.TrailerUrl).HasMaxLength(1000);
         builder.Property(x => x.VideoUrl).HasMaxLength(1000);
+        builder.Property(x => x.UseLocalGalleryFallback).HasDefaultValue(true);
         builder.Property(x => x.LifecycleStatus).HasConversion<string>().HasMaxLength(32);
         builder.Property(x => x.Status).HasConversion<string>().HasMaxLength(32).IsRequired();
         builder.Property(x => x.PremiereDate).HasColumnType("date");
@@ -481,6 +482,9 @@ internal sealed class TheatreInformationConfiguration : IEntityTypeConfiguration
         builder.Property(x => x.FacebookUrl).HasMaxLength(500);
         builder.Property(x => x.InstagramUrl).HasMaxLength(500);
         builder.Property(x => x.ReservationUrl).HasMaxLength(500);
+        builder.Property(x => x.PrimaryButtonLink).HasMaxLength(500);
+        builder.Property(x => x.AboutButtonLink).HasMaxLength(500);
+        builder.Property(x => x.PitfDestinationUrl).HasMaxLength(500);
         builder.Property(x => x.LatestNewsCount).HasDefaultValue(3);
 
         builder.HasOne(x => x.HeroBackgroundMediaAsset).WithMany().HasForeignKey(x => x.HeroBackgroundMediaAssetId).OnDelete(DeleteBehavior.Restrict);

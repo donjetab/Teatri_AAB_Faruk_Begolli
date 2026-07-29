@@ -212,6 +212,9 @@ public static class DevelopmentDataSeeder
         theatreInfo.AboutPreviewMediaAsset = media["about"];
         theatreInfo.PitfFeatureMediaAsset = media["pitfPreview"];
         theatreInfo.ReservationBannerMediaAsset = media["reservation"];
+        theatreInfo.HeroIsVisible = true;
+        theatreInfo.PitfFeatureIsVisible = true;
+        theatreInfo.ReservationBannerIsVisible = true;
         theatreInfo.Address = "Prishtine, Kosove";
         theatreInfo.Phone = "+383 44 000 000";
         theatreInfo.Email = "info@teatriaab.org";
@@ -219,7 +222,10 @@ public static class DevelopmentDataSeeder
         theatreInfo.Longitude = 21.148m;
         theatreInfo.FacebookUrl = "https://www.facebook.com/aabtheatre";
         theatreInfo.InstagramUrl = "https://www.instagram.com/aabtheatre";
-        theatreInfo.ReservationUrl = "https://example.com/reservations";
+        theatreInfo.ReservationUrl = "#/sq/rezervo";
+        theatreInfo.PrimaryButtonLink = "#/sq/shfaqjet";
+        theatreInfo.AboutButtonLink = "#/sq/per-ne";
+        theatreInfo.PitfDestinationUrl = "https://pitf.teatriaab.com/";
         theatreInfo.UpdatedAt = now;
 
         EnsureTheatreInfoTranslation(

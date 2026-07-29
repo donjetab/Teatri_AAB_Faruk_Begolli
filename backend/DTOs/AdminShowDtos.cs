@@ -18,10 +18,16 @@ public sealed record AdminShowListItemDto(
 
 public sealed record AdminShowDetailDto(
     int Id, int ShowCategoryId, int? PosterMediaAssetId, int? FeaturedMediaAssetId,
+    string? PosterUrl, string? FeaturedImageUrl,
     int? DurationMinutes, int? ProductionYear, int? AgeRecommendation, string? OriginalLanguage,
     string? TrailerUrl, string? VideoUrl, DateOnly? PremiereDate, string Status,
     string LifecycleStatus, bool IsFeatured, DateTimeOffset CreatedAt, DateTimeOffset UpdatedAt,
-    DateTimeOffset? PublishedAt, IReadOnlyList<AdminShowTranslationDto> Translations);
+    DateTimeOffset? PublishedAt, IReadOnlyList<AdminShowTranslationDto> Translations,
+    IReadOnlyList<AdminShowGalleryMediaDto> GalleryMedia, bool UseLocalGalleryFallback);
+
+public sealed record AdminShowGalleryMediaDto(
+    int Id, string FileUrl, string FileName, string MimeType, string? CaptionSq, string? CaptionEn);
+public sealed record AttachShowGalleryMediaRequest([Range(1, int.MaxValue)] int MediaAssetId);
 
 public sealed record SaveAdminShowRequest(
     [Range(1, int.MaxValue)] int ShowCategoryId,
@@ -31,7 +37,7 @@ public sealed record SaveAdminShowRequest(
     [Range(1900, 2200)] int? ProductionYear,
     [Range(0, 21)] int? AgeRecommendation,
     [MaxLength(80)] string? OriginalLanguage,
-    [Url] string? TrailerUrl,
+    [MaxLength(1000)] string? TrailerUrl,
     [Url] string? VideoUrl,
     DateOnly? PremiereDate,
     [Required] string LifecycleStatus,

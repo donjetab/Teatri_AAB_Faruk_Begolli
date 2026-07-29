@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useParams } from 'react-router-dom'
 import { getShow } from '../api/shows'
+import { resolveMediaUrl } from '../api/client'
 import {
   galleriesBySlug,
   heroImagesBySlug,
@@ -60,8 +61,11 @@ export function ShowDetailPage() {
   const [visibleGalleryCount, setVisibleGalleryCount] = useState(3)
   const [selectedImageIndex, setSelectedImageIndex] = useState(null)
   const trailerRef = useRef(null)
-  const galleryImages = galleriesBySlug[slug] ?? []
-  const trailer = trailersBySlug[slug]
+  const assetSlug = show?.slug || slug
+  const databaseGallery = show?.gallery?.map(item => resolveMediaUrl(item.url)) ?? []
+  const localProjectGallery = show?.useLocalGalleryFallback === false ? [] : galleriesBySlug[assetSlug] ?? []
+  const galleryImages = [...new Set([...databaseGallery, ...localProjectGallery])]
+  const trailer = show?.trailerUrl ? resolveMediaUrl(show.trailerUrl) : trailersBySlug[assetSlug]
 
   useEffect(() => {
     const controller = new AbortController()
@@ -156,7 +160,7 @@ export function ShowDetailPage() {
     return <section className="show-detail-state"><ErrorState message={t('showDetail.loadError')} /></section>
   }
 
-  const poster = postersBySlug[show.slug]
+  const poster = resolveMediaUrl(show.posterUrl) || postersBySlug[show.slug]
   const heroImage = heroImagesBySlug[show.slug] ?? poster
   const visibleGalleryImages = galleryImages.slice(
     galleryStart,
@@ -307,10 +311,10 @@ export function ShowDetailPage() {
             </div>
           </div>
           <div className="show-trailer-frame">
-            <video key={trailer} ref={trailerRef} controls muted playsInline preload="auto">
+            {/^https?:\/\//i.test(trailer) && !/\.mp4(?:$|\?)/i.test(trailer) ? <a className="home-button" href={trailer} target="_blank" rel="noreferrer">{t('showDetail.trailer')} ↗</a> : <video key={trailer} ref={trailerRef} controls muted playsInline preload="auto">
               <source src={trailer} type="video/mp4" />
               {t('showDetail.videoUnsupported')}
-            </video>
+            </video>}
           </div>
         </section>
       )}

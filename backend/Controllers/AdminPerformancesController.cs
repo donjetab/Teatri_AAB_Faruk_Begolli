@@ -13,6 +13,110 @@ namespace Theatre.Api.Controllers;
 [Route("api/admin/performances")]
 public sealed class AdminPerformancesController(AppDbContext db, IClock clock) : ControllerBase
 {
+    [HttpGet("venues")]
+    public async Task<ActionResult<IReadOnlyList<AdminVenueDto>>> GetVenues(CancellationToken token)
+    {
+        var venues = await db.Locations.AsNoTracking().OrderBy(x => x.Id).Select(x => new AdminVenueDto(
+            x.Id,
+            x.Translations.Where(t => t.Language.Code == "sq").Select(t => t.Name).FirstOrDefault() ?? "",
+            x.Translations.Where(t => t.Language.Code == "en").Select(t => t.Name).FirstOrDefault() ?? "",
+            x.Translations.Where(t => t.Language.Code == "sq").Select(t => t.Address).FirstOrDefault() ?? "",
+            x.Translations.Where(t => t.Language.Code == "en").Select(t => t.Address).FirstOrDefault() ?? "",
+            x.IsActive,
+            x.Performances.Count)).ToListAsync(token);
+        return Ok(venues);
+    }
+
+    [HttpPut("venues/{id:int}")]
+    public async Task<ActionResult<AdminVenueDto>> UpdateVenue(int id, CreateAdminVenueRequest request, CancellationToken token)
+    {
+        var venue = await db.Locations.Include(x => x.Translations).ThenInclude(x => x.Language)
+            .Include(x => x.Performances).FirstOrDefaultAsync(x => x.Id == id, token);
+        if (venue is null) return NotFound();
+        if (await db.LocationTranslations.AnyAsync(x => x.LocationId != id && x.Name == request.NameSq.Trim(), token))
+            return Conflict(new ProblemDetails { Title = "Venue already exists", Detail = "Another venue already uses this Albanian name.", Status = 409 });
+        foreach (var translation in venue.Translations)
+        {
+            translation.Name = translation.Language.Code == "sq" ? request.NameSq.Trim() : request.NameEn.Trim();
+            translation.Address = translation.Language.Code == "sq" ? request.AddressSq.Trim() : request.AddressEn.Trim();
+        }
+        await db.SaveChangesAsync(token);
+        return Ok(new AdminVenueDto(venue.Id, request.NameSq.Trim(), request.NameEn.Trim(), request.AddressSq.Trim(), request.AddressEn.Trim(), venue.IsActive, venue.Performances.Count));
+    }
+
+    [HttpDelete("venues/{id:int}")]
+    public async Task<IActionResult> DeleteVenue(int id, CancellationToken token)
+    {
+        var venue = await db.Locations.Include(x => x.Performances).FirstOrDefaultAsync(x => x.Id == id, token);
+        if (venue is null) return NotFound();
+        if (venue.Performances.Count > 0)
+            return Conflict(new ProblemDetails { Title = "Venue is in use", Detail = "This venue cannot be deleted while performances reference it. You can still edit its name and address.", Status = 409 });
+        db.Locations.Remove(venue);
+        await db.SaveChangesAsync(token);
+        return NoContent();
+    }
+
+    [HttpGet("conflicts")]
+    public async Task<ActionResult<IReadOnlyList<AdminPerformanceConflictDto>>> Conflicts(
+        [FromQuery] DateTimeOffset startDateTimeUtc,
+        [FromQuery] int? locationId,
+        [FromQuery] string? customVenue,
+        [FromQuery] int? excludeId,
+        CancellationToken token)
+    {
+        if (!locationId.HasValue && string.IsNullOrWhiteSpace(customVenue)) return Ok(Array.Empty<AdminPerformanceConflictDto>());
+        var from = startDateTimeUtc.ToUniversalTime().AddMinutes(-30);
+        var to = startDateTimeUtc.ToUniversalTime().AddMinutes(30);
+        var normalizedVenue = Clean(customVenue);
+        var query = db.ShowPerformances.AsNoTracking()
+            .Where(x => x.StartDateTimeUtc >= from && x.StartDateTimeUtc <= to
+                && x.Status != PerformanceStatus.Cancelled && x.Status != PerformanceStatus.Completed);
+        if (excludeId.HasValue) query = query.Where(x => x.Id != excludeId.Value);
+        query = locationId.HasValue
+            ? query.Where(x => x.LocationId == locationId.Value)
+            : query.Where(x => x.LocationId == null && x.Hall != null && x.Hall == normalizedVenue);
+        var items = await query.OrderBy(x => x.StartDateTimeUtc)
+            .Select(x => new AdminPerformanceConflictDto(
+                x.Id,
+                x.Show.Translations.Where(t => t.Language.Code == "sq").Select(t => t.Title).FirstOrDefault() ?? $"Show {x.ShowId}",
+                x.StartDateTimeUtc,
+                x.Location == null ? null : x.Location.Translations.Where(t => t.Language.Code == "sq").Select(t => t.Name).FirstOrDefault(),
+                x.Hall))
+            .ToListAsync(token);
+        return Ok(items);
+    }
+
+    [HttpPost("venues")]
+    public async Task<ActionResult<AdminLookupDto>> CreateVenue(CreateAdminVenueRequest request, CancellationToken token)
+    {
+        var name = request.NameSq.Trim();
+        if (await db.LocationTranslations.AnyAsync(x => x.Name == name, token))
+            return Conflict(new ProblemDetails { Title = "Venue already exists", Detail = "Choose the existing venue from the dropdown.", Status = 409 });
+
+        var languages = await db.Languages.Where(x => x.IsActive && (x.Code == "sq" || x.Code == "en")).ToListAsync(token);
+        if (languages.Count != 2) return Problem("The Albanian and English languages must be configured before adding a venue.");
+
+        var venue = new Location { IsActive = true };
+        foreach (var language in languages)
+            venue.Translations.Add(new LocationTranslation
+            {
+                LanguageId = language.Id,
+                Name = language.Code == "sq" ? request.NameSq.Trim() : request.NameEn.Trim(),
+                Address = language.Code == "sq" ? request.AddressSq.Trim() : request.AddressEn.Trim()
+            });
+        db.Locations.Add(venue);
+        db.AdminActivities.Add(new AdminActivity
+        {
+            AdminUserId = int.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var userId) ? userId : null,
+            Action = "Created",
+            EntityType = "Venue",
+            Summary = $"Created venue {name}",
+            CreatedAt = clock.UtcNow
+        });
+        await db.SaveChangesAsync(token);
+        return CreatedAtAction(nameof(List), new AdminLookupDto(venue.Id, name));
+    }
+
     [HttpGet]
     public async Task<ActionResult<AdminPerformanceListDto>> List(
         [FromQuery] int? showId, [FromQuery] int? locationId, [FromQuery] string? status,
@@ -50,7 +154,7 @@ public sealed class AdminPerformancesController(AppDbContext db, IClock clock) :
     [HttpPost]
     public async Task<ActionResult<AdminPerformanceDto>> Create(SaveAdminPerformanceRequest request, CancellationToken token)
     {
-        var error = await Validate(request, token); if (error is not null) return BadRequest(error);
+        var error = await Validate(request, allowPastStart: false, token: token); if (error is not null) return BadRequest(error);
         var now = clock.UtcNow;
         var entity = new ShowPerformance { CreatedAt = now, UpdatedAt = now };
         Apply(entity, request); db.ShowPerformances.Add(entity);
@@ -64,7 +168,7 @@ public sealed class AdminPerformancesController(AppDbContext db, IClock clock) :
     {
         var entity = await db.ShowPerformances.FirstOrDefaultAsync(x => x.Id == id, token);
         if (entity is null) return NotFound();
-        var error = await Validate(request, token); if (error is not null) return BadRequest(error);
+        var error = await Validate(request, allowPastStart: true, token: token); if (error is not null) return BadRequest(error);
         Apply(entity, request); entity.UpdatedAt = clock.UtcNow;
         AddActivity("Updated", entity, "Updated performance");
         await db.SaveChangesAsync(token);
@@ -90,17 +194,22 @@ public sealed class AdminPerformancesController(AppDbContext db, IClock clock) :
     {
         var entity = await db.ShowPerformances.FirstOrDefaultAsync(x => x.Id == id, token);
         if (entity is null) return NotFound();
-        if (entity.IsPublished) return Conflict(new ProblemDetails { Title = "Unpublish first", Detail = "Only unpublished performances can be deleted.", Status = 409 });
         db.ShowPerformances.Remove(entity); AddActivity("Deleted", entity, "Deleted draft performance");
         await db.SaveChangesAsync(token); return NoContent();
     }
 
-    private async Task<ValidationProblemDetails?> Validate(SaveAdminPerformanceRequest request, CancellationToken token)
+    private async Task<ValidationProblemDetails?> Validate(SaveAdminPerformanceRequest request, bool allowPastStart, CancellationToken token)
     {
         var errors = new Dictionary<string, string[]>();
         if (!await db.Shows.AnyAsync(x => x.Id == request.ShowId, token)) errors["ShowId"] = ["The selected play does not exist."];
+        if (!allowPastStart && request.StartDateTimeUtc < clock.UtcNow)
+            errors["StartDateTimeUtc"] = ["A new performance cannot be scheduled in the past."];
         if (request.LocationId.HasValue && !await db.Locations.AnyAsync(x => x.Id == request.LocationId, token)) errors["LocationId"] = ["The selected venue does not exist."];
         if (!Enum.TryParse<PerformanceStatus>(request.Status, true, out _)) errors["Status"] = ["Invalid performance status."];
+        if (!string.Equals(request.Status, nameof(PerformanceStatus.SoldOut), StringComparison.OrdinalIgnoreCase)
+            && string.IsNullOrWhiteSpace(request.TicketUrl)
+            && string.IsNullOrWhiteSpace(request.ContactPhone))
+            errors["BookingContact"] = ["Add a ticket URL or contact phone unless the performance is sold out."];
         if (request.EndDateTimeUtc.HasValue && request.EndDateTimeUtc <= request.StartDateTimeUtc) errors["EndDateTimeUtc"] = ["End time must be after start time."];
         return errors.Count == 0 ? null : new ValidationProblemDetails(errors);
     }

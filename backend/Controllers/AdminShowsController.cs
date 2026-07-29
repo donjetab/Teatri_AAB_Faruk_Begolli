@@ -13,6 +13,16 @@ namespace Theatre.Api.Controllers;
 [Route("api/admin/shows")]
 public sealed class AdminShowsController(AppDbContext db, IClock clock) : ControllerBase
 {
+    [HttpGet("credit-types")]
+    public async Task<ActionResult<IReadOnlyList<AdminCreditTypeDto>>> GetCreditTypes(CancellationToken token)
+    {
+        var types = await db.CreditTypes.AsNoTracking().OrderBy(x => x.DisplayOrder).Select(x => new AdminCreditTypeDto(
+            x.Id, x.Code,
+            x.Translations.Where(t => t.Language.Code == "sq").Select(t => t.Name).FirstOrDefault() ?? x.Code,
+            x.Translations.Where(t => t.Language.Code == "en").Select(t => t.Name).FirstOrDefault() ?? x.Code)).ToListAsync(token);
+        return Ok(types);
+    }
+
     [HttpGet]
     public async Task<ActionResult<AdminShowListResponseDto>> List(
         [FromQuery] string? search, [FromQuery] int? categoryId, [FromQuery] string? status,
@@ -117,6 +127,84 @@ public sealed class AdminShowsController(AppDbContext db, IClock clock) : Contro
         return await GetCredits(id, token);
     }
 
+    [HttpPost("{id:int}/gallery")]
+    public async Task<ActionResult<AdminShowDetailDto>> AttachGalleryMedia(
+        int id, AttachShowGalleryMediaRequest request, CancellationToken token)
+    {
+        var show = await LoadAsync(id, token);
+        if (show is null) return NotFound();
+        var media = await db.MediaAssets.FirstOrDefaultAsync(
+            x => x.Id == request.MediaAssetId && x.IsActive && x.MimeType.StartsWith("image/"), token);
+        if (media is null) return ValidationProblem("Choose an active image from the Media Library.");
+
+        var album = show.GalleryAlbums.FirstOrDefault();
+        if (album is null)
+        {
+            album = new GalleryAlbum
+            {
+                AlbumType = GalleryAlbumType.Show,
+                ShowId = show.Id,
+                IsPublished = true,
+                IsVisibleInGeneralGallery = false,
+                CreatedAt = clock.UtcNow,
+                UpdatedAt = clock.UtcNow
+            };
+            var languages = await db.Languages.Where(x => x.IsActive).ToListAsync(token);
+            foreach (var language in languages)
+            {
+                var title = show.Translations.FirstOrDefault(x => x.LanguageId == language.Id)?.Title ?? Title(show);
+                album.Translations.Add(new GalleryAlbumTranslation
+                {
+                    LanguageId = language.Id,
+                    Title = $"{title} Gallery",
+                    Slug = $"show-{show.Id}-gallery-{language.Code}"
+                });
+            }
+            show.GalleryAlbums.Add(album);
+        }
+        if (album.GalleryAlbumMedia.Any(x => x.MediaAssetId == media.Id))
+            return Conflict(new ProblemDetails { Title = "Image already attached", Detail = "This image is already in the play gallery.", Status = 409 });
+
+        album.GalleryAlbumMedia.Add(new GalleryAlbumMedia
+        {
+            MediaAssetId = media.Id,
+            DisplayOrder = album.GalleryAlbumMedia.Count,
+            IsFeatured = album.GalleryAlbumMedia.Count == 0
+        });
+        album.UpdatedAt = clock.UtcNow;
+        show.UpdatedAt = clock.UtcNow;
+        AddActivity("Added gallery image", show, $"{Title(show)}: {media.FileName}");
+        await db.SaveChangesAsync(token);
+        return Ok((await LoadAsync(id, token)) is { } updated ? ToDetail(updated) : throw new InvalidOperationException());
+    }
+
+    [HttpDelete("{id:int}/gallery/{mediaId:int}")]
+    public async Task<IActionResult> DetachGalleryMedia(int id, int mediaId, CancellationToken token)
+    {
+        var item = await db.GalleryAlbumMedia
+            .Include(x => x.GalleryAlbum).ThenInclude(x => x.Show!).ThenInclude(x => x.Translations).ThenInclude(x => x.Language)
+            .FirstOrDefaultAsync(x => x.GalleryAlbum.ShowId == id && x.MediaAssetId == mediaId, token);
+        if (item is null) return NotFound();
+        db.GalleryAlbumMedia.Remove(item);
+        item.GalleryAlbum.UpdatedAt = clock.UtcNow;
+        item.GalleryAlbum.Show!.UpdatedAt = clock.UtcNow;
+        AddActivity("Removed gallery image", item.GalleryAlbum.Show, Title(item.GalleryAlbum.Show));
+        await db.SaveChangesAsync(token);
+        return NoContent();
+    }
+
+    [HttpPost("{id:int}/gallery/manage-local")]
+    public async Task<ActionResult<AdminShowDetailDto>> DisableLocalGalleryFallback(int id, CancellationToken token)
+    {
+        var show = await LoadAsync(id, token);
+        if (show is null) return NotFound();
+        show.UseLocalGalleryFallback = false;
+        show.UpdatedAt = clock.UtcNow;
+        AddActivity("Converted local gallery", show, $"{Title(show)} gallery is now database-managed");
+        await db.SaveChangesAsync(token);
+        return Ok(ToDetail(show));
+    }
+
     [HttpPost]
     public async Task<ActionResult<AdminShowDetailDto>> Create(SaveAdminShowRequest request, CancellationToken token)
     {
@@ -211,8 +299,8 @@ public sealed class AdminShowsController(AppDbContext db, IClock clock) : Contro
         var isSuperAdmin = User.IsInRole(nameof(AdminRole.SuperAdmin));
         if (show.Status != ShowStatus.Draft && (!isSuperAdmin || !confirmHistorical))
             return Conflict(new ProblemDetails { Title = "Archive this play instead", Detail = "Only a Super Admin may permanently delete historical content after explicit confirmation.", Status = 409 });
-        if (show.Performances.Count != 0 || show.GalleryAlbums.Count != 0)
-            return Conflict(new ProblemDetails { Title = "Play is in use", Detail = "Remove associated performances and galleries before deleting this play.", Status = 409 });
+        if (show.Performances.Count != 0)
+            return Conflict(new ProblemDetails { Title = "Play has scheduled performances", Detail = "Remove its performances before permanently deleting this play.", Status = 409 });
         AddActivity("Deleted", show, $"Deleted play {id}");
         db.Shows.Remove(show);
         await db.SaveChangesAsync(token);
@@ -231,13 +319,23 @@ public sealed class AdminShowsController(AppDbContext db, IClock clock) : Contro
     }
 
     private async Task<Show?> LoadAsync(int id, CancellationToken token) =>
-        await db.Shows.Include(x => x.Translations).ThenInclude(x => x.Language).FirstOrDefaultAsync(x => x.Id == id, token);
+        await db.Shows
+            .Include(x => x.Translations).ThenInclude(x => x.Language)
+            .Include(x => x.PosterMediaAsset)
+            .Include(x => x.FeaturedMediaAsset)
+            .Include(x => x.GalleryAlbums).ThenInclude(x => x.GalleryAlbumMedia).ThenInclude(x => x.MediaAsset).ThenInclude(x => x.Translations)
+            .FirstOrDefaultAsync(x => x.Id == id, token);
 
     private async Task<ValidationProblemDetails?> ValidateRequestAsync(SaveAdminShowRequest request, int? id, CancellationToken token)
     {
         var errors = new Dictionary<string, string[]>();
         if (!Enum.TryParse<ShowLifecycleStatus>(request.LifecycleStatus, true, out _))
             errors[nameof(request.LifecycleStatus)] = ["Invalid lifecycle status."];
+        if (!string.IsNullOrWhiteSpace(request.TrailerUrl) &&
+            !request.TrailerUrl.StartsWith("/uploads/", StringComparison.OrdinalIgnoreCase) &&
+            (!Uri.TryCreate(request.TrailerUrl, UriKind.Absolute, out var trailerUri) ||
+             (trailerUri.Scheme != Uri.UriSchemeHttp && trailerUri.Scheme != Uri.UriSchemeHttps)))
+            errors[nameof(request.TrailerUrl)] = ["Choose a local Media Library video or enter a valid HTTP/HTTPS video URL."];
         var codes = request.Translations.Select(x => x.LanguageCode).ToList();
         if (!codes.Contains("sq") || !codes.Contains("en") || codes.Distinct().Count() != codes.Count)
             errors[nameof(request.Translations)] = ["Exactly one Albanian and one English translation are required."];
@@ -308,12 +406,18 @@ public sealed class AdminShowsController(AppDbContext db, IClock clock) : Contro
     }
 
     private static AdminShowDetailDto ToDetail(Show x) => new(
-        x.Id, x.ShowCategoryId, x.PosterMediaAssetId, x.FeaturedMediaAssetId, x.DurationMinutes,
+        x.Id, x.ShowCategoryId, x.PosterMediaAssetId, x.FeaturedMediaAssetId,
+        x.PosterMediaAsset?.FileUrl, x.FeaturedMediaAsset?.FileUrl, x.DurationMinutes,
         x.ProductionYear, x.AgeRecommendation, x.OriginalLanguage, x.TrailerUrl, x.VideoUrl,
         x.PremiereDate, x.Status.ToString(), x.LifecycleStatus.ToString(), x.IsFeatured,
         x.CreatedAt, x.UpdatedAt, x.PublishedAt,
         x.Translations.OrderBy(t => t.Language.Code).Select(t => new AdminShowTranslationDto(
-            t.Language.Code, t.Title, t.Slug, t.ShortDescription, t.FullDescription, t.MetaTitle, t.MetaDescription)).ToList());
+            t.Language.Code, t.Title, t.Slug, t.ShortDescription, t.FullDescription, t.MetaTitle, t.MetaDescription)).ToList(),
+        x.GalleryAlbums.SelectMany(a => a.GalleryAlbumMedia).OrderBy(m => m.DisplayOrder).Select(m =>
+            new AdminShowGalleryMediaDto(m.MediaAsset.Id, m.MediaAsset.FileUrl, m.MediaAsset.FileName, m.MediaAsset.MimeType,
+                m.MediaAsset.Translations.FirstOrDefault(t => t.Language.Code == "sq")?.Caption,
+                m.MediaAsset.Translations.FirstOrDefault(t => t.Language.Code == "en")?.Caption)).ToList(),
+        x.UseLocalGalleryFallback);
     private static string Title(Show show) => show.Translations.FirstOrDefault(x => x.Language.Code == "sq")?.Title ?? $"Show {show.Id}";
     private static string? Clean(string? value) => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
 }

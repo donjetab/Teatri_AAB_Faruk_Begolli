@@ -30,3 +30,9 @@ export function getRouteKey(pathname) {
 export function getLocalizedPath(routeKey, language) {
   return routeKeys[routeKey]?.[language] ?? routeKeys.home[language]
 }
+
+export function getManagedDestination(destination, language, fallbackRouteKey) {
+  if (!destination) return getLocalizedPath(fallbackRouteKey, language)
+  if (!destination.startsWith('#/')) return destination
+  return getLocalizedPath(getRouteKey(destination.slice(1)), language)
+}

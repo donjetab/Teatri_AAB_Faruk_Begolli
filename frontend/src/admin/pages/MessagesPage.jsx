@@ -1,14 +1,16 @@
 import { useEffect, useState } from 'react'
 import { adminApi } from '../api'
+import { useAdminDialog } from '../components/AdminDialog'
 import { LoadingSkeleton, PageHeader, StatusBadge, Toast } from '../components/AdminUi'
 
 export function MessagesPage() {
+  const dialog = useAdminDialog()
   const [filters, setFilters] = useState({ search: '', status: '' }); const [data, setData] = useState(null); const [selected, setSelected] = useState(null); const [toast, setToast] = useState('')
   const load = () => adminApi.messages(filters).then(setData)
   useEffect(() => { const timer = setTimeout(() => { void load() }, 180); return () => clearTimeout(timer) }, [filters.search, filters.status])
   const open = item => { setSelected(item); if (item.status === 'New') adminApi.saveMessage(item.id, { status: 'Read', internalNotes: item.internalNotes }).then(updated => { setSelected(updated); load() }) }
   const save = async () => { const updated = await adminApi.saveMessage(selected.id, { status: selected.status, internalNotes: selected.internalNotes }); setSelected(updated); setToast('Message updated.'); load() }
-  const remove = async () => { if (!window.confirm('Permanently delete this spam message?')) return; await adminApi.deleteMessage(selected.id); setSelected(null); setToast('Spam deleted.'); load() }
+  const remove = async () => { if (!await dialog.confirm({ title: 'Delete spam message?', message: 'This contact message will be permanently removed.', confirmLabel: 'Delete message', danger: true })) return; await adminApi.deleteMessage(selected.id); setSelected(null); setToast('Spam deleted.'); load() }
   return <><PageHeader eyebrow="Communication" title="Contact Messages" description="Review contact submissions while keeping personal information inside the protected admin area." />
     <section className="admin-panel"><div className="communication-summary"><div><strong>{data?.unreadCount ?? 0}</strong><span>New messages</span></div><input placeholder="Search sender, email or subject…" value={filters.search} onChange={e => setFilters({ ...filters, search: e.target.value })} /><select value={filters.status} onChange={e => setFilters({ ...filters, status: e.target.value })}><option value="">All statuses</option>{['New','Read','Resolved','Archived','Spam'].map(x => <option key={x}>{x}</option>)}</select></div></section>
     {!data ? <LoadingSkeleton /> : <section className="admin-panel"><div className="admin-table-wrap"><table className="admin-table"><thead><tr><th>Sender</th><th>Subject</th><th>Submitted</th><th>Status</th><th /></tr></thead><tbody>{data.items.map(item => <tr key={item.id} className={item.status === 'New' ? 'unread-row' : ''}><td><strong>{item.name}</strong><small className="private-detail">{item.email}</small></td><td>{item.subject}</td><td>{new Date(item.createdAt).toLocaleString()}</td><td><StatusBadge status={item.status} /></td><td><button className="admin-text-button" onClick={() => open(item)}>Open</button></td></tr>)}</tbody></table></div></section>}

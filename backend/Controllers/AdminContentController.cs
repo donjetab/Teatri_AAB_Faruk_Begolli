@@ -33,7 +33,7 @@ public sealed class AdminContentController(AppDbContext db, IClock clock) : Cont
         info.Email = request.Email.Trim().ToLowerInvariant();
         info.FacebookUrl = Clean(request.FacebookUrl);
         info.InstagramUrl = Clean(request.InstagramUrl);
-        info.ReservationUrl = Clean(request.ReservationUrl);
+        info.ReservationUrl = NormalizeReservationUrl(request.ReservationUrl);
         info.LogoMediaAssetId = request.LogoMediaAssetId;
         info.FaviconMediaAssetId = request.FaviconMediaAssetId;
         info.SocialSharingMediaAssetId = request.SocialSharingMediaAssetId;
@@ -77,12 +77,15 @@ public sealed class AdminContentController(AppDbContext db, IClock clock) : Cont
         info.ReservationBannerIsVisible = request.ReservationBannerIsVisible;
         info.PitfFeatureIsVisible = request.PitfFeatureIsVisible;
         info.LatestNewsCount = Math.Clamp(request.LatestNewsCount, 1, 12);
-        info.ReservationUrl = Clean(request.ReservationUrl);
+        info.PrimaryButtonLink = Clean(request.PrimaryButtonLink);
+        info.AboutButtonLink = Clean(request.AboutButtonLink);
+        info.ReservationUrl = NormalizeReservationUrl(request.ReservationUrl);
+        info.PitfDestinationUrl = Clean(request.PitfDestinationUrl);
         foreach (var item in request.Translations.Where(x => languages.ContainsKey(x.LanguageCode)))
         {
             var translation = info.Translations.First(x => x.LanguageId == languages[item.LanguageCode].Id);
             translation.HeroSlogan = item.HeroSlogan.Trim();
-            translation.HeroSupportingText = item.HeroSupportingText.Trim();
+            translation.HeroSupportingText = Clean(item.HeroSupportingText) ?? string.Empty;
             translation.HeroButtonText = item.HeroButtonText.Trim();
             translation.AboutTitle = item.AboutTitle.Trim();
             translation.AboutShort = item.AboutShort.Trim();
@@ -120,5 +123,11 @@ public sealed class AdminContentController(AppDbContext db, IClock clock) : Cont
         db.AdminActivities.Add(new AdminActivity { AdminUserId = int.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var userId) ? userId : null, Action = action, EntityType = type, EntityId = id, Summary = summary, CreatedAt = clock.UtcNow });
     private static string? Clean(string? value) => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
     private static WebsiteInformationDto ToWebsiteDto(TheatreInformation x) => new(x.Id, x.Address, x.Phone, x.Email, x.FacebookUrl, x.InstagramUrl, x.ReservationUrl, x.LogoMediaAssetId, x.FaviconMediaAssetId, x.SocialSharingMediaAssetId, x.Translations.Select(t => new LocalizedWebsiteInformationDto(t.Language.Code, t.TheatreName, t.AddressDisplayText, t.FooterCopyrightText)).ToList(), x.UpdatedAt);
-    private static AdminHomepageDto ToHomepageDto(TheatreInformation x) => new(x.Id, x.HeroBackgroundMediaAssetId, x.AboutPreviewMediaAssetId, x.ReservationBannerMediaAssetId, x.PitfFeatureMediaAssetId, x.HeroIsVisible, x.ReservationBannerIsVisible, x.PitfFeatureIsVisible, x.LatestNewsCount, x.ReservationUrl, null, x.ReservationUrl, null, x.Translations.Select(t => new LocalizedHomepageDto(t.Language.Code, t.HeroSlogan, t.HeroSupportingText, t.HeroButtonText, t.AboutTitle, t.AboutShort, t.AboutButtonText, t.ReservationCallToActionTitle, t.ReservationCallToActionText, t.ReservationButtonText, t.PitfFeatureTitle, t.PitfShortDescription, t.PitfFeatureButtonText)).ToList(), x.UpdatedAt);
+    private static AdminHomepageDto ToHomepageDto(TheatreInformation x) => new(x.Id, x.HeroBackgroundMediaAssetId, x.AboutPreviewMediaAssetId, x.ReservationBannerMediaAssetId, x.PitfFeatureMediaAssetId, x.HeroIsVisible, x.ReservationBannerIsVisible, x.PitfFeatureIsVisible, x.LatestNewsCount, x.PrimaryButtonLink ?? "#/sq/shfaqjet", x.AboutButtonLink ?? "#/sq/per-ne", NormalizeReservationUrl(x.ReservationUrl), x.PitfDestinationUrl ?? "https://pitf.teatriaab.com/", x.Translations.Select(t => new LocalizedHomepageDto(t.Language.Code, t.HeroSlogan, t.HeroSupportingText, ValueOrDefault(t.HeroButtonText, t.Language.Code, "Shiko programin", "View program"), ValueOrDefault(t.AboutTitle, t.Language.Code, "Për Ne", "About"), t.AboutShort, ValueOrDefault(t.AboutButtonText, t.Language.Code, "Mëso më shumë", "Learn more"), t.ReservationCallToActionTitle, t.ReservationCallToActionText, ValueOrDefault(t.ReservationButtonText, t.Language.Code, "Rezervo biletën", "Reserve ticket"), ValueOrDefault(t.PitfFeatureTitle, t.Language.Code, "Prishtina International Theatre Festival", "Prishtina International Theatre Festival"), t.PitfShortDescription, ValueOrDefault(t.PitfFeatureButtonText, t.Language.Code, "Programi PITF", "PITF program"))).ToList(), x.UpdatedAt);
+    private static string ValueOrDefault(string? value, string languageCode, string sq, string en) =>
+        string.IsNullOrWhiteSpace(value) ? (languageCode == "sq" ? sq : en) : value;
+    private static string? NormalizeReservationUrl(string? value) =>
+        string.IsNullOrWhiteSpace(value) || value.Equals("https://example.com/reservations", StringComparison.OrdinalIgnoreCase)
+            ? "#/sq/rezervo"
+            : value.Trim();
 }

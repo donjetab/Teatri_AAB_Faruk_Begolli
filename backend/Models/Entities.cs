@@ -25,6 +25,7 @@ public sealed class Show
     public ShowStatus Status { get; set; } = ShowStatus.Draft;
     public ShowLifecycleStatus LifecycleStatus { get; set; } = ShowLifecycleStatus.Upcoming;
     public bool IsFeatured { get; set; }
+    public bool UseLocalGalleryFallback { get; set; } = true;
     public DateTimeOffset CreatedAt { get; set; }
     public DateTimeOffset UpdatedAt { get; set; }
     public DateTimeOffset? PublishedAt { get; set; }
@@ -344,6 +345,9 @@ public sealed class TheatreInformation
     public string? FacebookUrl { get; set; }
     public string? InstagramUrl { get; set; }
     public string? ReservationUrl { get; set; }
+    public string? PrimaryButtonLink { get; set; }
+    public string? AboutButtonLink { get; set; }
+    public string? PitfDestinationUrl { get; set; }
     public DateTimeOffset UpdatedAt { get; set; }
 
     public MediaAsset? HeroBackgroundMediaAsset { get; set; }
