@@ -32,6 +32,8 @@ import { MessagesPage } from './admin/pages/MessagesPage'
 import { SubscribersPage } from './admin/pages/SubscribersPage'
 import { ExistingContentPage } from './admin/pages/ExistingContentPage'
 import { NewsEditorPage } from './admin/pages/NewsEditorPage'
+import { PitfManagementPage } from './admin/pages/PitfManagementPage'
+import { GalleryManagementPage } from './admin/pages/GalleryManagementPage'
 import './admin/admin.css'
 
 function ShellPlaceholder() {
@@ -63,8 +65,8 @@ function App() {
           <Route path="news" element={<ExistingContentPage type="news" />} />
           <Route path="news/new" element={<NewsEditorPage />} />
           <Route path="news/:id" element={<NewsEditorPage />} />
-          <Route path="pitf" element={<ExistingContentPage type="pitf" />} />
-          <Route path="gallery" element={<ExistingContentPage type="gallery" />} />
+          <Route path="pitf" element={<PitfManagementPage />} />
+          <Route path="gallery" element={<GalleryManagementPage />} />
           <Route path="pages" element={<SectionPlaceholderPage />} />
           <Route path="messages" element={<MessagesPage />} />
           <Route path="subscribers" element={<SubscribersPage />} />

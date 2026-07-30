@@ -63,9 +63,10 @@ export function NewsEditorPage() {
   useEffect(() => {
     if (isNew) {
       const empty = {
-        articleType: 'Authored', coverMediaAssetId: null, coverUrl: null,
+        articleType: 'Authored', coverMediaAssetId: null, coverUrl: null, coverMimeType: null,
+        cardThumbnailMediaAssetId: null, cardThumbnailUrl: null,
         externalUrl: null, externalSourceName: null, isPublished: false,
-        isFeatured: false, publishedAt: null,
+        isFeatured: false, publishedAt: null, galleryMedia: [], relatedLinks: [],
         translations: ['sq', 'en'].map(emptyTranslation),
       }
       setForm(empty)
@@ -146,6 +147,7 @@ export function NewsEditorPage() {
       galleryMedia: result.galleryMedia ?? [],
       coverMediaAssetId: result.coverMediaAssetId,
       coverUrl: result.coverUrl,
+      coverMimeType: result.coverMimeType,
     }
     setForm(current => ({ ...current, ...mediaState }))
     setSaved(current => {
@@ -169,6 +171,7 @@ export function NewsEditorPage() {
               ...current,
               coverMediaAssetId: current.coverMediaAssetId ?? media.id,
               coverUrl: current.coverUrl ?? media.fileUrl,
+              coverMimeType: current.coverMimeType ?? media.mimeType,
               galleryMedia: [...galleryMedia, { ...media, isThumbnail: galleryMedia.length === 0 }],
             }
           })
@@ -176,7 +179,7 @@ export function NewsEditorPage() {
           updatePersistedGallery(await adminApi.attachNewsGalleryMedia(id, media.id))
         }
       }
-      setToast(`${files.length} gallery image${files.length === 1 ? '' : 's'} uploaded.`)
+      setToast(`${files.length} media file${files.length === 1 ? '' : 's'} uploaded.`)
     } catch (e) {
       setError(e.response?.data?.detail ?? 'The gallery images could not be uploaded.')
     } finally {
@@ -192,6 +195,7 @@ export function NewsEditorPage() {
           ...current,
           coverMediaAssetId: current.coverMediaAssetId ?? media.id,
           coverUrl: current.coverUrl ?? media.fileUrl,
+          coverMimeType: current.coverMimeType ?? media.mimeType,
           galleryMedia: [...galleryMedia, { ...media, isThumbnail: galleryMedia.length === 0 }],
         }
       })
@@ -208,6 +212,7 @@ export function NewsEditorPage() {
           ...current,
           coverMediaAssetId: media.id,
           coverUrl: media.fileUrl,
+          coverMimeType: media.mimeType,
           galleryMedia: [
             { ...selected, isThumbnail: true },
             ...remaining.map(item => ({ ...item, isThumbnail: false })),
@@ -226,7 +231,7 @@ export function NewsEditorPage() {
     }
   }
   const removeGalleryMedia = async media => {
-    if (!await dialog.confirm({ title: 'Remove gallery image?', message: `“${media.fileName}” will be removed from this article. The Media Library file will be kept.`, confirmLabel: 'Remove image', danger: true })) return
+    if (!await dialog.confirm({ title: 'Remove media?', message: `“${media.fileName}” will be removed from this article. The Media Library file will be kept.`, confirmLabel: 'Remove media', danger: true })) return
     if (isNew) {
       setForm(current => {
         const galleryMedia = current.galleryMedia.filter(item => item.id !== media.id)
@@ -236,6 +241,7 @@ export function NewsEditorPage() {
           galleryMedia: galleryMedia.map(item => ({ ...item, isThumbnail: item.id === thumbnail?.id })),
           coverMediaAssetId: thumbnail?.id ?? null,
           coverUrl: thumbnail?.fileUrl ?? null,
+          coverMimeType: thumbnail?.mimeType ?? null,
         }
       })
     } else {
@@ -266,15 +272,34 @@ export function NewsEditorPage() {
     ?? form.galleryMedia?.find(item => item.id === form.coverMediaAssetId)
     ?? form.galleryMedia?.[0]
   const sortableGalleryMedia = (form.galleryMedia ?? []).filter(item => item.id !== thumbnailMedia?.id)
+  const changeRelatedLink = (index, key, value) => setForm(current => ({
+    ...current,
+    relatedLinks: (current.relatedLinks ?? []).map((link, linkIndex) =>
+      linkIndex === index ? { ...link, [key]: value } : link),
+  }))
+  const addRelatedLink = () => setForm(current => ({
+    ...current,
+    relatedLinks: [...(current.relatedLinks ?? []), {
+      id: null, title: '', url: '', sourceName: '', publishedAt: null,
+      displayOrder: current.relatedLinks?.length ?? 0,
+    }],
+  }))
+  const removeRelatedLink = index => setForm(current => ({
+    ...current,
+    relatedLinks: (current.relatedLinks ?? []).filter((_, linkIndex) => linkIndex !== index)
+      .map((link, displayOrder) => ({ ...link, displayOrder })),
+  }))
   return <><PageHeader eyebrow="News" title={tr.title || 'New article'} description={isNew ? 'Create a bilingual news article for the public website.' : 'Edit bilingual article content, publication settings, source information and search metadata.'} actions={<><Link className="admin-outline-button" to="/admin/news">Back to news</Link><StatusBadge status={form.isPublished ? 'Published' : 'Draft'} /></>} />
     <form className={`admin-form news-editor-form language-${lang}`} onSubmit={save}><section className="admin-panel"><div className="news-editor-top"><LanguageTabs active={lang} onChange={setLang} /><button type="button" className="admin-text-button" onClick={() => setPreview(!preview)}>{preview ? 'Return to editor' : 'Preview article'}</button></div>
-      {preview ? <article className="news-admin-preview"><h1>{tr.title}</h1><p>{tr.summary}</p><div dangerouslySetInnerHTML={{ __html: tr.content }} /></article> : <div className="form-grid"><label>Title *<input required value={tr.title} onChange={e => changeTr('title', e.target.value)} /></label><label>Slug *<input required value={tr.slug} onChange={e => changeTr('slug', e.target.value)} /></label><label className="full">Summary *<textarea rows="4" value={tr.summary} onChange={e => changeTr('summary', e.target.value)} /></label><label className="full">Article content *<RichTextEditor value={tr.content} onChange={value => changeTr('content', value)} /></label><label>SEO title<input value={tr.metaTitle ?? ''} onChange={e => changeTr('metaTitle', e.target.value)} /></label><label>SEO description<textarea rows="3" value={tr.metaDescription ?? ''} onChange={e => changeTr('metaDescription', e.target.value)} /></label></div>}</section>
+      {preview ? <article className="news-admin-preview"><h1>{tr.title}</h1><p>{tr.summary}</p><div dangerouslySetInnerHTML={{ __html: tr.content }} /></article> : <div className="form-grid"><label>Title *<input required value={tr.title} onChange={e => changeTr('title', e.target.value)} /></label><label>Slug *<input required value={tr.slug} onChange={e => changeTr('slug', e.target.value)} /></label><label className="full">Summary *<textarea rows="4" value={tr.summary} onChange={e => changeTr('summary', e.target.value)} /></label><div className="full admin-rich-field"><span>Article content {form.coverMimeType?.startsWith('video/') ? '(optional for video-led news)' : '*'}</span><RichTextEditor key={lang} value={tr.content} onChange={value => changeTr('content', value)} /></div><label>SEO title<input value={tr.metaTitle ?? ''} onChange={e => changeTr('metaTitle', e.target.value)} /></label><label>SEO description<textarea rows="3" value={tr.metaDescription ?? ''} onChange={e => changeTr('metaDescription', e.target.value)} /></label></div>}</section>
       <section className="admin-panel news-gallery-editor">
-        <div className="panel-heading"><div><h2>News gallery</h2><p>Upload article images and choose the thumbnail used on News cards. With one image, it becomes the thumbnail automatically.</p></div><label className={`admin-primary-button ${galleryBusy ? 'disabled' : ''}`}>{galleryBusy ? 'Uploading…' : '+ Upload images'}<input type="file" accept="image/jpeg,image/png,image/webp" multiple hidden disabled={galleryBusy} onChange={uploadGallery} /></label></div>
-        <MediaPicker label="Choose from Media Library" type="image/" onChange={() => {}} onSelect={chooseGalleryMedia} />
-        {thumbnailMedia ? <><div className="news-thumbnail-section"><div><span>Selected thumbnail</span><strong>This image is always displayed as the News card and article cover.</strong></div><img src={resolveMediaUrl(thumbnailMedia.fileUrl)} alt="" /><button type="button" className="admin-text-button danger" onClick={() => removeGalleryMedia(thumbnailMedia)}>Remove thumbnail</button></div>{sortableGalleryMedia.length > 0 && <><p className="admin-help">Drag the gallery images to arrange their order. Choose “Use as thumbnail” to replace the cover above.</p><div className="news-admin-gallery">{sortableGalleryMedia.map(media => <figure draggable className={draggedMediaId === media.id ? 'dragging' : ''} key={media.id} onDragStart={() => setDraggedMediaId(media.id)} onDragEnd={() => setDraggedMediaId(null)} onDragOver={event => event.preventDefault()} onDrop={() => reorderGallery(media.id)}><div className="news-gallery-image"><img src={resolveMediaUrl(media.fileUrl)} alt="" /><span className="news-gallery-drag" aria-hidden="true">⠿ Drag</span></div><figcaption>{media.fileName}</figcaption><div><button type="button" onClick={() => setThumbnail(media)}>Use as thumbnail</button><button type="button" className="danger" onClick={() => removeGalleryMedia(media)}>Remove</button></div></figure>)}</div></>}</> : <div className="admin-empty"><strong>No gallery images</strong><p>Upload the first image and it will automatically become the News card thumbnail.</p></div>}
+        <div className="panel-heading"><div><h2>Article media</h2><p>Upload images or MP4 videos. The main media is used on News cards and at the top of the article.</p></div><label className={`admin-primary-button ${galleryBusy ? 'disabled' : ''}`}>{galleryBusy ? 'Uploading…' : '+ Upload media'}<input type="file" accept="image/jpeg,image/png,image/webp,video/mp4" multiple hidden disabled={galleryBusy} onChange={uploadGallery} /></label></div>
+        <MediaPicker label="Choose image or video from Media Library" type="" onChange={() => {}} onSelect={chooseGalleryMedia} />
+        {thumbnailMedia ? <><div className="news-thumbnail-section"><div><span>Main media</span><strong>This {thumbnailMedia.mimeType?.startsWith('video/') ? 'video' : 'image'} is displayed on the News card and article cover.</strong></div>{thumbnailMedia.mimeType?.startsWith('video/') ? <video src={resolveMediaUrl(thumbnailMedia.fileUrl)} controls preload="metadata" /> : <img src={resolveMediaUrl(thumbnailMedia.fileUrl)} alt="" />}<button type="button" className="admin-text-button danger" onClick={() => removeGalleryMedia(thumbnailMedia)}>Remove main media</button></div>{sortableGalleryMedia.length > 0 && <><p className="admin-help">Drag media to arrange the article gallery. Choose “Use as main media” to replace the cover above.</p><div className="news-admin-gallery">{sortableGalleryMedia.map(media => <figure draggable className={draggedMediaId === media.id ? 'dragging' : ''} key={media.id} onDragStart={() => setDraggedMediaId(media.id)} onDragEnd={() => setDraggedMediaId(null)} onDragOver={event => event.preventDefault()} onDrop={() => reorderGallery(media.id)}><div className="news-gallery-image">{media.mimeType?.startsWith('video/') ? <video src={resolveMediaUrl(media.fileUrl)} muted preload="metadata" /> : <img src={resolveMediaUrl(media.fileUrl)} alt="" />}<span className="news-gallery-drag" aria-hidden="true">⠿ Drag</span></div><figcaption>{media.fileName}</figcaption><div><button type="button" onClick={() => setThumbnail(media)}>Use as main media</button><button type="button" className="danger" onClick={() => removeGalleryMedia(media)}>Remove</button></div></figure>)}</div></>}</> : <div className="admin-empty"><strong>No article media</strong><p>Upload an image or video. The first file automatically becomes the main media.</p></div>}
+        {thumbnailMedia?.mimeType?.startsWith('video/') && <div className="news-card-thumbnail-choice"><div><h3>News card thumbnail</h3><p>Leave this empty to use the video preview on the News card, or choose a separate image.</p></div><MediaPicker label="Optional card image" value={form.cardThumbnailMediaAssetId} currentUrl={form.cardThumbnailUrl} type="image/" onSelect={media => setForm(current => ({ ...current, cardThumbnailMediaAssetId: media?.id ?? null, cardThumbnailUrl: media?.fileUrl ?? null }))} /></div>}
       </section>
-      <section className="admin-panel"><h2>Article settings</h2><div className="form-grid"><label>Article type<select value={form.articleType} onChange={e => change('articleType', e.target.value)}><option>Authored</option><option>External</option></select></label>{form.articleType === 'External' && <><label>External source name<input value={form.externalSourceName ?? ''} onChange={e => change('externalSourceName', e.target.value)} /></label><label>Original article URL<input type="url" required value={form.externalUrl ?? ''} onChange={e => change('externalUrl', e.target.value)} /></label></>}<label>Publication date<input type="datetime-local" value={form.publishedAt ? new Date(form.publishedAt).toISOString().slice(0,16) : ''} onChange={e => change('publishedAt', e.target.value ? new Date(e.target.value).toISOString() : null)} /></label><label className="admin-switch-row"><input type="checkbox" checked={form.isFeatured} onChange={e => change('isFeatured', e.target.checked)} /> Featured article</label><label className="admin-switch-row"><input type="checkbox" checked={form.isPublished} onChange={e => change('isPublished', e.target.checked)} /> Published on website</label></div></section>
+      {form.articleType === 'Authored' && <section className="admin-panel news-related-links"><div className="panel-heading"><div><h2>Related external coverage</h2><p>Optional articles from other publishers covering the same topic. Links open in a new tab.</p></div><button type="button" className="admin-outline-button" onClick={addRelatedLink}>+ Add related link</button></div>{(form.relatedLinks ?? []).map((link, index) => <div className="news-related-link-row" key={link.id ?? `new-${index}`}><label>Link title *<input required value={link.title} onChange={e => changeRelatedLink(index, 'title', e.target.value)} /></label><label>Source name<input value={link.sourceName ?? ''} onChange={e => changeRelatedLink(index, 'sourceName', e.target.value)} /></label><label className="full">URL *<input type="url" required value={link.url} onChange={e => changeRelatedLink(index, 'url', e.target.value)} /></label><label>Publication date<input type="date" value={link.publishedAt ? String(link.publishedAt).slice(0, 10) : ''} onChange={e => changeRelatedLink(index, 'publishedAt', e.target.value ? new Date(`${e.target.value}T12:00:00Z`).toISOString() : null)} /></label><button type="button" className="admin-danger-button" onClick={() => removeRelatedLink(index)}>Remove</button></div>)}{!(form.relatedLinks ?? []).length && <div className="admin-empty"><strong>No related coverage</strong><p>Add links only when another publisher has covered this story.</p></div>}</section>}
+      <section className="admin-panel"><h2>Article settings</h2><div className="form-grid"><label>Article ownership<select value={form.articleType} onChange={e => change('articleType', e.target.value)}><option value="Authored">Our article</option><option value="External">External article</option></select></label>{form.articleType === 'External' && <><label>External source name *<input required value={form.externalSourceName ?? ''} onChange={e => change('externalSourceName', e.target.value)} /></label><label>Original article URL *<input type="url" required value={form.externalUrl ?? ''} onChange={e => change('externalUrl', e.target.value)} /></label></>}<label>Publication date<input type="datetime-local" value={form.publishedAt ? new Date(form.publishedAt).toISOString().slice(0,16) : ''} onChange={e => change('publishedAt', e.target.value ? new Date(e.target.value).toISOString() : null)} /></label><label className="admin-switch-row"><input type="checkbox" checked={form.isFeatured} onChange={e => change('isFeatured', e.target.checked)} /> Featured article</label><label className="admin-switch-row"><input type="checkbox" checked={form.isPublished} onChange={e => change('isPublished', e.target.checked)} /> Published on website</label></div></section>
       {error && <div className="admin-form-error">{error}</div>}
       <div className="sticky-save"><button className="admin-primary-button" disabled={!dirty || busy}>{busy ? 'Saving…' : isNew ? 'Create article' : 'Save article'}</button><span className={dirty ? 'unsaved-chip' : 'saved-chip'}>{dirty ? 'Unsaved changes' : 'All changes saved'}</span>{!isNew && <button type="button" className="admin-danger-button" disabled={busy} onClick={remove}>Delete</button>}<Link className="admin-outline-button news-back-button" to="/admin/news">← Back to News</Link></div>
     </form><Toast message={toast} onClose={() => setToast('')} /></>

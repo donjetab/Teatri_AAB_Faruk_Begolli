@@ -145,22 +145,28 @@ export function NewsPage() {
                 const content = (
                   <>
                     <div className="news-card-image">
-                      {article.coverUrl ? (
-                        <>
-                          <img
-                            className="news-card-image-backdrop"
-                            src={resolveMediaUrl(article.coverUrl)}
-                            alt=""
-                            loading="lazy"
-                            aria-hidden="true"
-                          />
-                          <img
-                            className="news-card-image-cover"
-                            src={resolveMediaUrl(article.coverUrl)}
-                            alt=""
-                            loading="lazy"
-                          />
-                        </>
+                      {(article.cardThumbnailUrl || article.coverUrl) ? (
+                        article.cardThumbnailUrl ? (
+                          <img className="news-card-image-cover news-card-custom-thumbnail" src={resolveMediaUrl(article.cardThumbnailUrl)} alt="" loading="lazy" />
+                        ) : article.coverMimeType?.startsWith('video/') ? (
+                          <><video className="news-card-video" src={resolveMediaUrl(article.coverUrl)} muted preload="metadata" /><span className="news-card-play" aria-hidden="true">▶</span></>
+                        ) : (
+                          <>
+                            <img
+                              className="news-card-image-backdrop"
+                              src={resolveMediaUrl(article.coverUrl)}
+                              alt=""
+                              loading="lazy"
+                              aria-hidden="true"
+                            />
+                            <img
+                              className="news-card-image-cover"
+                              src={resolveMediaUrl(article.coverUrl)}
+                              alt=""
+                              loading="lazy"
+                            />
+                          </>
+                        )
                       ) : (
                         <span className="news-card-placeholder" aria-hidden="true">AAB</span>
                       )}

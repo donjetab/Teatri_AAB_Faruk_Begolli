@@ -249,6 +249,10 @@ internal sealed class NewsArticleConfiguration : IEntityTypeConfiguration<NewsAr
             .WithMany()
             .HasForeignKey(x => x.CoverMediaAssetId)
             .OnDelete(DeleteBehavior.Restrict);
+        builder.HasOne(x => x.CardThumbnailMediaAsset)
+            .WithMany()
+            .HasForeignKey(x => x.CardThumbnailMediaAssetId)
+            .OnDelete(DeleteBehavior.Restrict);
 
         builder.HasIndex(x => x.PublishedAt);
         builder.HasIndex(x => x.IsPublished);
@@ -305,6 +309,7 @@ internal sealed class PitfEditionConfiguration : IEntityTypeConfiguration<PitfEd
 {
     public void Configure(EntityTypeBuilder<PitfEdition> builder)
     {
+        builder.Property(x => x.DestinationUrl).HasMaxLength(2000);
         builder.HasOne(x => x.LogoMediaAsset)
             .WithMany()
             .HasForeignKey(x => x.LogoMediaAssetId)
@@ -316,6 +321,7 @@ internal sealed class PitfEditionConfiguration : IEntityTypeConfiguration<PitfEd
             .OnDelete(DeleteBehavior.Restrict);
 
         builder.HasIndex(x => x.Year);
+        builder.HasIndex(x => x.DisplayOrder);
         builder.HasIndex(x => new { x.Year, x.EditionNumber }).IsUnique();
     }
 }
@@ -485,12 +491,14 @@ internal sealed class TheatreInformationConfiguration : IEntityTypeConfiguration
         builder.Property(x => x.PrimaryButtonLink).HasMaxLength(500);
         builder.Property(x => x.AboutButtonLink).HasMaxLength(500);
         builder.Property(x => x.PitfDestinationUrl).HasMaxLength(500);
+        builder.Property(x => x.PitfPageButtonUrl).HasMaxLength(500);
         builder.Property(x => x.LatestNewsCount).HasDefaultValue(3);
 
         builder.HasOne(x => x.HeroBackgroundMediaAsset).WithMany().HasForeignKey(x => x.HeroBackgroundMediaAssetId).OnDelete(DeleteBehavior.Restrict);
         builder.HasOne(x => x.AboutPreviewMediaAsset).WithMany().HasForeignKey(x => x.AboutPreviewMediaAssetId).OnDelete(DeleteBehavior.Restrict);
         builder.HasOne(x => x.ReservationBannerMediaAsset).WithMany().HasForeignKey(x => x.ReservationBannerMediaAssetId).OnDelete(DeleteBehavior.Restrict);
         builder.HasOne(x => x.PitfFeatureMediaAsset).WithMany().HasForeignKey(x => x.PitfFeatureMediaAssetId).OnDelete(DeleteBehavior.Restrict);
+        builder.HasOne(x => x.PitfPageMediaAsset).WithMany().HasForeignKey(x => x.PitfPageMediaAssetId).OnDelete(DeleteBehavior.Restrict);
         builder.HasOne(x => x.LogoMediaAsset).WithMany().HasForeignKey(x => x.LogoMediaAssetId).OnDelete(DeleteBehavior.Restrict);
         builder.HasOne(x => x.FaviconMediaAsset).WithMany().HasForeignKey(x => x.FaviconMediaAssetId).OnDelete(DeleteBehavior.Restrict);
         builder.HasOne(x => x.SocialSharingMediaAsset).WithMany().HasForeignKey(x => x.SocialSharingMediaAssetId).OnDelete(DeleteBehavior.Restrict);
@@ -516,6 +524,9 @@ internal sealed class TheatreInformationTranslationConfiguration : IEntityTypeCo
         builder.Property(x => x.ReservationButtonText).HasMaxLength(100);
         builder.Property(x => x.PitfFeatureTitle).HasMaxLength(180);
         builder.Property(x => x.PitfFeatureButtonText).HasMaxLength(100);
+        builder.Property(x => x.PitfPageTitle).HasMaxLength(180);
+        builder.Property(x => x.PitfPageDescription).HasMaxLength(700);
+        builder.Property(x => x.PitfPageButtonText).HasMaxLength(100);
         builder.Property(x => x.FooterCopyrightText).HasMaxLength(300);
         builder.Property(x => x.MetaTitle).HasMaxLength(220);
         builder.Property(x => x.MetaDescription).HasMaxLength(320);

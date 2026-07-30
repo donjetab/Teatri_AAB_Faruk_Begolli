@@ -575,6 +575,9 @@ namespace Theatre.Api.Migrations
                         .HasMaxLength(32)
                         .HasColumnType("nvarchar(32)");
 
+                    b.Property<int?>("CardThumbnailMediaAssetId")
+                        .HasColumnType("int");
+
                     b.Property<int?>("CoverMediaAssetId")
                         .HasColumnType("int");
 
@@ -604,6 +607,8 @@ namespace Theatre.Api.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("ArticleType");
+
+                    b.HasIndex("CardThumbnailMediaAssetId");
 
                     b.HasIndex("CoverMediaAssetId");
 
@@ -834,6 +839,13 @@ namespace Theatre.Api.Migrations
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("datetimeoffset");
 
+                    b.Property<string>("DestinationUrl")
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<int>("DisplayOrder")
+                        .HasColumnType("int");
+
                     b.Property<int>("EditionNumber")
                         .HasColumnType("int");
 
@@ -861,6 +873,8 @@ namespace Theatre.Api.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("CoverMediaAssetId");
+
+                    b.HasIndex("DisplayOrder");
 
                     b.HasIndex("LogoMediaAssetId");
 
@@ -1304,6 +1318,13 @@ namespace Theatre.Api.Migrations
                     b.Property<int?>("PitfFeatureMediaAssetId")
                         .HasColumnType("int");
 
+                    b.Property<string>("PitfPageButtonUrl")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<int?>("PitfPageMediaAssetId")
+                        .HasColumnType("int");
+
                     b.Property<string>("PrimaryButtonLink")
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
@@ -1338,6 +1359,8 @@ namespace Theatre.Api.Migrations
                     b.HasIndex("LogoMediaAssetId");
 
                     b.HasIndex("PitfFeatureMediaAssetId");
+
+                    b.HasIndex("PitfPageMediaAssetId");
 
                     b.HasIndex("ReservationBannerMediaAssetId");
 
@@ -1415,6 +1438,21 @@ namespace Theatre.Api.Migrations
                         .HasColumnType("nvarchar(100)");
 
                     b.Property<string>("PitfFeatureTitle")
+                        .IsRequired()
+                        .HasMaxLength(180)
+                        .HasColumnType("nvarchar(180)");
+
+                    b.Property<string>("PitfPageButtonText")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("PitfPageDescription")
+                        .IsRequired()
+                        .HasMaxLength(700)
+                        .HasColumnType("nvarchar(700)");
+
+                    b.Property<string>("PitfPageTitle")
                         .IsRequired()
                         .HasMaxLength(180)
                         .HasColumnType("nvarchar(180)");
@@ -1595,10 +1633,17 @@ namespace Theatre.Api.Migrations
 
             modelBuilder.Entity("Theatre.Api.Models.NewsArticle", b =>
                 {
+                    b.HasOne("Theatre.Api.Models.MediaAsset", "CardThumbnailMediaAsset")
+                        .WithMany()
+                        .HasForeignKey("CardThumbnailMediaAssetId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.HasOne("Theatre.Api.Models.MediaAsset", "CoverMediaAsset")
                         .WithMany()
                         .HasForeignKey("CoverMediaAssetId")
                         .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("CardThumbnailMediaAsset");
 
                     b.Navigation("CoverMediaAsset");
                 });
@@ -1833,6 +1878,11 @@ namespace Theatre.Api.Migrations
                         .HasForeignKey("PitfFeatureMediaAssetId")
                         .OnDelete(DeleteBehavior.Restrict);
 
+                    b.HasOne("Theatre.Api.Models.MediaAsset", "PitfPageMediaAsset")
+                        .WithMany()
+                        .HasForeignKey("PitfPageMediaAssetId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.HasOne("Theatre.Api.Models.MediaAsset", "ReservationBannerMediaAsset")
                         .WithMany()
                         .HasForeignKey("ReservationBannerMediaAssetId")
@@ -1852,6 +1902,8 @@ namespace Theatre.Api.Migrations
                     b.Navigation("LogoMediaAsset");
 
                     b.Navigation("PitfFeatureMediaAsset");
+
+                    b.Navigation("PitfPageMediaAsset");
 
                     b.Navigation("ReservationBannerMediaAsset");
 

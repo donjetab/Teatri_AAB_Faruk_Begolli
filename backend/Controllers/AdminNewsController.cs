@@ -39,6 +39,8 @@ public sealed class AdminNewsController(AppDbContext db, IClock clock) : Control
     {
         var item = await db.NewsArticles.AsNoTracking().Include(x => x.Translations).ThenInclude(x => x.Language)
             .Include(x => x.CoverMediaAsset)
+            .Include(x => x.CardThumbnailMediaAsset)
+            .Include(x => x.RelatedExternalLinks)
             .Include(x => x.GalleryAlbums).ThenInclude(x => x.GalleryAlbumMedia)
                 .ThenInclude(x => x.MediaAsset).ThenInclude(x => x.Translations).ThenInclude(x => x.Language)
             .FirstOrDefaultAsync(x => x.Id == id, token);
@@ -50,6 +52,8 @@ public sealed class AdminNewsController(AppDbContext db, IClock clock) : Control
     {
         var item = await db.NewsArticles.Include(x => x.Translations).ThenInclude(x => x.Language)
             .Include(x => x.CoverMediaAsset)
+            .Include(x => x.CardThumbnailMediaAsset)
+            .Include(x => x.RelatedExternalLinks)
             .Include(x => x.GalleryAlbums).ThenInclude(x => x.GalleryAlbumMedia)
                 .ThenInclude(x => x.MediaAsset).ThenInclude(x => x.Translations).ThenInclude(x => x.Language)
             .FirstOrDefaultAsync(x => x.Id == id, token);
@@ -84,8 +88,9 @@ public sealed class AdminNewsController(AppDbContext db, IClock clock) : Control
         var item = await LoadWithGallery(id, token);
         if (item is null) return NotFound();
         var media = await db.MediaAssets.FirstOrDefaultAsync(
-            x => x.Id == request.MediaAssetId && x.IsActive && x.MimeType.StartsWith("image/"), token);
-        if (media is null) return ValidationProblem("Choose an active image from the Media Library.");
+            x => x.Id == request.MediaAssetId && x.IsActive &&
+                 (x.MimeType.StartsWith("image/") || x.MimeType.StartsWith("video/")), token);
+        if (media is null) return ValidationProblem("Choose an active image or video from the Media Library.");
 
         var album = item.GalleryAlbums.FirstOrDefault();
         if (album is null)
@@ -114,7 +119,7 @@ public sealed class AdminNewsController(AppDbContext db, IClock clock) : Control
         }
 
         if (album.GalleryAlbumMedia.Any(x => x.MediaAssetId == media.Id))
-            return Conflict(new ProblemDetails { Title = "Image already attached", Detail = "This image is already in the news gallery.", Status = 409 });
+            return Conflict(new ProblemDetails { Title = "Media already attached", Detail = "This media file is already attached to the news article.", Status = 409 });
 
         var firstImage = album.GalleryAlbumMedia.Count == 0;
         album.GalleryAlbumMedia.Add(new GalleryAlbumMedia
@@ -130,7 +135,7 @@ public sealed class AdminNewsController(AppDbContext db, IClock clock) : Control
             album.CoverMediaAssetId = media.Id;
         }
         album.UpdatedAt = item.UpdatedAt = clock.UtcNow;
-        AddActivity("Added gallery image", item.Id, $"Added {media.FileName} to {AlbanianTitle(item)}");
+        AddActivity("Added news media", item.Id, $"Added {media.FileName} to {AlbanianTitle(item)}");
         await db.SaveChangesAsync(token);
         return Ok(ToDto((await LoadWithGallery(id, token))!));
     }
@@ -228,9 +233,22 @@ public sealed class AdminNewsController(AppDbContext db, IClock clock) : Control
             return ValidationProblem("Invalid article type.");
         if (type == NewsArticleType.External && string.IsNullOrWhiteSpace(request.ExternalUrl))
             return ValidationProblem("External articles require an original article URL.");
-        if (request.CoverMediaAssetId.HasValue &&
-            !await db.MediaAssets.AnyAsync(x => x.Id == request.CoverMediaAssetId && x.IsActive, token))
-            return ValidationProblem("The selected cover image does not exist.");
+        string? coverMimeType = null;
+        if (request.CoverMediaAssetId.HasValue)
+        {
+            coverMimeType = await db.MediaAssets
+                .Where(x => x.Id == request.CoverMediaAssetId && x.IsActive)
+                .Select(x => x.MimeType)
+                .FirstOrDefaultAsync(token);
+            if (coverMimeType is null)
+                return ValidationProblem("The selected main media does not exist.");
+        }
+        var isVideoLedArticle = type == NewsArticleType.Authored &&
+                                coverMimeType?.StartsWith("video/", StringComparison.OrdinalIgnoreCase) == true;
+        if (request.CardThumbnailMediaAssetId.HasValue &&
+            !await db.MediaAssets.AnyAsync(x =>
+                x.Id == request.CardThumbnailMediaAssetId && x.IsActive && x.MimeType.StartsWith("image/"), token))
+            return ValidationProblem("The selected card thumbnail must be an active image.");
 
         var languages = await db.Languages.Where(x => x.IsActive).ToDictionaryAsync(x => x.Code, token);
         if (!request.Translations.Any(x => x.LanguageCode == "sq") ||
@@ -241,8 +259,11 @@ public sealed class AdminNewsController(AppDbContext db, IClock clock) : Control
         {
             if (!languages.TryGetValue(incoming.LanguageCode, out var language)) continue;
             if (string.IsNullOrWhiteSpace(incoming.Title) || string.IsNullOrWhiteSpace(incoming.Slug) ||
-                string.IsNullOrWhiteSpace(incoming.Summary) || string.IsNullOrWhiteSpace(incoming.Content))
-                return ValidationProblem($"Title, slug, summary and content are required in {incoming.LanguageCode.ToUpperInvariant()}.");
+                string.IsNullOrWhiteSpace(incoming.Summary) ||
+                (type == NewsArticleType.Authored && !isVideoLedArticle && string.IsNullOrWhiteSpace(incoming.Content)))
+                return ValidationProblem(type == NewsArticleType.Authored
+                    ? $"Title, slug and summary are required in {incoming.LanguageCode.ToUpperInvariant()}. Content is also required unless the main media is a video."
+                    : $"Title, slug and summary are required in {incoming.LanguageCode.ToUpperInvariant()}.");
 
             var slug = incoming.Slug.Trim().ToLowerInvariant();
             if (await db.NewsArticleTranslations.AnyAsync(
@@ -256,8 +277,24 @@ public sealed class AdminNewsController(AppDbContext db, IClock clock) : Control
             translation.MetaTitle = Clean(incoming.MetaTitle); translation.MetaDescription = Clean(incoming.MetaDescription);
         }
         item.ArticleType = type; item.CoverMediaAssetId = request.CoverMediaAssetId;
+        item.CardThumbnailMediaAssetId = request.CardThumbnailMediaAssetId;
         item.ExternalUrl = type == NewsArticleType.External ? Clean(request.ExternalUrl) : null;
         item.ExternalSourceName = type == NewsArticleType.External ? Clean(request.ExternalSourceName) : null;
+        var incomingLinks = type == NewsArticleType.Authored ? request.RelatedLinks ?? [] : [];
+        db.NewsExternalLinks.RemoveRange(item.RelatedExternalLinks);
+        item.RelatedExternalLinks.Clear();
+        foreach (var link in incomingLinks.OrderBy(x => x.DisplayOrder))
+        {
+            item.RelatedExternalLinks.Add(new NewsExternalLink
+            {
+                Title = link.Title.Trim(),
+                Url = link.Url.Trim(),
+                SourceName = Clean(link.SourceName),
+                PublishedAt = link.PublishedAt,
+                DisplayOrder = item.RelatedExternalLinks.Count,
+                CreatedAt = clock.UtcNow
+            });
+        }
         item.IsPublished = request.IsPublished; item.IsFeatured = request.IsFeatured;
         item.PublishedAt = request.IsPublished ? request.PublishedAt ?? item.PublishedAt ?? clock.UtcNow : request.PublishedAt;
         return null;
@@ -277,14 +314,20 @@ public sealed class AdminNewsController(AppDbContext db, IClock clock) : Control
     }
 
     private async Task LoadCover(NewsArticle item, CancellationToken token) =>
-        item.CoverMediaAsset = item.CoverMediaAssetId.HasValue
-            ? await db.MediaAssets.FindAsync([item.CoverMediaAssetId.Value], token)
-            : null;
+        (item.CoverMediaAsset, item.CardThumbnailMediaAsset) = (
+            item.CoverMediaAssetId.HasValue
+                ? await db.MediaAssets.FindAsync([item.CoverMediaAssetId.Value], token)
+                : null,
+            item.CardThumbnailMediaAssetId.HasValue
+                ? await db.MediaAssets.FindAsync([item.CardThumbnailMediaAssetId.Value], token)
+                : null);
 
     private async Task<NewsArticle?> LoadWithGallery(int id, CancellationToken token) =>
         await db.NewsArticles
             .Include(x => x.Translations).ThenInclude(x => x.Language)
             .Include(x => x.CoverMediaAsset)
+            .Include(x => x.CardThumbnailMediaAsset)
+            .Include(x => x.RelatedExternalLinks)
             .Include(x => x.GalleryAlbums).ThenInclude(x => x.Translations)
             .Include(x => x.GalleryAlbums).ThenInclude(x => x.GalleryAlbumMedia)
                 .ThenInclude(x => x.MediaAsset).ThenInclude(x => x.Translations).ThenInclude(x => x.Language)
@@ -303,7 +346,8 @@ public sealed class AdminNewsController(AppDbContext db, IClock clock) : Control
         return sanitizer.Sanitize(html ?? "");
     }
     private static AdminNewsDetailDto ToDto(NewsArticle x) => new(x.Id, x.ArticleType.ToString(), x.CoverMediaAssetId,
-        x.CoverMediaAsset?.FileUrl, x.ExternalUrl, x.ExternalSourceName, x.IsPublished, x.IsFeatured, x.PublishedAt,
+        x.CoverMediaAsset?.FileUrl, x.CoverMediaAsset?.MimeType, x.CardThumbnailMediaAssetId,
+        x.CardThumbnailMediaAsset?.FileUrl, x.ExternalUrl, x.ExternalSourceName, x.IsPublished, x.IsFeatured, x.PublishedAt,
         x.CreatedAt, x.UpdatedAt, x.Translations.OrderBy(t => t.Language.Code).Select(t => new AdminNewsTranslationDto(
             t.Language.Code, t.Title, t.Slug, t.Summary, t.Content, t.MetaTitle, t.MetaDescription)).ToList(),
         x.GalleryAlbums.SelectMany(a => a.GalleryAlbumMedia).OrderBy(m => m.DisplayOrder)
@@ -312,6 +356,10 @@ public sealed class AdminNewsController(AppDbContext db, IClock clock) : Control
                 m.MediaAsset.Translations.FirstOrDefault(t => t.Language.Code == "sq")?.Caption,
                 m.MediaAsset.Translations.FirstOrDefault(t => t.Language.Code == "en")?.Caption,
                 m.IsCover || x.CoverMediaAssetId == m.MediaAssetId))
+            .ToList(),
+        x.RelatedExternalLinks.OrderBy(link => link.DisplayOrder)
+            .Select(link => new AdminNewsExternalLinkDto(
+                link.Id, link.Title, link.Url, link.SourceName, link.PublishedAt, link.DisplayOrder))
             .ToList());
     private static string? Clean(string? value) => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
 }

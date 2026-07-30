@@ -7,6 +7,8 @@ public sealed record NewsListItemDto(
     string Summary,
     DateTimeOffset PublishedAt,
     string? CoverUrl,
+    string? CoverMimeType,
+    string? CardThumbnailUrl,
     bool IsExternal,
     string? ExternalUrl,
     bool IsFallbackTranslation);
@@ -28,8 +30,13 @@ public sealed record NewsDetailDto(
     string Content,
     DateTimeOffset PublishedAt,
     string? CoverUrl,
+    string? CoverMimeType,
     bool IsExternal,
     string? ExternalUrl,
     string? ExternalSourceName,
     bool IsFallbackTranslation,
-    IReadOnlyList<NewsMediaDto> Media);
+    IReadOnlyList<NewsMediaDto> Media,
+    IReadOnlyList<NewsExternalLinkDto> RelatedLinks);
+
+public sealed record NewsExternalLinkDto(
+    int Id, string Title, string Url, string? SourceName, DateTimeOffset? PublishedAt, int DisplayOrder);

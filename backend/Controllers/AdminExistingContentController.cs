@@ -36,7 +36,9 @@ public sealed class AdminExistingContentController(AppDbContext db) : Controller
                 x.Translations.Where(t => t.Language.Code == "sq").Select(t => t.Slug).FirstOrDefault() ?? "",
                 x.Translations.Where(t => t.Language.Code == "en").Select(t => t.Slug).FirstOrDefault() ?? "",
                 x.IsPublished ? "Published" : "Draft", x.IsFeatured, x.UpdatedAt, x.PublishedAt,
-                x.CoverMediaAsset == null ? null : x.CoverMediaAsset.FileUrl,
+                x.CardThumbnailMediaAsset != null ? x.CardThumbnailMediaAsset.FileUrl :
+                    x.CoverMediaAsset != null && x.CoverMediaAsset.MimeType.StartsWith("image/")
+                        ? x.CoverMediaAsset.FileUrl : null,
                 x.ExternalSourceName ?? (x.ArticleType == NewsArticleType.External ? "External article" : "Authored article"), x.RelatedExternalLinks.Count)).ToListAsync(token);
         return Ok(new AdminExistingContentListDto(items, page, pageSize, total, published, drafts));
     }

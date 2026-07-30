@@ -62,17 +62,24 @@ export function NewsDetailPage() {
 
       {article.coverUrl && (
         <figure className="news-detail-cover">
-          <img
-            className="news-detail-cover-backdrop"
-            src={resolveMediaUrl(article.coverUrl)}
-            alt=""
-            aria-hidden="true"
-          />
-          <img
-            className="news-detail-cover-image"
-            src={resolveMediaUrl(article.coverUrl)}
-            alt={article.title}
-          />
+          {article.coverMimeType?.startsWith('video/') ? (
+            <video controls preload="metadata">
+              <source src={resolveMediaUrl(article.coverUrl)} type={article.coverMimeType} />
+              {t('showDetail.videoUnsupported')}
+            </video>
+          ) : <>
+            <img
+              className="news-detail-cover-backdrop"
+              src={resolveMediaUrl(article.coverUrl)}
+              alt=""
+              aria-hidden="true"
+            />
+            <img
+              className="news-detail-cover-image"
+              src={resolveMediaUrl(article.coverUrl)}
+              alt={article.title}
+            />
+          </>}
         </figure>
       )}
 
@@ -101,6 +108,22 @@ export function NewsDetailPage() {
               {item.caption && <figcaption>{item.caption}</figcaption>}
             </figure>
           ))}
+        </section>
+      )}
+
+      {article.relatedLinks?.length > 0 && (
+        <section className="news-related-coverage" aria-labelledby="news-related-coverage-title">
+          <h2 id="news-related-coverage-title">{t('newsPage.relatedCoverage')}</h2>
+          <div>
+            {article.relatedLinks.map(link => (
+              <a href={link.url} target="_blank" rel="noopener noreferrer" key={link.id}>
+                <span>{link.sourceName || t('newsPage.external')}</span>
+                <strong>{link.title}</strong>
+                {link.publishedAt && <time dateTime={link.publishedAt}>{new Intl.DateTimeFormat(locale, { day: '2-digit', month: 'long', year: 'numeric' }).format(new Date(link.publishedAt))}</time>}
+                <b aria-hidden="true">↗</b>
+              </a>
+            ))}
+          </div>
         </section>
       )}
 

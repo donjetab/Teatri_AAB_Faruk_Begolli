@@ -33,6 +33,8 @@ public sealed class NewsController(AppDbContext db) : ControllerBase
                 x.Id,
                 PublishedAt = x.PublishedAt!.Value,
                 CoverUrl = x.CoverMediaAsset == null ? null : x.CoverMediaAsset.FileUrl,
+                CoverMimeType = x.CoverMediaAsset == null ? null : x.CoverMediaAsset.MimeType,
+                CardThumbnailUrl = x.CardThumbnailMediaAsset == null ? null : x.CardThumbnailMediaAsset.FileUrl,
                 x.ArticleType,
                 x.ExternalUrl,
                 Requested = x.Translations.FirstOrDefault(t => t.LanguageId == requestedLanguageId),
@@ -52,6 +54,8 @@ public sealed class NewsController(AppDbContext db) : ControllerBase
                     translation.Summary,
                     x.PublishedAt,
                     x.CoverUrl,
+                    x.CoverMimeType,
+                    x.CardThumbnailUrl,
                     x.ArticleType == NewsArticleType.External,
                     x.ExternalUrl,
                     x.Requested is null);
@@ -78,6 +82,7 @@ public sealed class NewsController(AppDbContext db) : ControllerBase
             .AsNoTracking()
             .Include(x => x.Translations)
             .Include(x => x.CoverMediaAsset)
+            .Include(x => x.RelatedExternalLinks)
             .Include(x => x.GalleryAlbums)
                 .ThenInclude(x => x.GalleryAlbumMedia)
                     .ThenInclude(x => x.MediaAsset)
@@ -126,11 +131,16 @@ public sealed class NewsController(AppDbContext db) : ControllerBase
             translation.Content,
             article.PublishedAt.Value,
             article.CoverMediaAsset?.FileUrl,
+            article.CoverMediaAsset?.MimeType,
             article.ArticleType == NewsArticleType.External,
             article.ExternalUrl,
             article.ExternalSourceName,
             translation.LanguageId != requestedLanguageId,
-            media));
+            media,
+            article.RelatedExternalLinks.OrderBy(x => x.DisplayOrder)
+                .Select(x => new NewsExternalLinkDto(
+                    x.Id, x.Title, x.Url, x.SourceName, x.PublishedAt, x.DisplayOrder))
+                .ToList()));
     }
 
     private async Task<(int RequestedLanguageId, int DefaultLanguageId)?> GetLanguagesAsync(

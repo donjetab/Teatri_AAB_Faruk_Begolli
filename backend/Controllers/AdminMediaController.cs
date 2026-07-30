@@ -36,7 +36,7 @@ public sealed class AdminMediaController(AppDbContext db, IWebHostEnvironment en
             x.Translations.Where(t => t.Language.Code == "en").Select(t => t.Caption).FirstOrDefault(),
             db.Shows.Count(s => s.PosterMediaAssetId == x.Id || s.FeaturedMediaAssetId == x.Id)
             + db.GalleryAlbumMedia.Count(g => g.MediaAssetId == x.Id)
-            + db.NewsArticles.Count(n => n.CoverMediaAssetId == x.Id)
+            + db.NewsArticles.Count(n => n.CoverMediaAssetId == x.Id || n.CardThumbnailMediaAssetId == x.Id)
             + db.PitfEditions.Count(p => p.CoverMediaAssetId == x.Id || p.LogoMediaAssetId == x.Id))).ToListAsync(token);
         return Ok(new AdminMediaListDto(items, page, pageSize, total));
     }
@@ -78,7 +78,7 @@ public sealed class AdminMediaController(AppDbContext db, IWebHostEnvironment en
         var asset = await db.MediaAssets.FirstOrDefaultAsync(x => x.Id == id, token);
         if (asset is null) return NotFound();
         var used = await db.Shows.AnyAsync(x => x.PosterMediaAssetId == id || x.FeaturedMediaAssetId == id, token)
-            || await db.NewsArticles.AnyAsync(x => x.CoverMediaAssetId == id, token)
+            || await db.NewsArticles.AnyAsync(x => x.CoverMediaAssetId == id || x.CardThumbnailMediaAssetId == id, token)
             || await db.PitfEditions.AnyAsync(x => x.CoverMediaAssetId == id || x.LogoMediaAssetId == id, token)
             || await db.GalleryAlbumMedia.AnyAsync(x => x.MediaAssetId == id, token);
         if (used) return Conflict(new ProblemDetails { Title = "Media is in use", Detail = "Remove or replace all content references before deleting this asset.", Status = 409 });

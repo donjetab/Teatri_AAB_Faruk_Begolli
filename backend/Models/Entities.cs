@@ -164,6 +164,7 @@ public sealed class NewsArticle
     public int Id { get; set; }
     public NewsArticleType ArticleType { get; set; } = NewsArticleType.Authored;
     public int? CoverMediaAssetId { get; set; }
+    public int? CardThumbnailMediaAssetId { get; set; }
     public string? ExternalUrl { get; set; }
     public string? ExternalSourceName { get; set; }
     public bool IsPublished { get; set; }
@@ -173,6 +174,7 @@ public sealed class NewsArticle
     public DateTimeOffset UpdatedAt { get; set; }
 
     public MediaAsset? CoverMediaAsset { get; set; }
+    public MediaAsset? CardThumbnailMediaAsset { get; set; }
     public ICollection<NewsArticleTranslation> Translations { get; set; } = [];
     public ICollection<NewsExternalLink> RelatedExternalLinks { get; set; } = [];
     public ICollection<GalleryAlbum> GalleryAlbums { get; set; } = [];
@@ -217,6 +219,8 @@ public sealed class PitfEdition
     public int? CoverMediaAssetId { get; set; }
     public DateOnly? StartDate { get; set; }
     public DateOnly? EndDate { get; set; }
+    public string? DestinationUrl { get; set; }
+    public int DisplayOrder { get; set; }
     public bool IsPublished { get; set; }
     public bool IsFeatured { get; set; }
     public DateTimeOffset CreatedAt { get; set; }
@@ -330,6 +334,7 @@ public sealed class TheatreInformation
     public int? AboutPreviewMediaAssetId { get; set; }
     public int? ReservationBannerMediaAssetId { get; set; }
     public int? PitfFeatureMediaAssetId { get; set; }
+    public int? PitfPageMediaAssetId { get; set; }
     public int? LogoMediaAssetId { get; set; }
     public int? FaviconMediaAssetId { get; set; }
     public int? SocialSharingMediaAssetId { get; set; }
@@ -348,12 +353,14 @@ public sealed class TheatreInformation
     public string? PrimaryButtonLink { get; set; }
     public string? AboutButtonLink { get; set; }
     public string? PitfDestinationUrl { get; set; }
+    public string? PitfPageButtonUrl { get; set; }
     public DateTimeOffset UpdatedAt { get; set; }
 
     public MediaAsset? HeroBackgroundMediaAsset { get; set; }
     public MediaAsset? AboutPreviewMediaAsset { get; set; }
     public MediaAsset? ReservationBannerMediaAsset { get; set; }
     public MediaAsset? PitfFeatureMediaAsset { get; set; }
+    public MediaAsset? PitfPageMediaAsset { get; set; }
     public MediaAsset? LogoMediaAsset { get; set; }
     public MediaAsset? FaviconMediaAsset { get; set; }
     public MediaAsset? SocialSharingMediaAsset { get; set; }
@@ -380,6 +387,9 @@ public sealed class TheatreInformationTranslation
     public string ReservationButtonText { get; set; } = string.Empty;
     public string PitfFeatureTitle { get; set; } = string.Empty;
     public string PitfFeatureButtonText { get; set; } = string.Empty;
+    public string PitfPageTitle { get; set; } = string.Empty;
+    public string PitfPageDescription { get; set; } = string.Empty;
+    public string PitfPageButtonText { get; set; } = string.Empty;
     public string FooterCopyrightText { get; set; } = string.Empty;
     public string? MetaTitle { get; set; }
     public string? MetaDescription { get; set; }
