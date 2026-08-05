@@ -6,20 +6,17 @@ using Theatre.Api.DTOs;
 using Theatre.Api.Models;
 using Theatre.Api.Services;
 using System.Security.Cryptography;
+using Microsoft.Extensions.Options;
 
 namespace Theatre.Api.Controllers;
 
 [ApiController, Authorize(Policy = "Admin")]
 [Route("api/admin/media")]
 [RequestSizeLimit(52_428_800)]
-public sealed class AdminMediaController(AppDbContext db, IWebHostEnvironment environment, IClock clock) : ControllerBase
+public sealed class AdminMediaController(AppDbContext db, IWebHostEnvironment environment, IClock clock,
+    IOptions<UploadOptions> uploadOptions) : ControllerBase
 {
-    private static readonly Dictionary<string, string[]> Allowed = new(StringComparer.OrdinalIgnoreCase)
-    {
-        ["image/jpeg"] = [".jpg", ".jpeg"], ["image/png"] = [".png"], ["image/webp"] = [".webp"],
-        ["image/svg+xml"] = [".svg"], ["video/mp4"] = [".mp4"], ["application/pdf"] = [".pdf"],
-        ["application/msword"] = [".doc"], ["application/vnd.openxmlformats-officedocument.wordprocessingml.document"] = [".docx"]
-    };
+    private UploadOptions Uploads => uploadOptions.Value;
 
     [HttpGet]
     public async Task<ActionResult<AdminMediaListDto>> List([FromQuery] string? search, [FromQuery] string? type, [FromQuery] bool? unused, [FromQuery] int page = 1, [FromQuery] int pageSize = 30, CancellationToken token = default)
@@ -35,6 +32,7 @@ public sealed class AdminMediaController(AppDbContext db, IWebHostEnvironment en
             && !db.GalleryAlbums.Any(g => g.CoverMediaAssetId == x.Id)
             && !db.NewsArticles.Any(n => n.CoverMediaAssetId == x.Id || n.CardThumbnailMediaAssetId == x.Id)
             && !db.PitfEditions.Any(p => p.CoverMediaAssetId == x.Id || p.LogoMediaAssetId == x.Id)
+            && !db.StaticPages.Any(p => p.FeaturedMediaAssetId == x.Id || p.ParallaxMediaAssetId == x.Id || p.SocialSharingMediaAssetId == x.Id)
             && !db.TheatreInformation.Any(t => t.HeroBackgroundMediaAssetId == x.Id || t.AboutPreviewMediaAssetId == x.Id
                 || t.ReservationBannerMediaAssetId == x.Id || t.PitfFeatureMediaAssetId == x.Id || t.PitfPageMediaAssetId == x.Id
                 || t.LogoMediaAssetId == x.Id || t.FaviconMediaAssetId == x.Id || t.SocialSharingMediaAssetId == x.Id));
@@ -51,6 +49,7 @@ public sealed class AdminMediaController(AppDbContext db, IWebHostEnvironment en
             + db.GalleryAlbums.Count(g => g.CoverMediaAssetId == x.Id)
             + db.NewsArticles.Count(n => n.CoverMediaAssetId == x.Id || n.CardThumbnailMediaAssetId == x.Id)
             + db.PitfEditions.Count(p => p.CoverMediaAssetId == x.Id || p.LogoMediaAssetId == x.Id)
+            + db.StaticPages.Count(p => p.FeaturedMediaAssetId == x.Id || p.ParallaxMediaAssetId == x.Id || p.SocialSharingMediaAssetId == x.Id)
             + db.TheatreInformation.Count(t => t.HeroBackgroundMediaAssetId == x.Id || t.AboutPreviewMediaAssetId == x.Id
                 || t.ReservationBannerMediaAssetId == x.Id || t.PitfFeatureMediaAssetId == x.Id || t.PitfPageMediaAssetId == x.Id
                 || t.LogoMediaAssetId == x.Id || t.FaviconMediaAssetId == x.Id || t.SocialSharingMediaAssetId == x.Id))).ToListAsync(token);
@@ -72,6 +71,7 @@ public sealed class AdminMediaController(AppDbContext db, IWebHostEnvironment en
             + db.GalleryAlbums.Count(g => g.CoverMediaAssetId == x.Id)
             + db.NewsArticles.Count(n => n.CoverMediaAssetId == x.Id || n.CardThumbnailMediaAssetId == x.Id)
             + db.PitfEditions.Count(p => p.CoverMediaAssetId == x.Id || p.LogoMediaAssetId == x.Id)
+            + db.StaticPages.Count(p => p.FeaturedMediaAssetId == x.Id || p.ParallaxMediaAssetId == x.Id || p.SocialSharingMediaAssetId == x.Id)
             + db.TheatreInformation.Count(t => t.HeroBackgroundMediaAssetId == x.Id || t.AboutPreviewMediaAssetId == x.Id
                 || t.ReservationBannerMediaAssetId == x.Id || t.PitfFeatureMediaAssetId == x.Id || t.PitfPageMediaAssetId == x.Id
                 || t.LogoMediaAssetId == x.Id || t.FaviconMediaAssetId == x.Id || t.SocialSharingMediaAssetId == x.Id))).FirstOrDefaultAsync(token);
@@ -117,16 +117,25 @@ public sealed class AdminMediaController(AppDbContext db, IWebHostEnvironment en
             if (info.SocialSharingMediaAssetId == id) roles.Add("Social sharing image");
             if (roles.Count > 0) result.Add(new AdminMediaUsageDto("Website", info.Id, "Website information", string.Join(", ", roles), "/admin/website-information"));
         }
+        var pages = await db.StaticPages.AsNoTracking().Include(x => x.Translations).ThenInclude(x => x.Language)
+            .Where(x => x.FeaturedMediaAssetId == id || x.ParallaxMediaAssetId == id || x.SocialSharingMediaAssetId == id).ToListAsync(token);
+        result.AddRange(pages.Select(x => new AdminMediaUsageDto("Static page", x.Id,
+            x.Translations.FirstOrDefault(t => t.Language.Code == "sq")?.Title ?? x.PageKey,
+            x.FeaturedMediaAssetId == id ? "Featured image" : x.ParallaxMediaAssetId == id ? "Parallax image" : "Social sharing image",
+            $"/admin/pages/{x.Id}")));
         return Ok(result);
     }
 
     [HttpPost]
     public async Task<ActionResult<AdminMediaDto>> Upload(IFormFile file, CancellationToken token)
     {
-        if (file.Length == 0 || file.Length > 50 * 1024 * 1024) return ValidationProblem("File must be between 1 byte and 50 MB.");
-        var extension = Path.GetExtension(file.FileName).ToLowerInvariant();
-        if (!Allowed.TryGetValue(file.ContentType, out var extensions) || !extensions.Contains(extension))
-            return ValidationProblem("The file type, extension, or MIME type is not allowed.");
+        var validated = await UploadFileValidator.ValidateAsync(file, Uploads, token);
+        if (validated is null)
+        {
+            await RecordFailedUploadAsync(file, token);
+            return ValidationProblem($"The file is empty, larger than {Uploads.MaxBytes / 1024 / 1024} MB, or its contents do not match an allowed file type.");
+        }
+        var extension = validated.Extension;
         await using var input = file.OpenReadStream();
         var hash = Convert.ToHexString(await SHA256.HashDataAsync(input, token));
         var duplicate = await db.MediaAssets.AsNoTracking().FirstOrDefaultAsync(x => x.IsActive && x.ContentHash == hash, token);
@@ -139,7 +148,7 @@ public sealed class AdminMediaController(AppDbContext db, IWebHostEnvironment en
         var path = Path.Combine(folder, storedName);
         await using (var stream = System.IO.File.Create(path)) await input.CopyToAsync(stream, token);
         var asset = new MediaAsset { FileName = Path.GetFileName(file.FileName), FileUrl = $"/uploads/admin/{clock.UtcNow:yyyy-MM}/{storedName}",
-            MimeType = file.ContentType, FileSize = file.Length, ContentHash = hash, UploadedAt = clock.UtcNow, IsActive = true };
+            MimeType = validated.MimeType, FileSize = file.Length, ContentHash = hash, UploadedAt = clock.UtcNow, IsActive = true };
         db.MediaAssets.Add(asset); await db.SaveChangesAsync(token);
         return CreatedAtAction(nameof(List), new { search = asset.FileName }, new AdminMediaDto(asset.Id, asset.FileUrl, asset.FileName, asset.MimeType, null, null, asset.FileSize, true, asset.UploadedAt, null, null, null, null, null, 0));
     }
@@ -163,10 +172,13 @@ public sealed class AdminMediaController(AppDbContext db, IWebHostEnvironment en
     {
         var asset = await db.MediaAssets.Include(x => x.Translations).FirstOrDefaultAsync(x => x.Id == id && x.IsActive, token);
         if (asset is null) return NotFound();
-        if (file.Length == 0 || file.Length > 50 * 1024 * 1024) return ValidationProblem("File must be between 1 byte and 50 MB.");
-        var extension = Path.GetExtension(file.FileName).ToLowerInvariant();
-        if (!Allowed.TryGetValue(file.ContentType, out var extensions) || !extensions.Contains(extension))
-            return ValidationProblem("The file type, extension, or MIME type is not allowed.");
+        var validated = await UploadFileValidator.ValidateAsync(file, Uploads, token);
+        if (validated is null)
+        {
+            await RecordFailedUploadAsync(file, token);
+            return ValidationProblem($"The file is empty, larger than {Uploads.MaxBytes / 1024 / 1024} MB, or its contents do not match an allowed file type.");
+        }
+        var extension = validated.Extension;
         await using var input = file.OpenReadStream();
         var hash = Convert.ToHexString(await SHA256.HashDataAsync(input, token));
         if (await db.MediaAssets.AnyAsync(x => x.Id != id && x.IsActive && x.ContentHash == hash, token))
@@ -177,14 +189,16 @@ public sealed class AdminMediaController(AppDbContext db, IWebHostEnvironment en
         var storedName = $"{Guid.NewGuid():N}{extension}";
         var path = Path.Combine(folder, storedName);
         await using (var output = System.IO.File.Create(path)) await input.CopyToAsync(output, token);
+        var previousFileUrl = asset.FileUrl;
         asset.FileUrl = $"/uploads/admin/{clock.UtcNow:yyyy-MM}/{storedName}";
         asset.FileName = Path.GetFileName(file.FileName);
-        asset.MimeType = file.ContentType;
+        asset.MimeType = validated.MimeType;
         asset.FileSize = file.Length;
         asset.ContentHash = hash;
         asset.Width = null;
         asset.Height = null;
         await db.SaveChangesAsync(token);
+        DeleteManagedFile(previousFileUrl);
         return Ok(new AdminMediaDto(asset.Id, asset.FileUrl, asset.FileName, asset.MimeType, asset.Width, asset.Height,
             asset.FileSize, asset.IsActive, asset.UploadedAt,
             asset.Translations.FirstOrDefault(x => x.LanguageId == 1)?.AltText,
@@ -205,6 +219,7 @@ public sealed class AdminMediaController(AppDbContext db, IWebHostEnvironment en
             || await db.PitfEditions.AnyAsync(x => x.CoverMediaAssetId == id || x.LogoMediaAssetId == id, token)
             || await db.GalleryAlbums.AnyAsync(x => x.CoverMediaAssetId == id, token)
             || await db.GalleryAlbumMedia.AnyAsync(x => x.MediaAssetId == id, token)
+            || await db.StaticPages.AnyAsync(x => x.FeaturedMediaAssetId == id || x.ParallaxMediaAssetId == id || x.SocialSharingMediaAssetId == id, token)
             || await db.TheatreInformation.AnyAsync(x => x.HeroBackgroundMediaAssetId == id
                 || x.AboutPreviewMediaAssetId == id || x.ReservationBannerMediaAssetId == id
                 || x.PitfFeatureMediaAssetId == id || x.PitfPageMediaAssetId == id
@@ -223,6 +238,17 @@ public sealed class AdminMediaController(AppDbContext db, IWebHostEnvironment en
         item.AltText = Clean(alt); item.Caption = Clean(caption);
     }
     private static string? Clean(string? value) => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+
+    private async Task RecordFailedUploadAsync(IFormFile file, CancellationToken token)
+    {
+        db.OperationalEvents.Add(new OperationalEvent
+        {
+            EventType = "FailedUpload", Severity = "Warning",
+            Summary = $"Rejected upload '{Path.GetFileName(file.FileName)}' ({file.Length} bytes, declared as {file.ContentType}).",
+            RequestPath = Request.Path, CorrelationId = HttpContext.TraceIdentifier, CreatedAt = clock.UtcNow
+        });
+        await db.SaveChangesAsync(token);
+    }
 
     private void DeleteManagedFile(string fileUrl)
     {

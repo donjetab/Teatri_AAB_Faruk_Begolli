@@ -6,6 +6,7 @@ import { Header } from './Header'
 import { getHome } from '../../api/home'
 import { getNavigation } from '../../api/navigation'
 import { getLanguageFromPath, getLocalizedPath, getRouteKey } from '../../routes/localizedRoutes'
+import { setPageMetadata, setStructuredData } from '../../utils/seo'
 
 const seoContent = {
   sq: {
@@ -156,6 +157,10 @@ export function AppLayout() {
     getHome(language, controller.signal)
       .then((data) => {
         setHomepageMeta({
+          theatreName: data.theatreName,
+          address: data.address,
+          phone: data.phone,
+          email: data.email,
           reservationUrl: data.reservationUrl,
           facebookUrl: data.facebookUrl,
           instagramUrl: data.instagramUrl,
@@ -179,26 +184,40 @@ export function AppLayout() {
   useEffect(() => {
     const content = seoContent[language]?.[routeKey] ?? seoContent.sq.home
     const origin = window.location.origin
+    const basePath = import.meta.env.BASE_URL.replace(/\/$/, '')
 
-    document.title = content.title
-    setMetaDescription(content.description)
+    setPageMetadata({ title: content.title, description: content.description })
 
     upsertLink('canonical', {
-      href: `${origin}${getLocalizedPath(routeKey, language)}`,
+      href: `${origin}${basePath}${getLocalizedPath(routeKey, language)}`,
     })
     upsertLink('alternate', {
       hreflang: 'sq',
-      href: `${origin}${getLocalizedPath(routeKey, 'sq')}`,
+      href: `${origin}${basePath}${getLocalizedPath(routeKey, 'sq')}`,
     })
     upsertLink('alternate', {
       hreflang: 'en',
-      href: `${origin}${getLocalizedPath(routeKey, 'en')}`,
+      href: `${origin}${basePath}${getLocalizedPath(routeKey, 'en')}`,
     })
     upsertLink('alternate', {
       hreflang: 'x-default',
-      href: `${origin}${getLocalizedPath(routeKey, 'sq')}`,
+      href: `${origin}${basePath}${getLocalizedPath(routeKey, 'sq')}`,
     })
   }, [language, routeKey])
+
+  useEffect(() => {
+    if (!homepageMeta) return undefined
+    return setStructuredData('theatre', {
+      '@context': 'https://schema.org',
+      '@type': 'PerformingArtsTheater',
+      name: homepageMeta.theatreName,
+      url: window.location.origin,
+      address: homepageMeta.address,
+      telephone: homepageMeta.phone,
+      email: homepageMeta.email,
+      sameAs: [homepageMeta.facebookUrl, homepageMeta.instagramUrl].filter(Boolean),
+    })
+  }, [homepageMeta])
 
   useEffect(() => {
     const main = document.querySelector('.site-main')

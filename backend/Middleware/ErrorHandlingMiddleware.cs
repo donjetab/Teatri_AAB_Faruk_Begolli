@@ -3,10 +3,12 @@ using System.Text.Json;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Theatre.Api.Services;
+using Theatre.Api.Data;
+using Theatre.Api.Models;
 
 namespace Theatre.Api.Middleware;
 
-public sealed class ErrorHandlingMiddleware(RequestDelegate next, ILogger<ErrorHandlingMiddleware> logger)
+public sealed class ErrorHandlingMiddleware(RequestDelegate next, ILogger<ErrorHandlingMiddleware> logger, IServiceScopeFactory scopeFactory)
 {
     public async Task InvokeAsync(HttpContext context)
     {
@@ -26,12 +28,34 @@ public sealed class ErrorHandlingMiddleware(RequestDelegate next, ILogger<ErrorH
         {
             logger.LogWarning(ex, "Database rejected a request with SQL error {ErrorNumber}", sqlException.Number);
             var (status, title, detail) = DatabaseProblem(sqlException);
+            if ((int)status >= 500) await RecordAsync(context, "DatabaseError", detail);
             await WriteProblemAsync(context, status, title, detail);
         }
         catch (Exception ex)
         {
             logger.LogError(ex, "Unhandled request exception");
+            await RecordAsync(context, "ApplicationError", "An unexpected server error occurred. Review server logs using the correlation ID.");
             await WriteProblemAsync(context, HttpStatusCode.InternalServerError, "Server error", "An unexpected error occurred.");
+        }
+    }
+
+    private async Task RecordAsync(HttpContext context, string eventType, string summary)
+    {
+        try
+        {
+            await using var scope = scopeFactory.CreateAsyncScope();
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            db.OperationalEvents.Add(new OperationalEvent
+            {
+                EventType = eventType, Severity = "Error", Summary = summary,
+                RequestPath = context.Request.Path, CorrelationId = context.TraceIdentifier,
+                CreatedAt = DateTimeOffset.UtcNow
+            });
+            await db.SaveChangesAsync(context.RequestAborted);
+        }
+        catch (Exception persistenceError)
+        {
+            logger.LogWarning(persistenceError, "Could not persist operational error {CorrelationId}", context.TraceIdentifier);
         }
     }
 
@@ -78,7 +102,8 @@ public sealed class ErrorHandlingMiddleware(RequestDelegate next, ILogger<ErrorH
             type = $"https://httpstatuses.com/{(int)statusCode}",
             title,
             status = (int)statusCode,
-            detail
+            detail,
+            correlationId = context.TraceIdentifier
         };
 
         await context.Response.WriteAsync(JsonSerializer.Serialize(problem, new JsonSerializerOptions(JsonSerializerDefaults.Web)));

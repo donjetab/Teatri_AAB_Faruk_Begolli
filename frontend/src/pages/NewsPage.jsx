@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useLocation, useParams, useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { getStaticPage } from '../api/staticPages'
@@ -15,6 +15,16 @@ import { LoadingState } from '../components/ui/LoadingState'
 import { ErrorState } from '../components/ui/ErrorState'
 
 const PAGE_SIZE = 9
+
+function VideoThumbnail({ src }) {
+  const ref = useRef(null)
+  const revealFrame = () => {
+    const video = ref.current
+    if (!video || !Number.isFinite(video.duration) || video.duration <= 0) return
+    video.currentTime = Math.min(0.5, video.duration / 10)
+  }
+  return <video ref={ref} className="news-card-video" src={src} muted playsInline preload="auto" onLoadedMetadata={revealFrame} aria-hidden="true" />
+}
 
 function getPaginationItems(currentPage, pageCount) {
   if (pageCount <= 7) {
@@ -153,7 +163,7 @@ export function NewsPage() {
                         article.cardThumbnailUrl ? (
                           <img className="news-card-image-cover news-card-custom-thumbnail" src={resolveMediaUrl(article.cardThumbnailUrl)} alt="" loading="lazy" />
                         ) : article.coverMimeType?.startsWith('video/') ? (
-                          <><video className="news-card-video" src={resolveMediaUrl(article.coverUrl)} muted preload="metadata" /><span className="news-card-play" aria-hidden="true">▶</span></>
+                          <><VideoThumbnail src={resolveMediaUrl(article.coverUrl)} /><span className="news-card-play" aria-hidden="true">▶</span></>
                         ) : (
                           <>
                             <img

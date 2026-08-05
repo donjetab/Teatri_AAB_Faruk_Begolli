@@ -40,6 +40,7 @@ import { UsersRolesPage } from './admin/pages/UsersRolesPage'
 import { ActivityLogPage } from './admin/pages/ActivityLogPage'
 import { BackupsSystemPage } from './admin/pages/BackupsSystemPage'
 import { SettingsPage } from './admin/pages/SettingsPage'
+import { SeoIssuesPage } from './admin/pages/SeoIssuesPage'
 import './admin/admin.css'
 
 function ShellPlaceholder() {
@@ -76,10 +77,10 @@ function App() {
           <Route path="pages" element={<StaticPagesPage />} />
           <Route path="messages" element={<MessagesPage />} />
           <Route path="subscribers" element={<SubscribersPage />} />
-          <Route path="navigation" element={<NavigationFooterPage />} />
-          <Route path="seo" element={<SectionPlaceholderPage />} />
+          <Route path="seo" element={<SeoIssuesPage />} />
           <Route path="media" element={<MediaLibraryPage />} />
           <Route element={<SuperAdminRoute />}>
+            <Route path="navigation" element={<NavigationFooterPage />} />
             <Route path="users" element={<UsersRolesPage />} />
             <Route path="activity" element={<ActivityLogPage />} />
             <Route path="backups" element={<BackupsSystemPage />} />

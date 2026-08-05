@@ -8,7 +8,7 @@ const groups = [
   { label: 'Overview', items: [['Dashboard', '/admin', '⌂'], ['Reservations', '/admin/reservations', '▣']] },
   { label: 'Content', items: [['Homepage', '/admin/homepage', '◇'], ['Shows / Plays', '/admin/shows', '◈'], ['Performances', '/admin/performances', '▦'], ['News', '/admin/news', '▤'], ['PITF', '/admin/pitf', '◉'], ['Gallery', '/admin/gallery', '▧'], ['Pages', '/admin/pages', '□']] },
   { label: 'Communication', items: [['Contact Messages', '/admin/messages', '✉'], ['Subscribers', '/admin/subscribers', '♧', true]] },
-  { label: 'Website', items: [['Website Information', '/admin/website-information', '⚙'], ['Navigation & Footer', '/admin/navigation', '☷'], ['Translations', '/admin/translations', '文'], ['SEO & Links', '/admin/seo', '↗'], ['Media Library', '/admin/media', '▣']] },
+  { label: 'Website', items: [['Website Information', '/admin/website-information', '⚙'], ['Navigation & Footer', '/admin/navigation', '☷', true], ['Translations', '/admin/translations', '文'], ['SEO & Links', '/admin/seo', '↗'], ['Media Library', '/admin/media', '▣']] },
   { label: 'Administration', restricted: true, items: [['Users & Roles', '/admin/users', '♙'], ['Activity Log', '/admin/activity', '◷'], ['Backups & System', '/admin/backups', '▰'], ['Settings', '/admin/settings', '⚙']] },
 ]
 
@@ -22,6 +22,11 @@ export function AdminLayout() {
   const title = groups.flatMap(g => g.items).find(([, path]) => path === location.pathname)?.[0] ?? 'Dashboard'
   const visibleGroups = groups.filter(g => !g.restricted || user?.role === 'SuperAdmin').map(group => ({ ...group, items: group.items.filter(([, , , superOnly]) => !superOnly || user?.role === 'SuperAdmin') }))
   const signOut = async () => { await logout(); navigate('/admin/login') }
+  useEffect(() => {
+    let robots = document.head.querySelector('meta[name="robots"]')
+    if (!robots) { robots = document.createElement('meta'); robots.name = 'robots'; document.head.appendChild(robots) }
+    robots.content = 'noindex, nofollow'
+  }, [])
 
   useEffect(() => {
     const closeOnOutsideClick = (event) => {

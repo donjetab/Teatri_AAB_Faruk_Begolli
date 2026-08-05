@@ -8,12 +8,13 @@ using Theatre.Api.Data;
 using Theatre.Api.DTOs;
 using Theatre.Api.Models;
 using Theatre.Api.Services;
+using Microsoft.Extensions.Options;
 
 namespace Theatre.Api.Controllers;
 
 [ApiController, Authorize(Policy = "SuperAdmin"), Route("api/admin/system")]
 public sealed class AdminSystemController(AppDbContext db, IPasswordHasher<AdminUser> hasher, IClock clock,
-    IWebHostEnvironment environment, IConfiguration configuration) : ControllerBase
+    IWebHostEnvironment environment, IOptions<UploadOptions> uploadOptions, IConfiguration configuration) : ControllerBase
 {
     [HttpGet("users")]
     public async Task<ActionResult<IReadOnlyList<AdminUserListDto>>> Users(CancellationToken token) => Ok(await db.AdminUsers
@@ -77,17 +78,45 @@ public sealed class AdminSystemController(AppDbContext db, IPasswordHasher<Admin
             .Distinct(StringComparer.OrdinalIgnoreCase).OrderBy(x => x).ToList());
     }
 
+    [HttpGet("activity-filters")]
+    public async Task<IActionResult> ActivityFilters(CancellationToken token)
+    {
+        var actions = await db.AdminActivities.AsNoTracking().Select(x => x.Action).Distinct().OrderBy(x => x).ToListAsync(token);
+        var entityTypes = await db.AdminActivities.AsNoTracking().Select(x => x.EntityType).Distinct().OrderBy(x => x).ToListAsync(token);
+        return Ok(new { actions, entityTypes });
+    }
+
     [HttpGet("activity")]
     public async Task<ActionResult<PagedResultDto<AdminActivityDto>>> ActivityLog([FromQuery] string? search, [FromQuery] string? action, [FromQuery] string? entityType, [FromQuery] string? adminName, [FromQuery] DateTimeOffset? from, [FromQuery] DateTimeOffset? to, [FromQuery] int page = 1, [FromQuery] int pageSize = 25, CancellationToken token = default)
     { page = Math.Max(1, page); pageSize = Math.Clamp(pageSize, 1, 100); var query = db.AdminActivities.AsNoTracking().AsQueryable(); if (!string.IsNullOrWhiteSpace(search)) query = query.Where(x => (x.Summary ?? "").Contains(search) || x.Action.Contains(search)); if (!string.IsNullOrWhiteSpace(action)) query = query.Where(x => x.Action == action); if (!string.IsNullOrWhiteSpace(entityType)) query = query.Where(x => x.EntityType == entityType); if (!string.IsNullOrWhiteSpace(adminName)) query = query.Where(x => (x.AdminUser != null && x.AdminUser.DisplayName == adminName) || x.AdminDisplayName == adminName); if (from.HasValue) query = query.Where(x => x.CreatedAt >= from); if (to.HasValue) query = query.Where(x => x.CreatedAt < to); var total = await query.CountAsync(token); var items = await query.OrderByDescending(x => x.CreatedAt).Skip((page - 1) * pageSize).Take(pageSize).Select(x => new AdminActivityDto(x.Id, x.AdminUser != null ? x.AdminUser.DisplayName : x.AdminDisplayName ?? "System", x.Action, x.EntityType, x.EntityId, x.Summary, x.CreatedAt)).ToListAsync(token); return Ok(new PagedResultDto<AdminActivityDto>(items, page, pageSize, total)); }
 
     [HttpGet("status")]
     public async Task<ActionResult<SystemStatusDto>> Status(CancellationToken token)
-    { var uploadRoot = Path.Combine(environment.WebRootPath ?? Path.Combine(environment.ContentRootPath, "wwwroot"), "uploads"); var files = Directory.Exists(uploadRoot) ? Directory.EnumerateFiles(uploadRoot, "*", SearchOption.AllDirectories).ToList() : []; long bytes = files.Sum(x => new FileInfo(x).Length); var mediaUrls = await db.MediaAssets.AsNoTracking().Select(x => x.FileUrl).ToListAsync(token); var broken = mediaUrls.Count(url => url.StartsWith("/uploads/") && !System.IO.File.Exists(Path.Combine(environment.WebRootPath!, url.TrimStart('/').Replace('/', Path.DirectorySeparatorChar)))); var connected = await db.Database.CanConnectAsync(token); return Ok(new SystemStatusDto(connected ? "Connected" : "Unavailable", bytes, files.Count, null, null, "Backups are managed externally; this application does not claim or trigger backups.", environment.EnvironmentName, Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "Unknown", broken, 0)); }
+    {
+        var webRoot = environment.WebRootPath ?? Path.Combine(environment.ContentRootPath, "wwwroot");
+        var uploadRoot = Path.Combine(webRoot, "uploads");
+        var files = Directory.Exists(uploadRoot) ? Directory.EnumerateFiles(uploadRoot, "*", SearchOption.AllDirectories).ToList() : [];
+        long bytes = files.Sum(x => new FileInfo(x).Length);
+        var media = await db.MediaAssets.AsNoTracking().Where(x => x.IsActive).Select(x => new { x.Id, x.FileName, x.FileUrl }).ToListAsync(token);
+        var broken = media.Where(x => !MediaStoragePath.Exists(environment, x.FileUrl)).Select(x => new BrokenMediaDto(x.Id, x.FileName, x.FileUrl)).ToList();
+        var connected = await db.Database.CanConnectAsync(token);
+        var recent = await db.OperationalEvents.AsNoTracking().Where(x => x.Severity == "Error").OrderByDescending(x => x.CreatedAt).Take(20)
+            .Select(x => new OperationalEventDto(x.Id, x.EventType, x.Severity, x.Summary, x.RequestPath, x.CorrelationId, x.CreatedAt)).ToListAsync(token);
+        var failedUploads = await db.OperationalEvents.CountAsync(x => x.EventType == "FailedUpload", token);
+        DateTimeOffset? databaseBackup = configuration.GetValue<DateTimeOffset?>("BackupStatus:LastDatabaseBackupAt");
+        DateTimeOffset? mediaBackup = configuration.GetValue<DateTimeOffset?>("BackupStatus:LastMediaBackupAt");
+        var provider = configuration["BackupStatus:Provider"];
+        var backupMessage = string.IsNullOrWhiteSpace(provider)
+            ? "Backups are managed externally; no provider has reported status to this application."
+            : $"Backup status is supplied by {provider}. This page never runs a backup or restore.";
+        return Ok(new SystemStatusDto(connected ? "Connected" : "Unavailable", bytes, files.Count, databaseBackup, mediaBackup,
+            backupMessage, environment.EnvironmentName, Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "Unknown",
+            broken.Count, failedUploads, broken, recent));
+    }
 
     [HttpGet("settings")]
     public async Task<ActionResult<AdminSettingsDto>> Settings(CancellationToken token)
-    { var languages = await db.Languages.AsNoTracking().Where(x => x.IsActive).OrderBy(x => x.Id).ToListAsync(token); return Ok(new AdminSettingsDto(languages.First(x => x.IsDefault).Code, languages.Select(x => x.Code).ToList(), 20, configuration.GetValue<long?>("Uploads:MaxBytes") ?? 20 * 1024 * 1024, ["image/jpeg", "image/png", "image/webp", "video/mp4"], "Locale based", "Locale based", true)); }
+    { var languages = await db.Languages.AsNoTracking().Where(x => x.IsActive).OrderBy(x => x.Id).ToListAsync(token); return Ok(new AdminSettingsDto(languages.First(x => x.IsDefault).Code, languages.Select(x => x.Code).ToList(), 20, uploadOptions.Value.MaxBytes, uploadOptions.Value.AllowedMimeTypes, "Locale based", "Locale based", true)); }
 
     [HttpPut("settings")]
     public async Task<ActionResult<AdminSettingsDto>> SaveSettings(SaveAdminSettingsRequest request, CancellationToken token)

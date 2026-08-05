@@ -13,7 +13,7 @@
         "width": 1920,
         "height": 730
       },
-      "aboutPreview": "Teatri AAB “Faruk Begolli” është themeluar në vitin 2015, si teatër i pavarur. Ёshtë një teatër me të gjitha komoditetet, i rrallë dhe i veçantë për hapësirën kosovare, i cili funksionon në kuadër të kampusit universitar të Kolegjit AAB, në qytetin e Prishtinës, Kosovë.",
+      "aboutPreview": "Teatri AAB “Faruk Begolli” është themeluar në vitin 2016, si teatër i pavarur. Ёshtë një teatër me të gjitha komoditetet, i rrallë dhe i veçantë për hapësirën kosovare, i cili funksionon në kuadër të kampusit universitar të Kolegjit AAB, në qytetin e Prishtinës, Kosovë.",
       "aboutImage": {
         "id": 3,
         "url": "/uploads/dev/homepage/about-preview-per-ne.jpg",
@@ -23,7 +23,7 @@
         "height": 600
       },
       "statistics": {
-        "foundedYear": 2009,
+        "foundedYear": 2016,
         "performancesCount": 120,
         "spectatorsCount": 45000
       },
@@ -35,20 +35,9 @@
           "isFallbackTranslation": false,
           "posterUrl": "/uploads/dev/shows/bretkosa-poster.png",
           "director": "Burbuqe Berisha",
-          "nearestPerformanceDateUtc": "2030-09-08T19:00:00+00:00",
+          "nearestPerformanceDateUtc": "2026-10-14T15:00:00+00:00",
           "performanceStatus": "Scheduled",
-          "ticketUrl": "https://example.com/reservations"
-        },
-        {
-          "id": 2,
-          "title": "Qeni i Baskërvilëve",
-          "slug": "qeni-i-baskervileve",
-          "isFallbackTranslation": false,
-          "posterUrl": "/uploads/dev/shows/qeni-i-baskervileve-poster.jpg",
-          "director": "Jon Saqipi",
-          "nearestPerformanceDateUtc": "2030-09-11T19:00:00+00:00",
-          "performanceStatus": "Scheduled",
-          "ticketUrl": "https://example.com/reservations"
+          "ticketUrl": null
         },
         {
           "id": 3,
@@ -57,9 +46,9 @@
           "isFallbackTranslation": false,
           "posterUrl": "/uploads/dev/shows/rrena-poster.jpg",
           "director": "Agon Myftari",
-          "nearestPerformanceDateUtc": "2030-09-15T19:00:00+00:00",
+          "nearestPerformanceDateUtc": "2026-10-14T15:00:00+00:00",
           "performanceStatus": "Scheduled",
-          "ticketUrl": "https://example.com/reservations"
+          "ticketUrl": "https://rezervo.teatriaab.com"
         }
       ],
       "pitfFeatured": {
@@ -89,7 +78,7 @@
       },
       "reservationTitle": "Rezervo vendin tënd tani",
       "reservationText": "Zgjidh shfaqjen dhe siguro vendin per mbremjen e radhes ne teatrin tone.",
-      "reservationUrl": "https://example.com/reservations",
+      "reservationUrl": "https://rezervo.teatriaab.com/",
       "address": "Prishtine, Kosove",
       "phone": "+383 44 000 000",
       "email": "info@teatriaab.org",
@@ -116,8 +105,8 @@
         "posterUrl": "/uploads/dev/shows/rrena-poster.jpg",
         "director": "Agon Myftari",
         "premiereDate": "2024-12-05",
-        "nextPerformanceDateUtc": "2030-09-15T19:00:00+00:00",
-        "reservationUrl": "https://example.com/reservations"
+        "nextPerformanceDateUtc": "2026-10-14T15:00:00+00:00",
+        "reservationUrl": "https://rezervo.teatriaab.com"
       },
       {
         "id": 11,
@@ -160,8 +149,8 @@
         "posterUrl": "/uploads/dev/shows/qeni-i-baskervileve-poster.jpg",
         "director": "Jon Saqipi",
         "premiereDate": "2024-02-29",
-        "nextPerformanceDateUtc": "2030-09-11T19:00:00+00:00",
-        "reservationUrl": "https://example.com/reservations"
+        "nextPerformanceDateUtc": null,
+        "reservationUrl": null
       },
       {
         "id": 8,
@@ -193,8 +182,8 @@
         "posterUrl": "/uploads/dev/shows/bretkosa-poster.png",
         "director": "Burbuqe Berisha",
         "premiereDate": "2018-12-26",
-        "nextPerformanceDateUtc": "2030-09-08T19:00:00+00:00",
-        "reservationUrl": "https://example.com/reservations"
+        "nextPerformanceDateUtc": "2026-10-14T15:00:00+00:00",
+        "reservationUrl": null
       },
       {
         "id": 6,
@@ -428,8 +417,8 @@
             ]
           }
         ],
-        "nextPerformanceDateUtc": "2030-09-15T19:00:00+00:00",
-        "reservationUrl": "https://example.com/reservations"
+        "nextPerformanceDateUtc": "2026-10-14T15:00:00+00:00",
+        "reservationUrl": "https://rezervo.teatriaab.com"
       },
       "gjirafa-dhe-buburreci": {
         "id": 11,
@@ -733,8 +722,8 @@
             ]
           }
         ],
-        "nextPerformanceDateUtc": "2030-09-11T19:00:00+00:00",
-        "reservationUrl": "https://example.com/reservations"
+        "nextPerformanceDateUtc": null,
+        "reservationUrl": null
       },
       "brinat": {
         "id": 8,
@@ -958,8 +947,8 @@
             ]
           }
         ],
-        "nextPerformanceDateUtc": "2030-09-08T19:00:00+00:00",
-        "reservationUrl": "https://example.com/reservations"
+        "nextPerformanceDateUtc": "2026-10-14T15:00:00+00:00",
+        "reservationUrl": null
       },
       "per-caj-te-hillary": {
         "id": 6,
@@ -6720,7 +6709,7 @@
         "width": 1920,
         "height": 730
       },
-      "aboutPreview": "The AAB “Faruk Begolli” Theater was founded in 2015, as an independent theater. It is a theater with all the amenities, rare and special for the Kosovar space, which operates within the university campus of the AAB College, in the city of Pristina, Kosovo.",
+      "aboutPreview": "The AAB “Faruk Begolli” Theatre was founded in 2016 as an independent theatre. It offers a rare and distinctive theatrical space in Kosovo and operates within the AAB College university campus in Pristina, Kosovo.",
       "aboutImage": {
         "id": 3,
         "url": "/uploads/dev/homepage/about-preview-per-ne.jpg",
@@ -6730,7 +6719,7 @@
         "height": 600
       },
       "statistics": {
-        "foundedYear": 2009,
+        "foundedYear": 2016,
         "performancesCount": 120,
         "spectatorsCount": 45000
       },
@@ -6738,35 +6727,24 @@
         {
           "id": 1,
           "title": "Bretkosa",
-          "slug": "bretkosa-en",
+          "slug": "bretkosa",
           "isFallbackTranslation": false,
           "posterUrl": "/uploads/dev/shows/bretkosa-poster.png",
           "director": "Burbuqe Berisha",
-          "nearestPerformanceDateUtc": "2030-09-08T19:00:00+00:00",
+          "nearestPerformanceDateUtc": "2026-10-14T15:00:00+00:00",
           "performanceStatus": "Scheduled",
-          "ticketUrl": "https://example.com/reservations"
-        },
-        {
-          "id": 2,
-          "title": "Qeni i Baskërvilëve",
-          "slug": "qeni-i-baskervileve-en",
-          "isFallbackTranslation": false,
-          "posterUrl": "/uploads/dev/shows/qeni-i-baskervileve-poster.jpg",
-          "director": "Jon Saqipi",
-          "nearestPerformanceDateUtc": "2030-09-11T19:00:00+00:00",
-          "performanceStatus": "Scheduled",
-          "ticketUrl": "https://example.com/reservations"
+          "ticketUrl": null
         },
         {
           "id": 3,
           "title": "Rrèna",
-          "slug": "rrena-en",
+          "slug": "rrena",
           "isFallbackTranslation": false,
           "posterUrl": "/uploads/dev/shows/rrena-poster.jpg",
           "director": "Agon Myftari",
-          "nearestPerformanceDateUtc": "2030-09-15T19:00:00+00:00",
+          "nearestPerformanceDateUtc": "2026-10-14T15:00:00+00:00",
           "performanceStatus": "Scheduled",
-          "ticketUrl": "https://example.com/reservations"
+          "ticketUrl": "https://rezervo.teatriaab.com"
         }
       ],
       "pitfFeatured": {
@@ -6796,7 +6774,7 @@
       },
       "reservationTitle": "Reserve your seat now",
       "reservationText": "Choose a performance and secure your place for the next evening at our theatre.",
-      "reservationUrl": "https://example.com/reservations",
+      "reservationUrl": "https://rezervo.teatriaab.com/",
       "address": "Pristina, Kosovo",
       "phone": "+383 44 000 000",
       "email": "info@teatriaab.org",
@@ -6823,8 +6801,8 @@
         "posterUrl": "/uploads/dev/shows/rrena-poster.jpg",
         "director": "Agon Myftari",
         "premiereDate": "2024-12-05",
-        "nextPerformanceDateUtc": "2030-09-15T19:00:00+00:00",
-        "reservationUrl": "https://example.com/reservations"
+        "nextPerformanceDateUtc": "2026-10-14T15:00:00+00:00",
+        "reservationUrl": "https://rezervo.teatriaab.com"
       },
       {
         "id": 11,
@@ -6867,8 +6845,8 @@
         "posterUrl": "/uploads/dev/shows/qeni-i-baskervileve-poster.jpg",
         "director": "Jon Saqipi",
         "premiereDate": "2024-02-29",
-        "nextPerformanceDateUtc": "2030-09-11T19:00:00+00:00",
-        "reservationUrl": "https://example.com/reservations"
+        "nextPerformanceDateUtc": null,
+        "reservationUrl": null
       },
       {
         "id": 8,
@@ -6900,8 +6878,8 @@
         "posterUrl": "/uploads/dev/shows/bretkosa-poster.png",
         "director": "Burbuqe Berisha",
         "premiereDate": "2018-12-26",
-        "nextPerformanceDateUtc": "2030-09-08T19:00:00+00:00",
-        "reservationUrl": "https://example.com/reservations"
+        "nextPerformanceDateUtc": "2026-10-14T15:00:00+00:00",
+        "reservationUrl": null
       },
       {
         "id": 6,
@@ -7135,8 +7113,8 @@
             ]
           }
         ],
-        "nextPerformanceDateUtc": "2030-09-15T19:00:00+00:00",
-        "reservationUrl": "https://example.com/reservations"
+        "nextPerformanceDateUtc": "2026-10-14T15:00:00+00:00",
+        "reservationUrl": "https://rezervo.teatriaab.com"
       },
       "gjirafa-dhe-buburreci": {
         "id": 11,
@@ -7440,8 +7418,8 @@
             ]
           }
         ],
-        "nextPerformanceDateUtc": "2030-09-11T19:00:00+00:00",
-        "reservationUrl": "https://example.com/reservations"
+        "nextPerformanceDateUtc": null,
+        "reservationUrl": null
       },
       "brinat": {
         "id": 8,
@@ -7665,8 +7643,8 @@
             ]
           }
         ],
-        "nextPerformanceDateUtc": "2030-09-08T19:00:00+00:00",
-        "reservationUrl": "https://example.com/reservations"
+        "nextPerformanceDateUtc": "2026-10-14T15:00:00+00:00",
+        "reservationUrl": null
       },
       "per-caj-te-hillary": {
         "id": 6,

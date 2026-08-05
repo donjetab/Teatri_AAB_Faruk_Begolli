@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { adminApi } from '../api'
 import { LoadingSkeleton, PageHeader, StatusBadge, Toast } from '../components/AdminUi'
 import { useAdminDialog } from '../components/AdminDialog'
@@ -28,6 +29,7 @@ const payload = form => ({
 })
 
 export function PerformancesPage() {
+  const [searchParams, setSearchParams] = useSearchParams()
   const dialog = useAdminDialog()
   const [data, setData] = useState(null)
   const [filters, setFilters] = useState({ showId: '', locationId: '', status: '' })
@@ -94,6 +96,13 @@ export function PerformancesPage() {
       internalNotes: item.internalNotes ?? '',
     })
   }
+  useEffect(() => {
+    const requestedId = Number(searchParams.get('performance'))
+    if (!requestedId || editing) return
+    adminApi.performance(requestedId)
+      .then(item => { openEdit(item); setSearchParams({}, { replace: true }) })
+      .catch(() => { setToast('The selected performance could not be found.'); setSearchParams({}, { replace: true }) })
+  }, [searchParams, editing])
   const save = async event => {
     event.preventDefault()
     if (editing === 'new' && new Date(form.startDateTimeUtc) < new Date()) {
@@ -101,8 +110,9 @@ export function PerformancesPage() {
       return
     }
     setDateError('')
-    if (form.status !== 'SoldOut' && !form.ticketUrl.trim() && !form.contactPhone.trim()) {
-      setBookingError('Add at least one booking method: a ticket URL or a contact phone number.')
+    const bookingIsOptional = ['SoldOut', 'Completed', 'Cancelled'].includes(form.status) || new Date(form.startDateTimeUtc) < new Date()
+    if (!bookingIsOptional && !form.ticketUrl.trim() && !form.contactPhone.trim()) {
+      setBookingError('Add at least one booking method for an upcoming performance: a ticket URL or a contact phone number.')
       return
     }
     setBookingError('')
@@ -239,7 +249,7 @@ export function PerformancesPage() {
             {form.venueChoice === 'add' && <div className="add-venue-fields full"><label>Venue name — Albanian *<input required value={form.newVenueNameSq} onChange={event => setForm({ ...form, newVenueNameSq: event.target.value })} placeholder="Teatri Kombëtar i Kosovës" /></label><label>Venue name — English *<input required value={form.newVenueNameEn} onChange={event => setForm({ ...form, newVenueNameEn: event.target.value })} placeholder="National Theatre of Kosovo" /></label><label>Address — Albanian *<input required value={form.newVenueAddressSq} onChange={event => setForm({ ...form, newVenueAddressSq: event.target.value })} placeholder="Prishtinë, Kosovë" /></label><label>Address — English *<input required value={form.newVenueAddressEn} onChange={event => setForm({ ...form, newVenueAddressEn: event.target.value })} placeholder="Pristina, Kosovo" /></label><button type="button" className="admin-outline-button" disabled={savingVenue || !form.newVenueNameSq.trim() || !form.newVenueNameEn.trim() || !form.newVenueAddressSq.trim() || !form.newVenueAddressEn.trim()} onClick={addVenue}>{savingVenue ? 'Adding…' : 'Add venue to dropdown'}</button></div>}
             <label>Hall<input value={form.hall} onChange={event => setForm({ ...form, hall: event.target.value })} placeholder="Optional hall or stage" /></label>
             <label>Status<select value={form.status} onChange={event => { const status = event.target.value; setForm({ ...form, status, isPublished: status === 'Postponed' || status === 'Cancelled' ? true : form.isPublished }); if (status === 'SoldOut') setBookingError('') }}><option>Scheduled</option><option>SoldOut</option><option>Postponed</option><option>Cancelled</option><option>Completed</option></select></label>
-            {form.status !== 'SoldOut' && <><label>Ticket URL<input type="url" value={form.ticketUrl} onChange={event => { setForm({ ...form, ticketUrl: event.target.value }); if (event.target.value.trim() || form.contactPhone.trim()) setBookingError('') }} placeholder="Add a link or use the phone field" /></label><label>Contact phone<input value={form.contactPhone} onChange={event => { setForm({ ...form, contactPhone: event.target.value }); if (event.target.value.trim() || form.ticketUrl.trim()) setBookingError('') }} placeholder="Required when there is no ticket link" /></label><p className="admin-help booking-contact-help full">Add at least one booking method: a ticket URL or a contact phone number.</p></>}
+            {form.status !== 'SoldOut' && <><label>Ticket URL<input type="url" value={form.ticketUrl} onChange={event => { setForm({ ...form, ticketUrl: event.target.value }); if (event.target.value.trim() || form.contactPhone.trim()) setBookingError('') }} placeholder="Add a link or use the phone field" /></label><label>Contact phone<input value={form.contactPhone} onChange={event => { setForm({ ...form, contactPhone: event.target.value }); if (event.target.value.trim() || form.ticketUrl.trim()) setBookingError('') }} placeholder="Required for upcoming performances without a ticket link" /></label><p className="admin-help booking-contact-help full">Booking details are required for upcoming performances, but optional for past, completed or cancelled performances.</p></>}
             {form.status === 'SoldOut' && <div className="performance-sold-out-note full"><strong>Sold out</strong><span>Booking links and phone controls will be hidden on the public website.</span></div>}
             <label className="full">Internal notes<textarea rows="4" value={form.internalNotes} onChange={event => setForm({ ...form, internalNotes: event.target.value })} /></label>
             <label className="admin-switch-row full"><input type="checkbox" checked={form.isPublished} onChange={event => setForm({ ...form, isPublished: event.target.checked })} /> Published on the website</label>

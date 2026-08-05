@@ -12,7 +12,10 @@ public sealed record AdminActivityDto(long Id, string AdminName, string Action, 
     string? EntityId, string? Summary, DateTimeOffset CreatedAt);
 public sealed record SystemStatusDto(string DatabaseStatus, long MediaStorageBytes, int MediaFileCount,
     DateTimeOffset? LastDatabaseBackupAt, DateTimeOffset? LastMediaBackupAt, string BackupManagement,
-    string Environment, string ApplicationVersion, int BrokenMediaReferences, int FailedUploads);
+    string Environment, string ApplicationVersion, int BrokenMediaReferences, int FailedUploads,
+    IReadOnlyList<BrokenMediaDto> BrokenMedia, IReadOnlyList<OperationalEventDto> RecentErrors);
+public sealed record OperationalEventDto(long Id, string EventType, string Severity, string Summary,
+    string? RequestPath, string? CorrelationId, DateTimeOffset CreatedAt);
 public sealed record AdminSettingsDto(string DefaultLanguage, IReadOnlyList<string> SupportedLanguages,
     int DefaultPageSize, long MaximumUploadBytes, IReadOnlyList<string> AllowedUploadTypes,
     string DateFormat, string TimeFormat, bool MissingTranslationsBlockPublication);

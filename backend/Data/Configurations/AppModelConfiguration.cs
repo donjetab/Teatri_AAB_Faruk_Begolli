@@ -675,3 +675,17 @@ internal sealed class AdminActivityConfiguration : IEntityTypeConfiguration<Admi
         builder.HasIndex(x => x.CreatedAt);
     }
 }
+
+internal sealed class OperationalEventConfiguration : IEntityTypeConfiguration<OperationalEvent>
+{
+    public void Configure(EntityTypeBuilder<OperationalEvent> builder)
+    {
+        builder.Property(x => x.EventType).HasMaxLength(80).IsRequired();
+        builder.Property(x => x.Severity).HasMaxLength(20).IsRequired();
+        builder.Property(x => x.Summary).HasMaxLength(1000).IsRequired();
+        builder.Property(x => x.RequestPath).HasMaxLength(500);
+        builder.Property(x => x.CorrelationId).HasMaxLength(100);
+        builder.HasIndex(x => x.CreatedAt);
+        builder.HasIndex(x => new { x.EventType, x.CreatedAt });
+    }
+}

@@ -3,7 +3,6 @@ import { Link, useSearchParams } from 'react-router-dom'
 import { resolveMediaUrl } from '../../api/client'
 import { adminApi } from '../api'
 import { EmptyState, LoadingSkeleton, PageHeader, StatusBadge, Toast } from '../components/AdminUi'
-import { postersBySlug } from '../../assets/shows/showAssets'
 import { useAdminDialog } from '../components/AdminDialog'
 
 const initialFilters = { search: '', categoryId: '', status: '', lifecycleStatus: '', year: '', featured: '', sort: 'production', page: 1, pageSize: 20 }
@@ -75,7 +74,7 @@ export function AdminShowsPage() {
     </section>
     {loading ? <LoadingSkeleton rows={6} /> : !data?.items?.length ? <EmptyState title="No plays found" text="Try clearing the filters or create the first play." /> :
       <section className="admin-panel shows-table-panel"><div className="admin-table-wrap"><table className="admin-table shows-table"><thead><tr><th>Play</th><th>Category</th><th>Year</th><th>Publication</th><th>Performance</th><th>Updated</th><th aria-label="Actions" /></tr></thead><tbody>{data.items.map(show => <tr key={show.id}>
-        <td><div className="show-list-title">{(show.posterUrl || postersBySlug[show.slugSq]) ? <img src={show.posterUrl ? resolveMediaUrl(show.posterUrl) : postersBySlug[show.slugSq]} alt="" /> : <span className="show-poster-empty">◇</span>}<div><strong>{show.titleSq}</strong><small>{show.titleEn}{show.isFeatured ? ' · Featured' : ''}</small></div></div></td>
+        <td><div className="show-list-title">{show.posterUrl ? <img src={resolveMediaUrl(show.posterUrl)} alt="" /> : <span className="show-poster-empty">◇</span>}<div><strong>{show.titleSq}</strong><small>{show.titleEn}{show.isFeatured ? ' · Featured' : ''}</small></div></div></td>
         <td>{show.category}</td><td>{show.productionYear ?? '—'}</td><td><StatusBadge status={show.status} /></td><td><StatusBadge status={show.lifecycleStatus} /></td><td>{new Date(show.updatedAt).toLocaleDateString()}</td>
         <td><div className="table-actions"><Link to={`/admin/shows/${show.id}`}>Edit</Link><a href={`#/sq/shfaqjet/${show.slugSq}`} target="_blank">Preview</a>{show.status === 'Published' ? <button onClick={() => action(show, 'unpublish')}>Unpublish</button> : show.status === 'Archived' ? <button onClick={() => action(show, 'restore')}>Restore</button> : <button onClick={() => action(show, 'publish')}>Publish</button>}{show.status !== 'Archived' && <button onClick={() => action(show, 'archive')}>Archive</button>}<button className="danger" onClick={() => deletePlay(show)}>Delete</button></div></td>
       </tr>)}</tbody></table></div>

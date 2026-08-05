@@ -1,11 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { resolveMediaUrl } from '../../api/client'
-import { galleriesBySlug } from '../../assets/shows/showAssets'
 import { adminApi } from '../api'
 import { LoadingSkeleton, PageHeader, Toast } from '../components/AdminUi'
 import { MediaPicker } from '../components/MediaPicker'
-
-const displayName = slug => slug.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')
 
 export function GalleryManagementPage() {
   const [data, setData] = useState(null)
@@ -25,9 +22,8 @@ export function GalleryManagementPage() {
   useEffect(() => { void load() }, [])
 
   const showCards = useMemo(() => {
-    const local = Object.entries(galleriesBySlug).map(([slug, pictures]) => ({ id: `local-${slug}`, name: displayName(slug), pictures: pictures.map((src, index) => ({ id: `${slug}-${index}`, src })) }))
     const managed = (data?.items ?? []).filter(album => album.albumType === 'Show').map(album => ({ id: `managed-${album.id}`, name: album.relatedContent || album.titleSq, pictures: album.media.map(media => ({ id: media.id, src: resolveMediaUrl(media.fileUrl) })) }))
-    return [...local, ...managed].filter(card => !search.trim() || card.name.toLowerCase().includes(search.trim().toLowerCase()))
+    return managed.filter(card => !search.trim() || card.name.toLowerCase().includes(search.trim().toLowerCase()))
   }, [data, search])
   const openShow = showCards.find(card => card.id === openShowId)
   const uploaded = useMemo(() => (generalMedia ?? []).map(media => ({ id: `general-${media.id}`, mediaId: media.id, src: resolveMediaUrl(media.fileUrl), alt: media.altText ?? 'Teatri AAB Faruk Begolli', isFeatured: media.isFeatured })), [generalMedia])

@@ -21,7 +21,6 @@ public static class DevelopmentDataSeeder
         await EnsureTheatreInformationAsync(db, languages, media, now, cancellationToken);
         await EnsureShowsAsync(db, languages, media, category, creditTypes, location, now, cancellationToken);
         await EnsurePitfEditionAsync(db, languages, media, now, cancellationToken);
-        await NewsImportSeeder.SeedAsync(db, environment, languages, now, cancellationToken);
     }
 
     private static async Task<Dictionary<string, Language>> EnsureLanguagesAsync(AppDbContext db, CancellationToken cancellationToken)

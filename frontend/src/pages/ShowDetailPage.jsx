@@ -3,17 +3,12 @@ import { useTranslation } from 'react-i18next'
 import { Link, useParams } from 'react-router-dom'
 import { getShow } from '../api/shows'
 import { resolveMediaUrl } from '../api/client'
-import {
-  galleriesBySlug,
-  heroImagesBySlug,
-  postersBySlug,
-  trailersBySlug,
-} from '../assets/shows/showAssets'
 import smoke from '../assets/smoke_3.png'
 import theatreIcon from '../assets/acting-icon-gold.png'
 import { CalendarIcon, CreditIcon } from '../components/shows/CreditIcon'
 import { ErrorState } from '../components/ui/ErrorState'
 import { LoadingState } from '../components/ui/LoadingState'
+import { setPageMetadata } from '../utils/seo'
 
 function consolidateCredits(credits) {
   const actingCredits = credits.filter((credit) => credit.typeCode === 'cast')
@@ -70,11 +65,9 @@ export function ShowDetailPage() {
   const [visibleGalleryCount, setVisibleGalleryCount] = useState(3)
   const [selectedImageIndex, setSelectedImageIndex] = useState(null)
   const trailerRef = useRef(null)
-  const assetSlug = show?.slug || slug
   const databaseGallery = show?.gallery?.map(item => resolveMediaUrl(item.url)) ?? []
-  const localProjectGallery = show?.useLocalGalleryFallback === false ? [] : galleriesBySlug[assetSlug] ?? []
-  const galleryImages = [...new Set([...databaseGallery, ...localProjectGallery])]
-  const trailer = show?.trailerUrl ? resolveMediaUrl(show.trailerUrl) : trailersBySlug[assetSlug]
+  const galleryImages = [...new Set(databaseGallery)]
+  const trailer = show?.trailerUrl ? resolveMediaUrl(show.trailerUrl) : null
 
   useEffect(() => {
     const controller = new AbortController()
@@ -93,6 +86,16 @@ export function ShowDetailPage() {
 
     return () => controller.abort()
   }, [language, slug])
+
+  useEffect(() => {
+    if (!show) return
+    setPageMetadata({
+      title: `${show.title} | ${language === 'en' ? 'AAB Theatre “Faruk Begolli”' : 'Teatri AAB “Faruk Begolli”'}`,
+      description: show.synopsis?.slice(0, 160) || show.title,
+      image: resolveMediaUrl(show.posterUrl),
+      type: 'article',
+    })
+  }, [show, language])
 
   useEffect(() => {
     const updateVisibleCount = () => {
@@ -169,8 +172,8 @@ export function ShowDetailPage() {
     return <section className="show-detail-state"><ErrorState message={t('showDetail.loadError')} /></section>
   }
 
-  const poster = resolveMediaUrl(show.posterUrl) || postersBySlug[show.slug]
-  const heroImage = heroImagesBySlug[show.slug] ?? poster
+  const poster = resolveMediaUrl(show.posterUrl)
+  const heroImage = poster
   const visibleGalleryImages = galleryImages.slice(
     galleryStart,
     galleryStart + visibleGalleryCount,

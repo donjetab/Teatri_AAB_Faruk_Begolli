@@ -35,6 +35,12 @@ public sealed class NewsController(AppDbContext db) : ControllerBase
                 CoverUrl = x.CoverMediaAsset == null ? null : x.CoverMediaAsset.FileUrl,
                 CoverMimeType = x.CoverMediaAsset == null ? null : x.CoverMediaAsset.MimeType,
                 CardThumbnailUrl = x.CardThumbnailMediaAsset == null ? null : x.CardThumbnailMediaAsset.FileUrl,
+                GalleryVisual = x.GalleryAlbums.Where(album => album.IsPublished)
+                    .SelectMany(album => album.GalleryAlbumMedia)
+                    .OrderByDescending(media => media.IsCover)
+                    .ThenBy(media => media.DisplayOrder)
+                    .Select(media => new { media.MediaAsset.FileUrl, media.MediaAsset.MimeType })
+                    .FirstOrDefault(),
                 x.ArticleType,
                 x.ExternalUrl,
                 Requested = x.Translations.FirstOrDefault(t => t.LanguageId == requestedLanguageId),
@@ -53,8 +59,8 @@ public sealed class NewsController(AppDbContext db) : ControllerBase
                     translation.Slug,
                     translation.Summary,
                     x.PublishedAt,
-                    x.CoverUrl,
-                    x.CoverMimeType,
+                    x.CoverUrl ?? x.GalleryVisual?.FileUrl,
+                    x.CoverMimeType ?? x.GalleryVisual?.MimeType,
                     x.CardThumbnailUrl,
                     x.ArticleType == NewsArticleType.External,
                     x.ExternalUrl,

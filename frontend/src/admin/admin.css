@@ -2096,6 +2096,99 @@
   color: white;
 }
 
+.activity-details {
+  display: grid;
+  gap: 5px;
+  min-width: 220px;
+  white-space: normal;
+}
+
+.activity-details strong {
+  font-weight: 500;
+  line-height: 1.45;
+}
+
+.activity-details small {
+  color: var(--admin-muted);
+}
+
+.activity-filter-bar {
+  flex-wrap: wrap;
+  gap: 14px;
+  margin-bottom: 24px;
+}
+
+.activity-filter-bar > input:first-child {
+  min-width: 280px;
+}
+
+.activity-day-filter {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--admin-muted);
+  font-size: 0.72rem;
+  white-space: nowrap;
+}
+
+.activity-day-filter input {
+  min-width: 170px;
+  flex: none;
+}
+
+.activity-clear-filters {
+  height: 42px;
+  padding: 0 17px;
+  border: 1px solid var(--admin-border-soft);
+  border-radius: 11px;
+  background: transparent;
+  color: var(--admin-muted);
+  font: inherit;
+  cursor: pointer;
+  transition: border-color .2s ease, color .2s ease, background .2s ease;
+}
+
+.activity-clear-filters:hover {
+  border-color: var(--admin-red);
+  background: rgba(153, 27, 42, .12);
+  color: white;
+}
+
+.settings-destinations {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.settings-destinations a {
+  display: grid;
+  gap: 8px;
+  padding: 18px;
+  border: 1px solid var(--admin-border-soft);
+  border-radius: 12px;
+  color: white;
+  text-decoration: none;
+}
+
+.settings-destinations a:hover { border-color: var(--admin-red); }
+.settings-destinations span { color: var(--admin-muted); font-size: .72rem; }
+
+@media (max-width: 900px) {
+  .settings-destinations { grid-template-columns: 1fr; }
+  .activity-filter-bar > * {
+    width: 100%;
+  }
+
+  .activity-filter-bar > input:first-child,
+  .activity-day-filter input {
+    min-width: 0;
+  }
+
+  .activity-day-filter input {
+    flex: 1;
+  }
+}
+
 .private-detail {
   display: block;
   margin-top: 3px;
@@ -2218,6 +2311,19 @@
   background: var(--admin-red-strong);
   color: white;
   box-shadow: 0 8px 20px rgba(120, 20, 29, 0.26);
+}
+
+.admin-form.language-en .language-tabs button.active {
+  border-color: #527ca3;
+  background: #315b80;
+  box-shadow: 0 8px 20px rgba(49, 91, 128, 0.28);
+}
+
+.seo-issue-open {
+  min-width: 142px;
+  padding-inline: 20px;
+  justify-content: center;
+  white-space: nowrap;
 }
 
 .sticky-save {

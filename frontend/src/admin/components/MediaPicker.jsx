@@ -6,13 +6,16 @@ export function MediaPicker({ label, value, currentUrl, type = 'image/', onChang
   const [open, setOpen] = useState(false)
   const [data, setData] = useState(null)
   const [search, setSearch] = useState('')
+  const [page, setPage] = useState(1)
   const [uploading, setUploading] = useState(false)
   const [previewing, setPreviewing] = useState(false)
   useEffect(() => {
     if (!open) return
-    const timer = setTimeout(() => adminApi.media({ type, search, pageSize: 50 }).then(setData), 150)
+    const timer = setTimeout(() => adminApi.media({ type, search, page, pageSize: 100 }).then(result => {
+      setData(current => page === 1 ? result : { ...result, items: [...(current?.items ?? []), ...result.items] })
+    }), 150)
     return () => clearTimeout(timer)
-  }, [open, search, type])
+  }, [open, search, type, page])
   const current = data?.items?.find(x => x.id === value)
   const previewUrl = current?.fileUrl ?? currentUrl
   const isVideo = type.startsWith('video')
@@ -39,9 +42,10 @@ export function MediaPicker({ label, value, currentUrl, type = 'image/', onChang
   </div></>}{open && <div className="admin-modal-backdrop" onMouseDown={e => e.target === e.currentTarget && setOpen(false)}><section className="admin-modal">
     <div className="admin-modal-heading"><div><span>Media Library</span><h2>Select {isMixed ? 'image or video' : isVideo ? 'video' : 'image'}</h2></div><button type="button" onClick={() => setOpen(false)}>×</button></div>
     <div className="media-picker-toolbar">
-      <input className="media-picker-search" placeholder={`Search ${isMixed ? 'media' : isVideo ? 'videos' : 'images'}…`} value={search} onChange={e => setSearch(e.target.value)} />
+      <input className="media-picker-search" placeholder={`Search ${isMixed ? 'media' : isVideo ? 'videos' : 'images'}…`} value={search} onChange={e => { setSearch(e.target.value); setPage(1); setData(null) }} />
       <label className={`admin-primary-button ${uploading ? 'disabled' : ''}`}>{uploading ? 'Uploading…' : `Upload new ${isMixed ? 'media' : isVideo ? 'video' : 'image'}`}<input type="file" hidden disabled={uploading} accept={isMixed ? 'image/jpeg,image/png,image/webp,video/mp4' : isVideo ? 'video/mp4,video/webm,video/quicktime' : 'image/jpeg,image/png,image/webp'} onChange={upload} /></label>
     </div>
     <div className="media-picker-grid">{data?.items?.map(item => <button type="button" className={item.id === value ? 'selected' : ''} key={item.id} onClick={() => choose(item)}>{item.mimeType?.startsWith('video/') ? <video src={resolveMediaUrl(item.fileUrl)} muted preload="metadata" /> : <img src={resolveMediaUrl(item.fileUrl)} alt={item.altTextSq ?? ''} />}<span>{item.fileName}</span></button>)}</div>
+    {data && data.items.length < data.totalCount && <div className="admin-pagination"><span>Showing {data.items.length} of {data.totalCount}</span><button type="button" className="admin-outline-button" onClick={() => setPage(currentPage => currentPage + 1)}>Load more media</button></div>}
   </section></div>}{previewing && <div className="admin-modal-backdrop" onMouseDown={e => e.target === e.currentTarget && setPreviewing(false)}><section className="admin-modal page-image-preview"><button type="button" className="page-image-preview-close" onClick={() => setPreviewing(false)}>×</button>{previewIsVideo ? <video src={resolveMediaUrl(previewUrl)} controls autoPlay /> : <img src={resolveMediaUrl(previewUrl)} alt="Selected media preview" />}</section></div>}</div>
 }

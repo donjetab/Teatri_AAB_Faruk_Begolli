@@ -7,6 +7,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
 {
     public DbSet<AdminUser> AdminUsers => Set<AdminUser>();
     public DbSet<AdminActivity> AdminActivities => Set<AdminActivity>();
+    public DbSet<OperationalEvent> OperationalEvents => Set<OperationalEvent>();
     public DbSet<ContactMessage> ContactMessages => Set<ContactMessage>();
     public DbSet<CreditType> CreditTypes => Set<CreditType>();
     public DbSet<CreditTypeTranslation> CreditTypeTranslations => Set<CreditTypeTranslation>();

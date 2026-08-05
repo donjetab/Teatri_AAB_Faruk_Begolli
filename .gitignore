@@ -3,9 +3,12 @@ bin/
 obj/
 dist/
 build/
+.tmp-*/
+**/.tmp-*/
 
 # Dependencies
 node_modules/
+backups/
 
 # Environment and secrets
 .env

@@ -9,7 +9,6 @@ import { LoadingState } from '../components/ui/LoadingState'
 import showsHeaderBackground from '../assets/shows-header.jpg'
 import smoke from '../assets/smoke_3.png'
 import theatreIcon from '../assets/acting-icon-gold.png'
-import { postersBySlug } from '../assets/shows/showAssets'
 import { resolveMediaUrl } from '../api/client'
 
 const categoriesBySlug = {
@@ -109,8 +108,8 @@ export function ShowsPage() {
                   to={`/${language}/${language === 'en' ? 'shows' : 'shfaqjet'}/${show.slug}`}
                   aria-label={t('showsPage.openShow', { title: show.title })}
                 >
-                  {(show.posterUrl || postersBySlug[show.slug]) && <img
-                    src={show.posterUrl ? resolveMediaUrl(show.posterUrl) : postersBySlug[show.slug]}
+                  {show.posterUrl && <img
+                    src={resolveMediaUrl(show.posterUrl)}
                     alt={t('showsPage.posterAlt', { title: show.title })}
                     loading="lazy"
                   />}

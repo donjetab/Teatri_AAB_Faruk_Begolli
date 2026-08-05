@@ -7,6 +7,12 @@ using Theatre.Api.Data.Seed;
 using Theatre.Api.Middleware;
 using Theatre.Api.Services;
 using Theatre.Api.Models;
+using Microsoft.AspNetCore.HttpOverrides;
+using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.Extensions.Options;
+using System.Security.Claims;
+using System.Threading.RateLimiting;
+using Microsoft.AspNetCore.Authentication;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -24,16 +30,29 @@ builder.Services.AddSwaggerGen(options =>
 builder.Services.AddScoped<IHomepageService, HomepageService>();
 builder.Services.AddScoped<INewsletterService, NewsletterService>();
 builder.Services.AddScoped<IContactService, ContactService>();
-builder.Services.AddSingleton<IClock, SystemClock>();
+builder.Services.AddSingleton<IClock, Theatre.Api.Services.SystemClock>();
 builder.Services.AddHostedService<PerformanceStatusUpdater>();
 builder.Services.AddScoped<IPasswordHasher<AdminUser>, PasswordHasher<AdminUser>>();
+builder.Services.AddOptions<UploadOptions>()
+    .Bind(builder.Configuration.GetSection(UploadOptions.SectionName))
+    .Validate(x => x.MaxBytes is > 0 and <= 52_428_800, "Uploads:MaxBytes must be between 1 byte and 50 MB.")
+    .Validate(x => x.AllowedMimeTypes.Length > 0, "At least one upload MIME type must be configured.")
+    .ValidateOnStart();
+builder.Services.AddHealthChecks().AddCheck<DatabaseHealthCheck>("database");
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    options.AddPolicy("AdminLogin", context => RateLimitPartition.GetFixedWindowLimiter(
+        context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+        _ => new FixedWindowRateLimiterOptions { PermitLimit = 5, Window = TimeSpan.FromMinutes(5), QueueLimit = 0 }));
+});
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(options =>
     {
         options.Cookie.Name = "TeatriAab.Admin";
         options.Cookie.HttpOnly = true;
         options.Cookie.SameSite = SameSiteMode.Strict;
-        options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
+        options.Cookie.SecurePolicy = builder.Environment.IsDevelopment() ? CookieSecurePolicy.SameAsRequest : CookieSecurePolicy.Always;
         options.SlidingExpiration = true;
         options.ExpireTimeSpan = TimeSpan.FromHours(8);
         options.Events.OnRedirectToLogin = context =>
@@ -45,6 +64,23 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
         {
             context.Response.StatusCode = StatusCodes.Status403Forbidden;
             return Task.CompletedTask;
+        };
+        options.Events.OnValidatePrincipal = async context =>
+        {
+            if (!int.TryParse(context.Principal?.FindFirstValue(ClaimTypes.NameIdentifier), out var userId))
+            {
+                context.RejectPrincipal();
+                await context.HttpContext.SignOutAsync();
+                return;
+            }
+            var db = context.HttpContext.RequestServices.GetRequiredService<AppDbContext>();
+            var user = await db.AdminUsers.AsNoTracking().SingleOrDefaultAsync(x => x.Id == userId, context.HttpContext.RequestAborted);
+            var role = context.Principal?.FindFirstValue(ClaimTypes.Role);
+            if (user is null || !user.IsActive || !string.Equals(role, user.Role.ToString(), StringComparison.Ordinal))
+            {
+                context.RejectPrincipal();
+                await context.HttpContext.SignOutAsync();
+            }
         };
     });
 builder.Services.AddAuthorizationBuilder()
@@ -67,13 +103,29 @@ builder.Services.AddCors(options =>
 });
 
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
-if (!string.IsNullOrWhiteSpace(connectionString))
+if (string.IsNullOrWhiteSpace(connectionString))
+    throw new InvalidOperationException("ConnectionStrings:DefaultConnection must be configured.");
+builder.Services.AddDbContext<AppDbContext>(options => options.UseSqlServer(connectionString));
+
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
 {
-    builder.Services.AddDbContext<AppDbContext>(options =>
-        options.UseSqlServer(connectionString));
-}
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+});
 
 var app = builder.Build();
+
+if (!app.Environment.IsDevelopment())
+{
+    var origins = app.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [];
+    if (origins.Length == 0 || origins.Any(x => x.Contains("localhost", StringComparison.OrdinalIgnoreCase)))
+        throw new InvalidOperationException("Production Cors:AllowedOrigins must contain the deployed HTTPS admin origin and must not use localhost.");
+    var publicUrl = app.Configuration["PublicSite:BaseUrl"];
+    if (!Uri.TryCreate(publicUrl, UriKind.Absolute, out var publicUri) || publicUri.Scheme != Uri.UriSchemeHttps)
+        throw new InvalidOperationException("Production PublicSite:BaseUrl must be an absolute HTTPS URL.");
+    var allowedHosts = app.Configuration["AllowedHosts"];
+    if (string.IsNullOrWhiteSpace(allowedHosts) || allowedHosts.Trim() == "*")
+        throw new InvalidOperationException("Production AllowedHosts must list the deployed host names and must not use '*'.");
+}
 
 if (app.Environment.IsDevelopment())
 {
@@ -81,13 +133,19 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
+app.UseForwardedHeaders();
+if (!app.Environment.IsDevelopment()) { app.UseHsts(); app.UseHttpsRedirection(); }
 app.UseStaticFiles();
 app.UseMiddleware<ErrorHandlingMiddleware>();
 app.UseCors("FrontendDevelopment");
+app.UseRateLimiter();
 app.UseAuthentication();
+app.UseMiddleware<AdminRequestOriginMiddleware>();
 app.UseAuthorization();
 app.UseMiddleware<AdminActivityMiddleware>();
 app.MapControllers();
+app.MapHealthChecks("/health/live", new Microsoft.AspNetCore.Diagnostics.HealthChecks.HealthCheckOptions { Predicate = _ => false });
+app.MapHealthChecks("/health/ready");
 
 if (app.Environment.IsDevelopment())
 {

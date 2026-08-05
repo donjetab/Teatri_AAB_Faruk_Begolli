@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { adminApi } from '../api'
 import { LanguageTabs, LoadingSkeleton, PageHeader, Toast } from '../components/AdminUi'
 import { MediaPicker } from '../components/MediaPicker'
@@ -26,6 +26,7 @@ function TextHeaderFields({ translation, change }) {
 }
 
 export function StaticPagesPage() {
+  const [searchParams, setSearchParams] = useSearchParams()
   const [items, setItems] = useState(null)
   const [selectedId, setSelectedId] = useState(null)
   const [form, setForm] = useState(null)
@@ -36,11 +37,16 @@ export function StaticPagesPage() {
   const [previewImage, setPreviewImage] = useState(null)
   const [toast, setToast] = useState('')
 
-  useEffect(() => { adminApi.staticPages().then(result => { setItems(result); setSelectedId(result[0]?.id); setForm(result[0]) }) }, [])
+  useEffect(() => { adminApi.staticPages().then(result => {
+    const requestedId = Number(searchParams.get('page'))
+    const selected = result.find(item => item.id === requestedId) ?? result[0]
+    setItems(result); setSelectedId(selected?.id); setForm(selected)
+    if (searchParams.get('language') === 'en') setLanguage('en')
+  }) }, [])
   const loadGallery = () => adminApi.generalGallery().then(setGallery).catch(() => setGallery([]))
   useEffect(() => { adminApi.website().then(setWebsite); loadGallery() }, [])
   const translation = useMemo(() => form?.translations.find(x => x.languageCode === language), [form, language])
-  const select = id => { setSelectedId(id); setForm(items.find(x => x.id === id)) }
+  const select = id => { setSelectedId(id); setForm(items.find(x => x.id === id)); setSearchParams({ page: String(id), language }) }
   const change = (field, value) => setForm(current => ({ ...current, translations: current.translations.map(x => x.languageCode === language ? { ...x, [field]: value } : x) }))
   const chooseImage = (idField, urlField, media) => setForm(current => ({ ...current, [idField]: media?.id ?? null, [urlField]: media?.fileUrl ?? null }))
   const addGalleryImage = async media => { if (!media) return; await adminApi.addGeneralGalleryMedia(media.id); await loadGallery(); setToast('Picture added to the About gallery.') }
@@ -66,7 +72,7 @@ export function StaticPagesPage() {
     <div className="static-pages-layout">
       <PageList items={items} selectedId={selectedId} onSelect={select} />
       <section className={`admin-panel admin-form language-${language}`}>
-        <div className="panel-heading"><div><h2>{sectionLabels[form.pageKey]}</h2><p>Public page content</p></div><LanguageTabs active={language} onChange={setLanguage} /></div>
+        <div className="panel-heading"><div><h2>{sectionLabels[form.pageKey]}</h2><p>Public page content</p></div><LanguageTabs active={language} onChange={code => { setLanguage(code); setSearchParams({ page: String(form.id), language: code }) }} /></div>
         <div className="form-grid">
           <TextHeaderFields translation={translation} change={change} />
 
@@ -87,6 +93,10 @@ export function StaticPagesPage() {
             <div className="full panel-heading"><div><h3>Contact and social media</h3><p>Also used in the website header and footer.</p></div></div>
             <label>Address<input value={website.address} onChange={e => setWebsite({ ...website, address: e.target.value })} /></label><label>Phone<input value={website.phone} onChange={e => setWebsite({ ...website, phone: e.target.value })} /></label><label>Email<input type="email" value={website.email} onChange={e => setWebsite({ ...website, email: e.target.value })} /></label><label>Facebook URL<input type="url" value={website.facebookUrl ?? ''} onChange={e => setWebsite({ ...website, facebookUrl: e.target.value })} /></label><label>Instagram URL<input type="url" value={website.instagramUrl ?? ''} onChange={e => setWebsite({ ...website, instagramUrl: e.target.value })} /></label>
           </>}
+
+          <div className="full panel-heading"><div><h3>Search and link preview</h3><p>Controls how this page is described in Google and when its link is shared.</p></div></div>
+          <label>SEO page title<input maxLength="60" value={translation.metaTitle ?? ''} onChange={e => change('metaTitle', e.target.value)} /><small>{(translation.metaTitle ?? '').length}/60 characters</small></label>
+          <label className="full">Meta description<textarea rows="3" maxLength="160" value={translation.metaDescription ?? ''} onChange={e => change('metaDescription', e.target.value)} /><small>{(translation.metaDescription ?? '').length}/160 characters</small></label>
 
         </div>
         <button type="button" className="admin-primary-button" onClick={save}>Save changes</button>

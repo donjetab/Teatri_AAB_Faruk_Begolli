@@ -205,11 +205,14 @@ public sealed class AdminPerformancesController(AppDbContext db, IClock clock) :
         if (!allowPastStart && request.StartDateTimeUtc < clock.UtcNow)
             errors["StartDateTimeUtc"] = ["A new performance cannot be scheduled in the past."];
         if (request.LocationId.HasValue && !await db.Locations.AnyAsync(x => x.Id == request.LocationId, token)) errors["LocationId"] = ["The selected venue does not exist."];
-        if (!Enum.TryParse<PerformanceStatus>(request.Status, true, out _)) errors["Status"] = ["Invalid performance status."];
-        if (!string.Equals(request.Status, nameof(PerformanceStatus.SoldOut), StringComparison.OrdinalIgnoreCase)
+        var hasValidStatus = Enum.TryParse<PerformanceStatus>(request.Status, true, out var parsedStatus);
+        if (!hasValidStatus) errors["Status"] = ["Invalid performance status."];
+        var bookingIsOptional = hasValidStatus && parsedStatus is PerformanceStatus.SoldOut or PerformanceStatus.Completed or PerformanceStatus.Cancelled
+            || request.StartDateTimeUtc < clock.UtcNow;
+        if (!bookingIsOptional
             && string.IsNullOrWhiteSpace(request.TicketUrl)
             && string.IsNullOrWhiteSpace(request.ContactPhone))
-            errors["BookingContact"] = ["Add a ticket URL or contact phone unless the performance is sold out."];
+            errors["BookingContact"] = ["Add a ticket URL or contact phone for an upcoming performance."];
         if (request.EndDateTimeUtc.HasValue && request.EndDateTimeUtc <= request.StartDateTimeUtc) errors["EndDateTimeUtc"] = ["End time must be after start time."];
         return errors.Count == 0 ? null : new ValidationProblemDetails(errors);
     }

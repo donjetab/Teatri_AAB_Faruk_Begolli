@@ -18,7 +18,7 @@ public sealed class NavigationController(AppDbContext db) : ControllerBase
     }
 }
 
-[ApiController, Authorize(Policy = "Admin"), Route("api/admin/navigation")]
+[ApiController, Authorize(Policy = "SuperAdmin"), Route("api/admin/navigation")]
 public sealed class AdminNavigationController(AppDbContext db, IClock clock) : ControllerBase
 {
     [HttpGet]

@@ -4,7 +4,6 @@ import { useTranslation } from 'react-i18next'
 import { getStaticPage } from '../api/staticPages'
 import reserveHeader from '../assets/teatri/perne-bg.jpg'
 import emptyShowsImage from '../assets/teatri-pitf-2024.jpg'
-import { postersBySlug } from '../assets/shows/showAssets'
 import { resolveMediaUrl } from '../api/client'
 import smoke from '../assets/smoke_3.png'
 import theatreIcon from '../assets/acting-icon-gold.png'
@@ -99,7 +98,7 @@ export function ReservePage() {
           <div className="reserve-show-list">
             {visibleShows.map((show) => {
               const date = new Date(show.startDateTimeUtc)
-              const poster = resolveMediaUrl(show.posterUrl) || postersBySlug[show.showSlug]
+              const poster = resolveMediaUrl(show.posterUrl)
               const phoneUrl = show.contactPhone ? `tel:${show.contactPhone.replace(/[^\d+]/g, '')}` : null
               const isPostponed = show.status === 'Postponed'
               const isCancelled = show.status === 'Cancelled'

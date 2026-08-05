@@ -517,3 +517,14 @@ public sealed class AdminActivity
     public DateTimeOffset CreatedAt { get; set; }
     public AdminUser? AdminUser { get; set; }
 }
+
+public sealed class OperationalEvent
+{
+    public long Id { get; set; }
+    public string EventType { get; set; } = string.Empty;
+    public string Severity { get; set; } = string.Empty;
+    public string Summary { get; set; } = string.Empty;
+    public string? RequestPath { get; set; }
+    public string? CorrelationId { get; set; }
+    public DateTimeOffset CreatedAt { get; set; }
+}

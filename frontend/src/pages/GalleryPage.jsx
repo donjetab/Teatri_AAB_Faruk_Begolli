@@ -3,7 +3,6 @@ import { useTranslation } from 'react-i18next'
 import galleryHeader from '../assets/gallery-header.jpg'
 import smoke from '../assets/smoke_3.png'
 import theatreIcon from '../assets/acting-icon-gold.png'
-import { galleriesBySlug } from '../assets/shows/showAssets'
 import { getGalleryImages } from '../api/gallery'
 import { resolveMediaUrl } from '../api/client'
 import { getStaticPage } from '../api/staticPages'
@@ -28,15 +27,7 @@ export function GalleryPage() {
     return () => controller.abort()
   }, [i18n.language])
 
-  const images = useMemo(
-    () => [
-      ...uploadedImages,
-      ...Object.entries(galleriesBySlug).flatMap(([showSlug, gallery]) =>
-        gallery.map((src, index) => ({ src, showSlug, index })),
-      ),
-    ],
-    [uploadedImages],
-  )
+  const images = useMemo(() => uploadedImages, [uploadedImages])
 
   useEffect(() => {
     if (selectedImageIndex === null) {

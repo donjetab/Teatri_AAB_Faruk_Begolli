@@ -5,7 +5,6 @@ import { LanguageTabs, LoadingSkeleton, PageHeader, StatusBadge, Toast } from '.
 import { CreditRepeater } from '../components/CreditRepeater'
 import { MediaPicker } from '../components/MediaPicker'
 import { resolveMediaUrl } from '../../api/client'
-import { galleriesBySlug, postersBySlug, trailersBySlug } from '../../assets/shows/showAssets'
 import { useAdminDialog } from '../components/AdminDialog'
 
 const blankTranslation = code => ({ languageCode: code, title: '', slug: '', shortDescription: '', fullDescription: '', metaTitle: '', metaDescription: '' })
@@ -133,40 +132,6 @@ export function ShowEditorPage() {
     const result = await adminApi.attachShowGalleryMedia(id, media.id)
     setForm(current => ({ ...current, galleryMedia: result.galleryMedia }))
   }
-  const makeLocalGalleryEditable = async (requestedAction = null, requestedIndex = null) => {
-    if (!localGallery.length || isNew) return
-    if (!await dialog.confirm({ title: 'Make gallery editable?', message: `Import all ${localGallery.length} local images into the Media Library so they can be edited and removed.`, confirmLabel: 'Import images' })) return
-    setGalleryBusy(true)
-    try {
-      let result
-      for (let index = 0; index < localGallery.length; index++) {
-        const response = await fetch(localGallery[index])
-        if (!response.ok) throw new Error('A local image could not be read.')
-        const blob = await response.blob()
-        const extension = blob.type === 'image/png' ? 'png' : blob.type === 'image/webp' ? 'webp' : 'jpg'
-        const file = new File([blob], `${showSlug}-gallery-${index + 1}.${extension}`, { type: blob.type || 'image/jpeg' })
-        const media = await adminApi.uploadMedia(file)
-        result = await adminApi.attachShowGalleryMedia(id, media.id)
-      }
-      result = await adminApi.manageLocalShowGallery(id)
-      setForm(current => ({ ...current, galleryMedia: result.galleryMedia, useLocalGalleryFallback: false }))
-      setToastType('success')
-      setToast('The local gallery is now fully editable.')
-      if (requestedAction && requestedIndex !== null) {
-        const prefix = `${showSlug}-gallery-${requestedIndex + 1}.`
-        const managedItem = result.galleryMedia.find(item => item.fileName.startsWith(prefix))
-        if (managedItem) {
-          if (requestedAction === 'edit') await editGalleryItem(managedItem)
-          if (requestedAction === 'remove') await removeGalleryItem(managedItem)
-        }
-      }
-    } catch (e) {
-      setToastType('warning')
-      setToast(e.response?.data?.detail ?? e.message ?? 'The local gallery could not be converted.')
-    } finally {
-      setGalleryBusy(false)
-    }
-  }
   const editGalleryItem = async item => {
     const captionSq = await dialog.prompt({ title: 'Edit Albanian caption', label: 'Albanian caption', defaultValue: item.captionSq ?? '', confirmLabel: 'Continue' })
     if (captionSq === null) return
@@ -185,12 +150,7 @@ export function ShowEditorPage() {
     setToast('Image removed from this play.')
   }
   if (loading) return <LoadingSkeleton rows={7} />
-  const showSlug = translation('sq').slug
-  const localPoster = postersBySlug[showSlug]
-  const localTrailer = trailersBySlug[showSlug]
-  const localGallery = galleriesBySlug[showSlug] ?? []
-  const visibleLocalGallery = form.useLocalGalleryFallback === false ? [] : localGallery
-  const effectiveTrailer = form.trailerUrl || localTrailer
+  const effectiveTrailer = form.trailerUrl
   const contentFields = code => <div className="form-grid"><label>Title *<input required value={translation(code).title} onChange={e => changeTranslation(code, 'title', e.target.value)} /></label><label className="full">Short description *<textarea rows="4" required maxLength="700" value={translation(code).shortDescription} onChange={e => changeTranslation(code, 'shortDescription', e.target.value)} /></label><label className="full">Synopsis *<textarea rows="12" required value={translation(code).fullDescription} onChange={e => changeTranslation(code, 'fullDescription', e.target.value)} /></label></div>
 
   return <><PageHeader eyebrow="Shows / Plays" title={isNew ? 'Create play' : translation('sq').title || 'Edit play'} description="Manage bilingual content, production information, media and publication state." actions={<><Link className="admin-outline-button" to="/admin/shows">Back to plays</Link>{!isNew && <StatusBadge status={form.status} />}</>} />
@@ -202,12 +162,12 @@ export function ShowEditorPage() {
       {tab === 'Credits' && <section className="admin-panel">{isNew ? <><p className="admin-help">These credits will be saved together with the new play.</p><CreditRepeater value={draftCredits} onChange={setDraftCredits} /></> : <CreditRepeater showId={id} onSaved={() => { setToastType('success'); setToast('Credits saved successfully.') }} />}</section>}
       {tab === 'Media' && isNew && <section className="admin-panel new-show-gallery-tools"><div className="panel-heading"><div><h2>Gallery images</h2><p>Choose images you already uploaded, or upload new pictures. They will be attached when you create the play.</p></div><label className={`admin-primary-button ${galleryBusy ? 'disabled' : ''}`}>{galleryBusy ? 'Uploading…' : '+ Upload images'}<input type="file" accept="image/jpeg,image/png,image/webp" multiple hidden disabled={galleryBusy} onChange={uploadGallery} /></label></div><MediaPicker label="Choose from Media Library" type="image/" onChange={() => {}} onSelect={chooseGalleryMedia} /></section>}
       {tab === 'Media' && <section className="admin-panel show-media-editor"><div className="panel-heading"><div><h2>Play media</h2><p>The poster is the main public image. Add a trailer and review gallery images already attached to this play.</p></div></div>
-        <div className="show-media-primary"><div className="show-media-poster-preview">{(form.posterUrl || localPoster) ? <img src={form.posterUrl ? resolveMediaUrl(form.posterUrl) : localPoster} alt="" /> : <span>No poster available</span>}{!form.posterUrl && localPoster && <small>Local project poster</small>}</div><div><MediaPicker label="Main poster" value={form.posterMediaAssetId} currentUrl={form.posterUrl} onChange={value => field('posterMediaAssetId', value)} onSelect={item => field('posterUrl', item?.fileUrl ?? null)} /><MediaPicker label="Featured / hero image" value={form.featuredMediaAssetId} currentUrl={form.featuredImageUrl} onChange={value => field('featuredMediaAssetId', value)} onSelect={item => field('featuredImageUrl', item?.fileUrl ?? null)} /></div></div>
+        <div className="show-media-primary"><div className="show-media-poster-preview">{form.posterUrl ? <img src={resolveMediaUrl(form.posterUrl)} alt="" /> : <span>No poster available</span>}</div><div><MediaPicker label="Main poster" value={form.posterMediaAssetId} currentUrl={form.posterUrl} onChange={value => field('posterMediaAssetId', value)} onSelect={item => field('posterUrl', item?.fileUrl ?? null)} /><MediaPicker label="Featured / hero image" value={form.featuredMediaAssetId} currentUrl={form.featuredImageUrl} onChange={value => field('featuredMediaAssetId', value)} onSelect={item => field('featuredImageUrl', item?.fileUrl ?? null)} /></div></div>
         <div className="show-media-block"><h3>Trailer</h3><div className="view-switch"><button type="button" className={trailerMode === 'local' ? 'active' : ''} onClick={() => { setTrailerMode('local'); field('trailerUrl', '') }}>Local video</button><button type="button" className={trailerMode === 'external' ? 'active' : ''} onClick={() => { setTrailerMode('external'); setLocalTrailerMediaId(null); field('trailerUrl', '') }}>External video link</button></div>
           {trailerMode === 'local' ? <MediaPicker label="Trailer from Media Library" type="video/" value={localTrailerMediaId} currentUrl={form.trailerUrl} onChange={setLocalTrailerMediaId} onSelect={item => field('trailerUrl', item?.fileUrl ?? '')} /> : <label>Trailer URL<input type="url" placeholder="https://www.youtube.com/watch?v=…" value={form.trailerUrl} onChange={e => field('trailerUrl', e.target.value)} /></label>}
-          {effectiveTrailer && <div className="show-trailer-admin-preview">{!form.trailerUrl && localTrailer && <small>Existing local project trailer</small>}{trailerMode === 'local' ? <video src={form.trailerUrl ? resolveMediaUrl(form.trailerUrl) : localTrailer} controls /> : <a href={form.trailerUrl} target="_blank" rel="noreferrer">Open external trailer ↗</a>}</div>}
+          {effectiveTrailer && <div className="show-trailer-admin-preview">{trailerMode === 'local' ? <video src={resolveMediaUrl(form.trailerUrl)} controls /> : <a href={form.trailerUrl} target="_blank" rel="noreferrer">Open external trailer ↗</a>}</div>}
         </div>
-        <div className="show-media-block"><div className="show-gallery-admin-heading"><h3>Gallery <small>{(form.galleryMedia?.length ?? 0) + visibleLocalGallery.length} items</small></h3><div className="show-gallery-heading-actions">{visibleLocalGallery.length > 0 && !isNew && <button type="button" className="admin-outline-button" disabled={galleryBusy} onClick={() => makeLocalGalleryEditable()}>Make local pictures editable</button>}{!isNew && <label className={`admin-primary-button ${galleryBusy ? 'disabled' : ''}`}>{galleryBusy ? 'Uploading…' : '+ Upload more'}<input type="file" accept="image/jpeg,image/png,image/webp" multiple hidden disabled={galleryBusy} onChange={uploadGallery} /></label>}</div></div>{(form.galleryMedia?.length || visibleLocalGallery.length) ? <><p className="admin-help">{visibleLocalGallery.length ? 'The first Edit or Remove action converts the local gallery automatically.' : 'Every picture in this gallery is database-managed and editable.'}</p><div className="show-admin-gallery">{form.galleryMedia?.map(item => <figure key={`database-${item.id}`}><img src={resolveMediaUrl(item.fileUrl)} alt={item.captionSq ?? ''} /><figcaption>{item.captionSq || item.fileName}</figcaption><div className="show-gallery-item-actions"><button type="button" onClick={() => editGalleryItem(item)}>Edit</button><button type="button" className="danger" onClick={() => removeGalleryItem(item)}>Remove</button></div></figure>)}{visibleLocalGallery.map((url, index) => <figure key={`local-${url}`}><img src={url} alt="" /><figcaption>Local image {index + 1}</figcaption><span className="local-media-badge">Local asset</span><div className="show-gallery-item-actions"><button type="button" disabled={galleryBusy} onClick={() => makeLocalGalleryEditable('edit', index)}>Edit</button><button type="button" className="danger" disabled={galleryBusy} onClick={() => makeLocalGalleryEditable('remove', index)}>Remove</button></div></figure>)}</div></> : <div className="admin-empty"><strong>No gallery attached</strong><p>Use “Upload more” to add the first gallery images.</p></div>}</div>
+        <div className="show-media-block"><div className="show-gallery-admin-heading"><h3>Gallery <small>{form.galleryMedia?.length ?? 0} items</small></h3><div className="show-gallery-heading-actions">{!isNew && <label className={`admin-primary-button ${galleryBusy ? 'disabled' : ''}`}>{galleryBusy ? 'Uploading…' : '+ Upload more'}<input type="file" accept="image/jpeg,image/png,image/webp" multiple hidden disabled={galleryBusy} onChange={uploadGallery} /></label>}</div></div>{form.galleryMedia?.length ? <><p className="admin-help">Every picture in this gallery is database-managed and editable.</p><div className="show-admin-gallery">{form.galleryMedia.map(item => <figure key={`database-${item.id}`}><img src={resolveMediaUrl(item.fileUrl)} alt={item.captionSq ?? ''} /><figcaption>{item.captionSq || item.fileName}</figcaption><div className="show-gallery-item-actions"><button type="button" onClick={() => editGalleryItem(item)}>Edit</button><button type="button" className="danger" onClick={() => removeGalleryItem(item)}>Remove</button></div></figure>)}</div></> : <div className="admin-empty"><strong>No gallery attached</strong><p>Use “Upload more” to add the first gallery images.</p></div>}</div>
       </section>}
       {tab === 'Media' && isNew && <div className="new-show-gallery-bottom"><label className={`admin-primary-button ${galleryBusy ? 'disabled' : ''}`}>{galleryBusy ? 'Uploading…' : '+ Upload gallery images'}<input type="file" accept="image/jpeg,image/png,image/webp" multiple hidden disabled={galleryBusy} onChange={uploadGallery} /></label><MediaPicker label="Or choose an image from Media Library" type="image/" onChange={() => {}} onSelect={chooseGalleryMedia} /></div>}
       {tab === 'Performances' && <section className="admin-panel editor-coming-next"><h2>Performances</h2><p>Performance dates will be managed here after the performance table and calendar module is connected.</p></section>}

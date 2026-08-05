@@ -9,6 +9,7 @@ using Theatre.Api.Data;
 using Theatre.Api.DTOs;
 using Theatre.Api.Models;
 using Theatre.Api.Services;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace Theatre.Api.Controllers;
 
@@ -17,6 +18,7 @@ namespace Theatre.Api.Controllers;
 public sealed class AdminAuthController(AppDbContext db, IPasswordHasher<AdminUser> passwordHasher, IClock clock) : ControllerBase
 {
     [AllowAnonymous]
+    [EnableRateLimiting("AdminLogin")]
     [HttpPost("login")]
     public async Task<ActionResult<AdminSessionDto>> Login(AdminLoginRequest request, CancellationToken cancellationToken)
     {

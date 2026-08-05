@@ -6,6 +6,7 @@ import { resolveMediaUrl } from '../api/client'
 import { getLocalizedPath } from '../routes/localizedRoutes'
 import { LoadingState } from '../components/ui/LoadingState'
 import { ErrorState } from '../components/ui/ErrorState'
+import { setPageMetadata } from '../utils/seo'
 
 export function NewsDetailPage() {
   const { t, i18n } = useTranslation()
@@ -28,6 +29,17 @@ export function NewsDetailPage() {
       })
     return () => controller.abort()
   }, [language, slug])
+
+  useEffect(() => {
+    if (!article) return
+    const plainText = (article.content || '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim()
+    setPageMetadata({
+      title: `${article.title} | ${language === 'en' ? 'AAB Theatre' : 'Teatri AAB'}`,
+      description: plainText.slice(0, 160) || article.title,
+      image: resolveMediaUrl(article.coverUrl),
+      type: 'article',
+    })
+  }, [article, language])
 
   if (status === 'loading') {
     return <section className="news-detail-state"><LoadingState /></section>
