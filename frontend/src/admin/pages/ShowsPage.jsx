@@ -6,7 +6,7 @@ import { EmptyState, LoadingSkeleton, PageHeader, StatusBadge, Toast } from '../
 import { postersBySlug } from '../../assets/shows/showAssets'
 import { useAdminDialog } from '../components/AdminDialog'
 
-const initialFilters = { search: '', categoryId: '', status: '', lifecycleStatus: '', year: '', featured: '', sort: 'updated', page: 1, pageSize: 20 }
+const initialFilters = { search: '', categoryId: '', status: '', lifecycleStatus: '', year: '', featured: '', sort: 'production', page: 1, pageSize: 20 }
 
 export function AdminShowsPage() {
   const dialog = useAdminDialog()
@@ -22,15 +22,20 @@ export function AdminShowsPage() {
   useEffect(() => {
     const timer = setTimeout(() => {
       setLoading(true)
-      const params = Object.fromEntries(Object.entries(filters).filter(([, value]) => value !== ''))
+      const params = Object.fromEntries(Object.entries(filters).filter(([key, value]) =>
+        value !== '' && String(value) !== String(initialFilters[key]),
+      ))
       setSearchParams(params, { replace: true })
-      adminApi.shows(params).then(setData).finally(() => setLoading(false))
+      adminApi.shows({ ...filters, sort: filters.sort || initialFilters.sort }).then(setData).finally(() => setLoading(false))
     }, filters.search ? 250 : 0)
     return () => clearTimeout(timer)
   }, [queryKey, refreshKey, setSearchParams])
 
   const update = (key, value) => setFilters(current => ({ ...current, [key]: value, page: key === 'page' ? value : 1 }))
-  const clear = () => setFilters(initialFilters)
+  const clear = () => {
+    setFilters({ ...initialFilters })
+    setSearchParams({}, { replace: true })
+  }
   const action = async (show, nextAction) => {
     const question = nextAction === 'archive' ? `Archive “${show.titleSq}”?` : nextAction === 'publish' ? `Publish “${show.titleSq}”?` : null
     if (question && !await dialog.confirm({ title: `${nextAction[0].toUpperCase() + nextAction.slice(1)} play?`, message: question, confirmLabel: nextAction[0].toUpperCase() + nextAction.slice(1), danger: nextAction === 'archive' })) return
@@ -64,7 +69,7 @@ export function AdminShowsPage() {
         <label><span>Performance</span><select value={filters.lifecycleStatus} onChange={e => update('lifecycleStatus', e.target.value)}><option value="">All states</option><option>Upcoming</option><option>Active</option><option>Completed</option><option>SoldOut</option></select></label>
         <label><span>Year</span><select value={filters.year} onChange={e => update('year', e.target.value)}><option value="">All years</option>{data?.years?.map(x => <option key={x}>{x}</option>)}</select></label>
         <label><span>Featured</span><select value={filters.featured} onChange={e => update('featured', e.target.value)}><option value="">All</option><option value="true">Featured</option><option value="false">Not featured</option></select></label>
-        <label><span>Sort</span><select value={filters.sort} onChange={e => update('sort', e.target.value)}><option value="updated">Last updated</option><option value="title">Title</option><option value="premiere">Premiere date</option></select></label>
+        <label><span>Sort</span><select value={filters.sort} onChange={e => update('sort', e.target.value)}><option value="production">Featured, then newest</option><option value="updated">Last updated</option><option value="title">Title</option><option value="premiere">Premiere date</option></select></label>
         <button className="admin-text-button" onClick={clear}>Clear filters</button>
       </div>
     </section>

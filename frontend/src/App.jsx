@@ -14,7 +14,7 @@ import { NewsPage } from './pages/NewsPage'
 import { NewsDetailPage } from './pages/NewsDetailPage'
 import { defaultLanguage, getLocalizedPath } from './routes/localizedRoutes'
 import './App.css'
-import { AdminAuthProvider, ProtectedAdminRoute } from './admin/AuthContext'
+import { AdminAuthProvider, ProtectedAdminRoute, SuperAdminRoute } from './admin/AuthContext'
 import { AdminLayout } from './admin/components/AdminLayout'
 import { LoginPage } from './admin/pages/LoginPage'
 import { DashboardPage } from './admin/pages/DashboardPage'
@@ -27,13 +27,19 @@ import { ChangePasswordPage } from './admin/pages/ChangePasswordPage'
 import { AdminShowsPage } from './admin/pages/ShowsPage'
 import { ShowEditorPage } from './admin/pages/ShowEditorPage'
 import { PerformancesPage } from './admin/pages/PerformancesPage'
-import { MediaLibraryPage } from './admin/pages/MediaLibraryPage'
 import { MessagesPage } from './admin/pages/MessagesPage'
 import { SubscribersPage } from './admin/pages/SubscribersPage'
 import { ExistingContentPage } from './admin/pages/ExistingContentPage'
 import { NewsEditorPage } from './admin/pages/NewsEditorPage'
 import { PitfManagementPage } from './admin/pages/PitfManagementPage'
 import { GalleryManagementPage } from './admin/pages/GalleryManagementPage'
+import { StaticPagesPage } from './admin/pages/StaticPagesPage'
+import { MediaLibraryPage } from './admin/pages/MediaLibraryPage'
+import { NavigationFooterPage } from './admin/pages/NavigationFooterPage'
+import { UsersRolesPage } from './admin/pages/UsersRolesPage'
+import { ActivityLogPage } from './admin/pages/ActivityLogPage'
+import { BackupsSystemPage } from './admin/pages/BackupsSystemPage'
+import { SettingsPage } from './admin/pages/SettingsPage'
 import './admin/admin.css'
 
 function ShellPlaceholder() {
@@ -67,16 +73,18 @@ function App() {
           <Route path="news/:id" element={<NewsEditorPage />} />
           <Route path="pitf" element={<PitfManagementPage />} />
           <Route path="gallery" element={<GalleryManagementPage />} />
-          <Route path="pages" element={<SectionPlaceholderPage />} />
+          <Route path="pages" element={<StaticPagesPage />} />
           <Route path="messages" element={<MessagesPage />} />
           <Route path="subscribers" element={<SubscribersPage />} />
-          <Route path="navigation" element={<SectionPlaceholderPage />} />
+          <Route path="navigation" element={<NavigationFooterPage />} />
           <Route path="seo" element={<SectionPlaceholderPage />} />
           <Route path="media" element={<MediaLibraryPage />} />
-          <Route path="users" element={<SectionPlaceholderPage />} />
-          <Route path="activity" element={<SectionPlaceholderPage />} />
-          <Route path="backups" element={<SectionPlaceholderPage />} />
-          <Route path="settings" element={<SectionPlaceholderPage />} />
+          <Route element={<SuperAdminRoute />}>
+            <Route path="users" element={<UsersRolesPage />} />
+            <Route path="activity" element={<ActivityLogPage />} />
+            <Route path="backups" element={<BackupsSystemPage />} />
+            <Route path="settings" element={<SettingsPage />} />
+          </Route>
         </Route>
       </Route>
       <Route path="/" element={<Navigate to={getLocalizedPath('home', defaultLanguage)} replace />} />

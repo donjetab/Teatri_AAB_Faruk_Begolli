@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { getHome } from '../api/home'
+import { getStaticPage } from '../api/staticPages'
 import { AboutPreview } from '../components/home/AboutPreview'
 import { HeroSection } from '../components/home/HeroSection'
 import { PitfPreview } from '../components/home/PitfPreview'
@@ -17,15 +18,20 @@ export function HomePage() {
   const { language: languageParam } = useParams()
   const language = languages.includes(languageParam) ? languageParam : defaultLanguage
   const [home, setHome] = useState(null)
+  const [aboutStatistics, setAboutStatistics] = useState(null)
   const [status, setStatus] = useState('loading')
 
   useEffect(() => {
     const controller = new AbortController()
     setStatus('loading')
 
-    getHome(language, controller.signal)
-      .then((data) => {
+    Promise.all([
+      getHome(language, controller.signal),
+      getStaticPage(language, 'about', controller.signal).catch(() => null),
+    ])
+      .then(([data, aboutPage]) => {
         setHome(data)
+        setAboutStatistics(aboutPage?.statistics ?? null)
         setStatus('success')
       })
       .catch((error) => {
@@ -67,7 +73,7 @@ export function HomePage() {
   return (
     <div className="homepage">
       {home.heroIsVisible !== false && <HeroSection home={home} language={language} />}
-      <AboutPreview home={home} />
+      <AboutPreview home={home} statistics={aboutStatistics} />
       <UpcomingShows shows={home.upcomingShows ?? []} language={language} reservationUrl={home.reservationUrl} />
       {home.pitfFeatureIsVisible !== false && <PitfPreview pitf={home.pitfFeatured} title={home.pitfFeatureTitle} buttonText={home.pitfFeatureButtonText} destinationUrl={home.pitfDestinationUrl} />}
       {home.reservationBannerIsVisible !== false && <ReservationBanner home={home} />}

@@ -86,6 +86,7 @@ app.UseMiddleware<ErrorHandlingMiddleware>();
 app.UseCors("FrontendDevelopment");
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseMiddleware<AdminActivityMiddleware>();
 app.MapControllers();
 
 if (app.Environment.IsDevelopment())
@@ -93,6 +94,7 @@ if (app.Environment.IsDevelopment())
     using var scope = app.Services.CreateScope();
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     await db.Database.MigrateAsync();
+    await LegacyGalleryImporter.ImportAsync(db, app.Environment);
     if (app.Configuration.GetValue("Seed:EnableDevelopmentSeed", false))
         await DevelopmentDataSeeder.SeedAsync(db, app.Environment);
 

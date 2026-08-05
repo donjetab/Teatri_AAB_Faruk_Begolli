@@ -4,36 +4,38 @@ import galleryHeader from '../assets/gallery-header.jpg'
 import smoke from '../assets/smoke_3.png'
 import theatreIcon from '../assets/acting-icon-gold.png'
 import { galleriesBySlug } from '../assets/shows/showAssets'
+import { getGalleryImages } from '../api/gallery'
+import { resolveMediaUrl } from '../api/client'
+import { getStaticPage } from '../api/staticPages'
+import { useParams } from 'react-router-dom'
 
 const INITIAL_IMAGE_COUNT = 12
 const IMAGE_BATCH_SIZE = 8
-const theatreImageModules = import.meta.glob(
-  '../assets/teatri/*.{jpg,jpeg,png,webp}',
-  { eager: true, query: '?url', import: 'default' },
-)
-
-const theatreImages = Object.entries(theatreImageModules)
-  .sort(([firstPath], [secondPath]) => firstPath.localeCompare(secondPath))
-  .map(([path, src], index) => ({
-    src,
-    showSlug: 'theatre',
-    index,
-    path,
-  }))
-
 export function GalleryPage() {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
+  const { language = 'sq' } = useParams()
+  const [pageCopy, setPageCopy] = useState(null)
   const [visibleCount, setVisibleCount] = useState(INITIAL_IMAGE_COUNT)
   const [selectedImageIndex, setSelectedImageIndex] = useState(null)
+  const [uploadedImages, setUploadedImages] = useState([])
+  useEffect(() => { const controller = new AbortController(); getStaticPage(language, 'gallery-introduction', controller.signal).then(setPageCopy).catch(() => setPageCopy(null)); return () => controller.abort() }, [language])
+
+  useEffect(() => {
+    const controller = new AbortController()
+    getGalleryImages(i18n.language?.startsWith('en') ? 'en' : 'sq', controller.signal)
+      .then(items => setUploadedImages(items.map(item => ({ src: resolveMediaUrl(item.fileUrl), showSlug: 'theatre', index: item.id, altText: item.altText }))))
+      .catch(error => { if (error.name !== 'CanceledError' && error.code !== 'ERR_CANCELED') setUploadedImages([]) })
+    return () => controller.abort()
+  }, [i18n.language])
 
   const images = useMemo(
     () => [
-      ...theatreImages,
+      ...uploadedImages,
       ...Object.entries(galleriesBySlug).flatMap(([showSlug, gallery]) =>
         gallery.map((src, index) => ({ src, showSlug, index })),
       ),
     ],
-    [],
+    [uploadedImages],
   )
 
   useEffect(() => {
@@ -69,13 +71,13 @@ export function GalleryPage() {
       >
         <img className="page-hero-smoke" src={smoke} alt="" aria-hidden="true" />
         <div className="page-hero-content">
-          <h1 id="gallery-page-title">{t('galleryPage.heroTitle')}</h1>
+          <h1 id="gallery-page-title">{pageCopy?.title || t('galleryPage.heroTitle')}</h1>
           <div className="page-hero-rule" aria-hidden="true">
             <span />
             <img src={theatreIcon} alt="" aria-hidden="true" />
             <span />
           </div>
-          <p>{t('galleryPage.heroSubtitle')}</p>
+          <p>{pageCopy?.subtitle || t('galleryPage.heroSubtitle')}</p>
         </div>
       </section>
 
@@ -91,7 +93,7 @@ export function GalleryPage() {
             >
               <img
                 src={image.src}
-                alt={t('galleryPage.imageAlt', { number: image.index + 1 })}
+                alt={image.altText || t('galleryPage.imageAlt', { number: image.index + 1 })}
                 loading="lazy"
               />
             </button>

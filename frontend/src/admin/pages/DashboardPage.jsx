@@ -4,7 +4,7 @@ import { adminApi } from '../api'
 import { DataTable, LoadingSkeleton, PageHeader, StatusBadge } from '../components/AdminUi'
 
 const metricIcons = { publishedPlays: '◈', draftPlays: '✎', archivedPlays: '□', upcomingPerformances: '▦', publishedNews: '▤', draftNews: '▧', unreadMessages: '✉', subscribers: '♧', missingSq: '文', missingEn: '文', brokenLinks: '↗', unusedMedia: '▱' }
-const quick = [['Add New Play', '/admin/shows'], ['Add Performance', '/admin/performances'], ['Add News Article', '/admin/news'], ['Upload Media', '/admin/media'], ['Add PITF Edition', '/admin/pitf'], ['Edit Homepage', '/admin/homepage'], ['Review Messages', '/admin/messages'], ['Preview Website', '/sq']]
+const quick = [['Add New Play', '/admin/shows'], ['Add Performance', '/admin/performances'], ['Add News Article', '/admin/news'], ['View Gallery', '/admin/gallery'], ['Add PITF Edition', '/admin/pitf'], ['Edit Homepage', '/admin/homepage'], ['Review Messages', '/admin/messages'], ['Preview Website', '/sq']]
 const itemColumns = [{ key: 'title', label: 'Title' }, { key: 'date', label: 'Date', render: r => r.date ? new Date(r.date).toLocaleDateString() : '—' }, { key: 'status', label: 'Status', render: r => <StatusBadge status={r.status} /> }]
 
 export function DashboardPage() {

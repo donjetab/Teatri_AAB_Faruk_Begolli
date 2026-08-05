@@ -33,8 +33,19 @@ export function resolveMediaUrl(url) {
     return url
   }
 
+  if (/^(?:data:|blob:)/i.test(url)) {
+    return url
+  }
+
   if (bundledMediaByApiPath[url]) {
     return bundledMediaByApiPath[url]
+  }
+
+  // Only files under /uploads are served by ASP.NET. Every other relative
+  // path is a Vite/public asset and must stay on the frontend host, including
+  // paths prefixed by the configured /Teatri_AAB_Faruk_Begolli/ base.
+  if (!/^\/?uploads\//i.test(url)) {
+    return url
   }
 
   return `${apiBaseUrl}${url.startsWith('/') ? url : `/${url}`}`

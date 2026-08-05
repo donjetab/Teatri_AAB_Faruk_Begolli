@@ -39,6 +39,8 @@ public sealed class ShowsController(AppDbContext db) : ControllerBase
             {
                 x.Id,
                 x.PremiereDate,
+                x.ProductionYear,
+                x.IsFeatured,
                 PosterUrl = x.PosterMediaAsset == null ? null : x.PosterMediaAsset.FileUrl,
                 Requested = x.Translations.FirstOrDefault(t => t.LanguageId == requestedLanguageId),
                 Fallback = x.Translations.FirstOrDefault(t => t.LanguageId == defaultLanguageId),
@@ -61,7 +63,9 @@ public sealed class ShowsController(AppDbContext db) : ControllerBase
 
         return Ok(shows
             .Where(x => x.Requested != null || x.Fallback != null)
-            .OrderByDescending(x => x.PremiereDate)
+            .OrderByDescending(x => x.IsFeatured)
+            .ThenByDescending(x => x.ProductionYear)
+            .ThenBy(x => (x.Requested ?? x.Fallback)!.Title)
             .Select(x =>
             {
                 var translation = x.Requested ?? x.Fallback!;
@@ -74,6 +78,8 @@ public sealed class ShowsController(AppDbContext db) : ControllerBase
                     translation.FullDescription,
                     x.PosterUrl,
                     x.Director,
+                    x.ProductionYear,
+                    x.IsFeatured,
                     x.PremiereDate,
                     x.NextPerformance == null ? null : x.NextPerformance.StartDateTimeUtc,
                     x.NextPerformance == null ? null : x.NextPerformance.TicketUrl);

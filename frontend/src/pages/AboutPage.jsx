@@ -16,6 +16,9 @@ import statsTheatreIcon from '../assets/theatre-icon.png'
 import actingIcon from '../assets/acting-icon.png'
 import spectatorsIcon from '../assets/spectators-icon.png'
 import { getHome } from '../api/home'
+import { getStaticPage } from '../api/staticPages'
+import { getGalleryImages } from '../api/gallery'
+import { resolveMediaUrl } from '../api/client'
 import { ReservationBanner } from '../components/home/ReservationBanner'
 import { ArrowRightIcon } from '../components/icons/ArrowRightIcon'
 import { getLocalizedPath } from '../routes/localizedRoutes'
@@ -24,13 +27,16 @@ export function AboutPage() {
   const { t } = useTranslation()
   const { language = 'sq' } = useParams()
   const [homeMeta, setHomeMeta] = useState(null)
+  const [page, setPage] = useState(null)
+  const [managedGallery, setManagedGallery] = useState([])
   const [selectedImageIndex, setSelectedImageIndex] = useState(null)
-  const stats = [
+  const fallbackStats = [
     { value: '2015', label: t('home.stats.founded'), icon: statsTheatreIcon },
     { value: '500+', label: t('home.stats.performances'), icon: actingIcon },
     { value: '100K+', label: t('home.stats.spectators'), icon: spectatorsIcon },
   ]
-  const galleryImages = [
+  const stats = page?.statistics?.filter(item => item.value || item.label).map((item, index) => ({ ...item, icon: [statsTheatreIcon, actingIcon, spectatorsIcon][index] })) || fallbackStats
+  const fallbackGalleryImages = [
     { src: galleryOne, alt: t('aboutPage.galleryImageAlt', { number: 1 }) },
     { src: galleryTwo, alt: t('aboutPage.galleryImageAlt', { number: 2 }) },
     { src: galleryThree, alt: t('aboutPage.galleryImageAlt', { number: 3 }) },
@@ -38,6 +44,7 @@ export function AboutPage() {
     { src: galleryFive, alt: t('aboutPage.galleryImageAlt', { number: 5 }) },
     { src: gallerySix, alt: t('aboutPage.galleryImageAlt', { number: 6 }) },
   ]
+  const galleryImages = managedGallery.length ? managedGallery.slice(0, 6).map((item, index) => ({ src: resolveMediaUrl(item.fileUrl), alt: item.altText || t('aboutPage.galleryImageAlt', { number: index + 1 }) })) : fallbackGalleryImages
   const selectedImage = selectedImageIndex === null ? null : galleryImages[selectedImageIndex]
 
   useEffect(() => {
@@ -53,6 +60,9 @@ export function AboutPage() {
 
     return () => controller.abort()
   }, [language])
+
+  useEffect(() => { const controller = new AbortController(); getStaticPage(language, 'about', controller.signal).then(setPage).catch(() => setPage(null)); return () => controller.abort() }, [language])
+  useEffect(() => { const controller = new AbortController(); getGalleryImages(language, controller.signal).then(setManagedGallery).catch(() => setManagedGallery([])); return () => controller.abort() }, [language])
 
   useEffect(() => {
     if (!selectedImage) {
@@ -78,32 +88,32 @@ export function AboutPage() {
     <article className="about-page">
       <section
         className="about-hero"
-        style={{ '--about-hero-image': `url("${aboutBackground}")` }}
+        style={{ '--about-hero-image': `url("${page?.socialSharingImageUrl ? resolveMediaUrl(page.socialSharingImageUrl) : aboutBackground}")` }}
         aria-labelledby="about-page-title"
       >
         <img className="about-smoke" src={smokeOne} alt="" aria-hidden="true" />
 
         <div className="about-hero-content">
-          <h1 id="about-page-title">{t('aboutPage.heroTitle')}</h1>
+          <h1 id="about-page-title">{page?.title || t('aboutPage.heroTitle')}</h1>
           <div className="about-hero-rule" aria-hidden="true">
             <span />
             <img src={theatreIcon} alt="" aria-hidden="true" />
             <span />
           </div>
-          <p>{t('aboutPage.heroSubtitle')}</p>
+          <p>{page?.subtitle || t('aboutPage.heroSubtitle')}</p>
         </div>
       </section>
 
       <section className="about-intro-section" aria-label={t('aboutPage.introLabel')}>
         <div className="about-intro-inner">
-          <div className="about-intro-copy">
+          {page?.content ? <div className="about-intro-copy" dangerouslySetInnerHTML={{ __html: page.content }} /> : <div className="about-intro-copy">
             <p>{t('aboutPage.intro.paragraph1')}</p>
             <p>{t('aboutPage.intro.paragraph2')}</p>
             <p>{t('aboutPage.intro.paragraph3')}</p>
-          </div>
+          </div>}
 
           <figure className="about-framed-image">
-            <img src={aboutTheatreImage} alt={t('aboutPage.intro.imageAlt')} loading="lazy" />
+            <img src={page?.featuredImageUrl ? resolveMediaUrl(page.featuredImageUrl) : aboutTheatreImage} alt={t('aboutPage.intro.imageAlt')} loading="lazy" />
           </figure>
         </div>
       </section>
@@ -122,12 +132,12 @@ export function AboutPage() {
 
       <section
         className="about-quote-band"
-        style={{ '--about-quote-image': `url("${quoteBackground}")` }}
+        style={{ '--about-quote-image': `url("${page?.parallaxImageUrl ? resolveMediaUrl(page.parallaxImageUrl) : quoteBackground}")` }}
         aria-label={t('aboutPage.quoteLabel')}
       >
         <blockquote>
-          <p>{t('aboutPage.quote.text')}</p>
-          <cite>{t('aboutPage.quote.author')}</cite>
+          <p>{page?.quoteText || t('aboutPage.quote.text')}</p>
+          <cite>{page?.quoteAuthor || t('aboutPage.quote.author')}</cite>
         </blockquote>
       </section>
 

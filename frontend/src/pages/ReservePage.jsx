@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
+import { getStaticPage } from '../api/staticPages'
 import reserveHeader from '../assets/teatri/perne-bg.jpg'
 import emptyShowsImage from '../assets/teatri-pitf-2024.jpg'
 import { postersBySlug } from '../assets/shows/showAssets'
@@ -41,6 +42,9 @@ export function ReservePage() {
   const { language = 'sq' } = useParams()
   const [selectedDate, setSelectedDate] = useState('')
   const [activeShows, setActiveShows] = useState([])
+  const [pageCopy, setPageCopy] = useState(null)
+
+  useEffect(() => { const controller = new AbortController(); getStaticPage(language, 'reservations', controller.signal).then(setPageCopy).catch(() => setPageCopy(null)); return () => controller.abort() }, [language])
 
   useEffect(() => {
     const controller = new AbortController()
@@ -67,13 +71,13 @@ export function ReservePage() {
       >
         <img className="page-hero-smoke" src={smoke} alt="" aria-hidden="true" />
         <div className="page-hero-content">
-          <h1 id="reserve-page-title">{t('reservePage.heroTitle')}</h1>
+          <h1 id="reserve-page-title">{pageCopy?.title || t('reservePage.heroTitle')}</h1>
           <div className="page-hero-rule" aria-hidden="true">
             <span />
             <img src={theatreIcon} alt="" aria-hidden="true" />
             <span />
           </div>
-          <p>{t('reservePage.heroSubtitle')}</p>
+          <p>{pageCopy?.subtitle || t('reservePage.heroSubtitle')}</p>
         </div>
       </section>
 

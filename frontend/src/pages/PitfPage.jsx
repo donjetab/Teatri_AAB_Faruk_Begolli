@@ -10,12 +10,14 @@ import pitfHeader from '../assets/pitf-header.jpg'
 import pitfPicture from '../assets/pitf-pic.jpg'
 import theatreIcon from '../assets/acting-icon-gold.png'
 import smoke from '../assets/smoke_3.png'
+import { getStaticPage } from '../api/staticPages'
 
 export function PitfPage() {
   const { t } = useTranslation()
   const { language = 'sq' } = useParams()
   const [homeMeta, setHomeMeta] = useState(null)
   const [pitf, setPitf] = useState(null)
+  const [pageCopy, setPageCopy] = useState(null)
   const [editionsVisible, setEditionsVisible] = useState(false)
   const editionsRef = useRef(null)
 
@@ -44,6 +46,7 @@ export function PitfPage() {
       document.removeEventListener('visibilitychange', refreshWhenVisible)
     }
   }, [language])
+  useEffect(() => { const controller = new AbortController(); getStaticPage(language, 'pitf-introduction', controller.signal).then(setPageCopy).catch(() => setPageCopy(null)); return () => controller.abort() }, [language])
 
   useEffect(() => {
     const section = editionsRef.current
@@ -65,7 +68,7 @@ export function PitfPage() {
   return <article className="pitf-page">
     <section className="pitf-page-hero about-hero" style={{ '--about-hero-image': `url("${pitfHeader}")` }} aria-labelledby="pitf-page-title">
       <img className="about-smoke" src={smoke} alt="" aria-hidden="true" />
-      <div className="about-hero-content"><h1 id="pitf-page-title">PITF</h1><div className="about-hero-rule" aria-hidden="true"><span /><img src={theatreIcon} alt="" /><span /></div><p>{t('pitfPage.fullName')}</p></div>
+      <div className="about-hero-content"><h1 id="pitf-page-title">{pageCopy?.title || 'PITF'}</h1><div className="about-hero-rule" aria-hidden="true"><span /><img src={theatreIcon} alt="" /><span /></div><p>{pageCopy?.subtitle || t('pitfPage.fullName')}</p></div>
     </section>
     <section className="pitf-page-about" aria-label={t('pitfPage.aboutLabel')}><div className="pitf-page-about-inner"><figure className="pitf-page-picture"><img src={pageImage} alt={pitf?.title || t('pitfPage.imageAlt')} loading="lazy" /></figure><div className="pitf-page-copy">{description.split(/\r?\n\r?\n/).filter(Boolean).map((paragraph, index) => <p key={index}>{paragraph}</p>)}</div></div></section>
     <section ref={editionsRef} className={`pitf-editions-section${editionsVisible ? ' is-visible' : ''}`} aria-labelledby="pitf-editions-title">

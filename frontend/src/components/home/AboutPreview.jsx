@@ -2,7 +2,7 @@ import { useTranslation } from 'react-i18next'
 import { resolveMediaUrl } from '../../api/client'
 import { TheatreStatistics } from './TheatreStatistics'
 
-export function AboutPreview({ home }) {
+export function AboutPreview({ home, statistics }) {
   const { t } = useTranslation()
   const aboutImage = resolveMediaUrl(home.aboutImage?.url)
   return <section className="about-section" aria-labelledby="about-title">
@@ -12,7 +12,7 @@ export function AboutPreview({ home }) {
         <div className="about-visual-overlay" />
         <p className="legacy-lockup" aria-hidden="true"><span>A Legacy.</span><span>A Vision.</span><span>A Theatre.</span><i /></p>
       </div>
-      <div className="about-copy"><h2 id="about-title">{home.aboutTitle || t('home.aboutTitle')}</h2><p>{home.aboutPreview}</p><TheatreStatistics statistics={home.statistics} /></div>
+      <div className="about-copy"><h2 id="about-title">{home.aboutTitle || t('home.aboutTitle')}</h2><p>{home.aboutPreview}</p><TheatreStatistics statistics={home.statistics} managedStatistics={statistics} /></div>
     </div>
   </section>
 }

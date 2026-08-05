@@ -42,17 +42,12 @@ export function ShowEditorPage() {
   const field = (key, value) => setForm(current => ({ ...current, [key]: value }))
   const translation = code => form.translations.find(x => x.languageCode === code)
   const changeTranslation = (code, key, value) => setForm(current => ({ ...current, translations: current.translations.map(x => x.languageCode === code ? { ...x, [key]: value } : x) }))
-  const slugifyTitle = (code, value) => {
-    changeTranslation(code, 'title', value)
-    if (!translation(code).slug) changeTranslation(code, 'slug', value.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''))
-  }
-  const payload = () => ({ ...form, showCategoryId: Number(form.showCategoryId), durationMinutes: form.durationMinutes ? Number(form.durationMinutes) : null, productionYear: form.productionYear ? Number(form.productionYear) : null, ageRecommendation: form.ageRecommendation !== '' ? Number(form.ageRecommendation) : null, premiereDate: form.premiereDate || null, trailerUrl: form.trailerUrl?.trim() || null, videoUrl: form.videoUrl?.trim() || null })
+  const payload = () => ({ ...form, translations: form.translations.map(({ slug, ...item }) => item), showCategoryId: Number(form.showCategoryId), durationMinutes: form.durationMinutes ? Number(form.durationMinutes) : null, productionYear: form.productionYear ? Number(form.productionYear) : null, ageRecommendation: form.ageRecommendation !== '' ? Number(form.ageRecommendation) : null, premiereDate: form.premiereDate || null, trailerUrl: form.trailerUrl?.trim() || null, videoUrl: form.videoUrl?.trim() || null })
   const validateBeforeSave = () => {
     if (!form.showCategoryId) return { tab: 'Basic information', message: 'Choose a category before creating the play.' }
     for (const [code, targetTab] of [['sq', 'Albanian content'], ['en', 'English content']]) {
       const item = translation(code)
       if (!item?.title?.trim()) return { tab: targetTab, message: `Enter the ${code === 'sq' ? 'Albanian' : 'English'} title.` }
-      if (!item?.slug?.trim()) return { tab: targetTab, message: `Enter the ${code === 'sq' ? 'Albanian' : 'English'} page slug.` }
       if (!item?.shortDescription?.trim()) return { tab: targetTab, message: `Enter the ${code === 'sq' ? 'Albanian' : 'English'} short description.` }
       if (!item?.fullDescription?.trim()) return { tab: targetTab, message: `Enter the ${code === 'sq' ? 'Albanian' : 'English'} synopsis.` }
     }
@@ -196,7 +191,7 @@ export function ShowEditorPage() {
   const localGallery = galleriesBySlug[showSlug] ?? []
   const visibleLocalGallery = form.useLocalGalleryFallback === false ? [] : localGallery
   const effectiveTrailer = form.trailerUrl || localTrailer
-  const contentFields = code => <div className="form-grid"><label>Title *<input required value={translation(code).title} onChange={e => slugifyTitle(code, e.target.value)} /></label><label>Slug *<input required pattern="[a-z0-9]+(?:-[a-z0-9]+)*" value={translation(code).slug} onChange={e => changeTranslation(code, 'slug', e.target.value)} /></label><label className="full">Short description *<textarea rows="4" required maxLength="700" value={translation(code).shortDescription} onChange={e => changeTranslation(code, 'shortDescription', e.target.value)} /></label><label className="full">Synopsis *<textarea rows="12" required value={translation(code).fullDescription} onChange={e => changeTranslation(code, 'fullDescription', e.target.value)} /></label></div>
+  const contentFields = code => <div className="form-grid"><label>Title *<input required value={translation(code).title} onChange={e => changeTranslation(code, 'title', e.target.value)} /></label><label className="full">Short description *<textarea rows="4" required maxLength="700" value={translation(code).shortDescription} onChange={e => changeTranslation(code, 'shortDescription', e.target.value)} /></label><label className="full">Synopsis *<textarea rows="12" required value={translation(code).fullDescription} onChange={e => changeTranslation(code, 'fullDescription', e.target.value)} /></label></div>
 
   return <><PageHeader eyebrow="Shows / Plays" title={isNew ? 'Create play' : translation('sq').title || 'Edit play'} description="Manage bilingual content, production information, media and publication state." actions={<><Link className="admin-outline-button" to="/admin/shows">Back to plays</Link>{!isNew && <StatusBadge status={form.status} />}</>} />
     <div className="editor-tabs" role="tablist">{tabs.map(x => <button type="button" className={tab === x ? 'active' : ''} onClick={() => setTab(x)} key={x}>{x}</button>)}</div>

@@ -5,9 +5,11 @@ import { getLocalizedPath } from '../../routes/localizedRoutes'
 
 const navItems = ['home', 'about', 'shows', 'news', 'pitf', 'gallery', 'contact']
 
-export function MobileNavigation({ language }) {
+export function MobileNavigation({ language, navigation }) {
   const { t } = useTranslation()
   const [isOpen, setIsOpen] = useState(false)
+  const labels = navigation?.translations?.find(item => item.languageCode === language)?.labels
+  const items = navigation?.items?.filter(item => item.showInHeader).sort((a, b) => a.sortOrder - b.sortOrder).map(item => item.routeKey) ?? navItems
 
   useEffect(() => {
     function closeOnEscape(event) {
@@ -34,7 +36,7 @@ export function MobileNavigation({ language }) {
       </button>
       <div id="mobile-navigation-panel" className={isOpen ? 'mobile-panel open' : 'mobile-panel'}>
         <nav aria-label={t('a11y.mobileNavigation')}>
-          {navItems.map((item) => (
+          {items.map((item) => (
             <NavLink
               key={item}
               to={getLocalizedPath(item, language)}
@@ -42,7 +44,7 @@ export function MobileNavigation({ language }) {
               className={({ isActive }) => (isActive ? 'mobile-nav-link active' : 'mobile-nav-link')}
               onClick={() => setIsOpen(false)}
             >
-              {t(`nav.${item}`)}
+              {labels?.[item] || t(`nav.${item}`)}
             </NavLink>
           ))}
         </nav>

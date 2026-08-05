@@ -18,6 +18,8 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
     public DbSet<LocationTranslation> LocationTranslations => Set<LocationTranslation>();
     public DbSet<MediaAsset> MediaAssets => Set<MediaAsset>();
     public DbSet<MediaAssetTranslation> MediaAssetTranslations => Set<MediaAssetTranslation>();
+    public DbSet<StaticPage> StaticPages => Set<StaticPage>();
+    public DbSet<StaticPageTranslation> StaticPageTranslations => Set<StaticPageTranslation>();
     public DbSet<NewsArticle> NewsArticles => Set<NewsArticle>();
     public DbSet<NewsExternalLink> NewsExternalLinks => Set<NewsExternalLink>();
     public DbSet<NewsArticleTranslation> NewsArticleTranslations => Set<NewsArticleTranslation>();

@@ -1,4 +1,7 @@
 using System.Security.Claims;
+using System.Globalization;
+using System.Text;
+using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -27,7 +30,7 @@ public sealed class AdminShowsController(AppDbContext db, IClock clock) : Contro
     public async Task<ActionResult<AdminShowListResponseDto>> List(
         [FromQuery] string? search, [FromQuery] int? categoryId, [FromQuery] string? status,
         [FromQuery] string? lifecycleStatus, [FromQuery] int? year, [FromQuery] bool? featured,
-        [FromQuery] string sort = "updated", [FromQuery] int page = 1, [FromQuery] int pageSize = 20,
+        [FromQuery] string sort = "production", [FromQuery] int page = 1, [FromQuery] int pageSize = 20,
         CancellationToken token = default)
     {
         page = Math.Max(1, page);
@@ -47,6 +50,9 @@ public sealed class AdminShowsController(AppDbContext db, IClock clock) : Contro
         {
             "title" => query.OrderBy(x => x.Translations.Where(t => t.Language.Code == "sq").Select(t => t.Title).FirstOrDefault()),
             "premiere" => query.OrderByDescending(x => x.PremiereDate),
+            "production" => query.OrderByDescending(x => x.IsFeatured)
+                .ThenByDescending(x => x.ProductionYear)
+                .ThenBy(x => x.Translations.Where(t => t.Language.Code == "sq").Select(t => t.Title).FirstOrDefault()),
             _ => query.OrderByDescending(x => x.UpdatedAt)
         };
         var total = await query.CountAsync(token);
@@ -102,18 +108,22 @@ public sealed class AdminShowsController(AppDbContext db, IClock clock) : Contro
             return BadRequest(new ValidationProblemDetails(new Dictionary<string, string[]> { ["Credits"] = ["One or more credit types are invalid."] }));
         await using var transaction = await db.Database.BeginTransactionAsync(token);
         db.ShowCredits.RemoveRange(show.Credits);
+        var peopleByName = new Dictionary<string, Person>(StringComparer.OrdinalIgnoreCase);
         for (var index = 0; index < request.Credits.Count; index++)
         {
             var item = request.Credits[index];
+            var personName = item.PersonName.Trim();
             Person? person = null;
             if (item.PersonId.HasValue)
                 person = await db.People.FirstOrDefaultAsync(x => x.Id == item.PersonId, token);
-            person ??= await db.People.FirstOrDefaultAsync(x => x.FullName == item.PersonName.Trim(), token);
+            if (person is null && !peopleByName.TryGetValue(personName, out person))
+                person = await db.People.FirstOrDefaultAsync(x => x.FullName == personName, token);
             if (person is null)
             {
-                person = new Person { FullName = item.PersonName.Trim(), CreatedAt = clock.UtcNow, UpdatedAt = clock.UtcNow };
+                person = new Person { FullName = personName, CreatedAt = clock.UtcNow, UpdatedAt = clock.UtcNow };
                 db.People.Add(person);
             }
+            peopleByName[personName] = person;
             show.Credits.Add(new ShowCredit
             {
                 Person = person, CreditTypeId = item.CreditTypeId, CharacterName = Clean(item.CharacterName),
@@ -341,8 +351,9 @@ public sealed class AdminShowsController(AppDbContext db, IClock clock) : Contro
             errors[nameof(request.Translations)] = ["Exactly one Albanian and one English translation are required."];
         foreach (var translation in request.Translations)
         {
-            if (await db.ShowTranslations.AnyAsync(x => x.Slug == translation.Slug && x.ShowId != id, token))
-                errors[$"Translations.{translation.LanguageCode}.Slug"] = ["This slug is already in use."];
+            var slug = Slugify(translation.Title);
+            if (string.IsNullOrEmpty(slug))
+                errors[$"Translations.{translation.LanguageCode}.Title"] = ["The title must contain letters or numbers."];
         }
         if (!await db.ShowCategories.AnyAsync(x => x.Id == request.ShowCategoryId && x.IsActive, token))
             errors[nameof(request.ShowCategoryId)] = ["The selected category does not exist."];
@@ -365,7 +376,7 @@ public sealed class AdminShowsController(AppDbContext db, IClock clock) : Contro
         show.IsFeatured = request.IsFeatured;
     }
 
-    private async Task ApplyTranslationsAsync(Show show, IReadOnlyList<AdminShowTranslationDto> translations, CancellationToken token)
+    private async Task ApplyTranslationsAsync(Show show, IReadOnlyList<SaveAdminShowTranslationDto> translations, CancellationToken token)
     {
         var languages = await db.Languages.Where(x => x.IsActive).ToDictionaryAsync(x => x.Code, token);
         foreach (var item in translations)
@@ -378,7 +389,7 @@ public sealed class AdminShowsController(AppDbContext db, IClock clock) : Contro
                 show.Translations.Add(translation);
             }
             translation.Title = item.Title.Trim();
-            translation.Slug = item.Slug.Trim().ToLowerInvariant();
+            translation.Slug = await UniqueSlugAsync(item.Title, language.Id, show.Id, token);
             translation.ShortDescription = item.ShortDescription.Trim();
             translation.FullDescription = item.FullDescription.Trim();
             translation.MetaTitle = Clean(item.MetaTitle);
@@ -420,4 +431,24 @@ public sealed class AdminShowsController(AppDbContext db, IClock clock) : Contro
         x.UseLocalGalleryFallback);
     private static string Title(Show show) => show.Translations.FirstOrDefault(x => x.Language.Code == "sq")?.Title ?? $"Show {show.Id}";
     private static string? Clean(string? value) => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+    private static string Slugify(string value)
+    {
+        var normalized = value.Trim().ToLowerInvariant().Normalize(NormalizationForm.FormD);
+        var withoutMarks = new string(normalized.Where(x => CharUnicodeInfo.GetUnicodeCategory(x) != UnicodeCategory.NonSpacingMark).ToArray());
+        var slug = Regex.Replace(withoutMarks, "[^a-z0-9]+", "-").Trim('-');
+        return slug.Length <= 220 ? slug : slug[..220].TrimEnd('-');
+    }
+
+    private async Task<string> UniqueSlugAsync(string title, int languageId, int showId, CancellationToken token)
+    {
+        var baseSlug = Slugify(title);
+        var candidate = baseSlug;
+        for (var suffix = 2; await db.ShowTranslations.AnyAsync(
+                 x => x.LanguageId == languageId && x.Slug == candidate && x.ShowId != showId, token); suffix++)
+        {
+            var ending = $"-{suffix}";
+            candidate = $"{baseSlug[..Math.Min(baseSlug.Length, 220 - ending.Length)].TrimEnd('-')}{ending}";
+        }
+        return candidate;
+    }
 }

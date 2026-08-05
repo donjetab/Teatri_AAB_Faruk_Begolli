@@ -7,6 +7,7 @@ import { ReservationBanner } from '../components/home/ReservationBanner'
 import contactHeader from '../assets/Kolegji-AAB.jpg'
 import smoke from '../assets/smoke_3.png'
 import theatreIcon from '../assets/acting-icon-gold.png'
+import { getStaticPage } from '../api/staticPages'
 
 const theatreMapEmbedUrl = 'https://www.google.com/maps/embed?pb=!1m14!1m8!1m3!1d11740.15791744908!2d21.112945!3d42.639323!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x13549f005d591c87%3A0x2473b114eef9fd14!2zVGVhdHJpIEFBQiDigJxGYXJ1ayBCZWdvbGxp4oCd!5e0!3m2!1sen!2sus!4v1785141268194!5m2!1sen!2sus'
 const theatreMapUrl = 'https://www.google.com/maps/search/?api=1&query=42.6389837%2C21.1126562'
@@ -41,6 +42,7 @@ export function ContactPage() {
   const { t } = useTranslation()
   const { language = 'sq' } = useParams()
   const [home, setHome] = useState(null)
+  const [pageCopy, setPageCopy] = useState(null)
   const [status, setStatus] = useState('idle')
   const [form, setForm] = useState({ name: '', email: '', subject: '', message: '' })
 
@@ -49,6 +51,7 @@ export function ContactPage() {
     getHome(language, controller.signal).then(setHome).catch(() => setHome(null))
     return () => controller.abort()
   }, [language])
+  useEffect(() => { const controller = new AbortController(); getStaticPage(language, 'contact', controller.signal).then(setPageCopy).catch(() => setPageCopy(null)); return () => controller.abort() }, [language])
 
   function updateField(event) {
     setForm((current) => ({ ...current, [event.target.name]: event.target.value }))
@@ -79,13 +82,13 @@ export function ContactPage() {
       >
         <img className="page-hero-smoke" src={smoke} alt="" aria-hidden="true" />
         <div className="page-hero-content">
-          <h1 id="contact-page-title">{t('contactPage.heroTitle')}</h1>
+          <h1 id="contact-page-title">{pageCopy?.title || t('contactPage.heroTitle')}</h1>
           <div className="page-hero-rule" aria-hidden="true">
             <span />
             <img src={theatreIcon} alt="" aria-hidden="true" />
             <span />
           </div>
-          <p>{t('contactPage.heroSubtitle')}</p>
+          <p>{pageCopy?.subtitle || t('contactPage.heroSubtitle')}</p>
         </div>
       </section>
 
@@ -95,14 +98,14 @@ export function ContactPage() {
             <h2 id="contact-location-title">{t('contactPage.location')}</h2>
             <iframe
               title={t('contactPage.mapTitle')}
-              src={theatreMapEmbedUrl}
+              src={pageCopy?.mapEmbedUrl || theatreMapEmbedUrl}
               loading="lazy"
               referrerPolicy="strict-origin-when-cross-origin"
               allowFullScreen
             />
             <a
               className="contact-address"
-              href={theatreMapUrl}
+              href={pageCopy?.mapLinkUrl || theatreMapUrl}
               target="_blank"
               rel="noreferrer"
             >

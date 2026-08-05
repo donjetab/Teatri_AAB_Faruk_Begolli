@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useLocation, useParams, useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
+import { getStaticPage } from '../api/staticPages'
 import { getNews } from '../api/news'
 import { getHome } from '../api/home'
 import { resolveMediaUrl } from '../api/client'
@@ -36,9 +37,12 @@ export function NewsPage() {
   const [articles, setArticles] = useState([])
   const [home, setHome] = useState(null)
   const [status, setStatus] = useState('loading')
+  const [pageCopy, setPageCopy] = useState(null)
   const query = searchParams.get('q') ?? ''
   const requestedPage = Number.parseInt(searchParams.get('page') ?? '1', 10)
   const currentPage = Number.isFinite(requestedPage) && requestedPage > 0 ? requestedPage : 1
+
+  useEffect(() => { const controller = new AbortController(); getStaticPage(language, 'news-introduction', controller.signal).then(setPageCopy).catch(() => setPageCopy(null)); return () => controller.abort() }, [language])
 
   useEffect(() => {
     const controller = new AbortController()
@@ -110,13 +114,13 @@ export function NewsPage() {
       >
         <img className="page-hero-smoke" src={smoke} alt="" aria-hidden="true" />
         <div className="page-hero-content">
-          <h1 id="news-page-title">{t('newsPage.heroTitle')}</h1>
+          <h1 id="news-page-title">{pageCopy?.title || t('newsPage.heroTitle')}</h1>
           <div className="page-hero-rule" aria-hidden="true">
             <span />
             <img src={theatreIcon} alt="" aria-hidden="true" />
             <span />
           </div>
-          <p>{t('newsPage.heroSubtitle')}</p>
+          <p>{pageCopy?.subtitle || t('newsPage.heroSubtitle')}</p>
           <label className="news-search">
             <span className="sr-only">{t('newsPage.searchLabel')}</span>
             <input

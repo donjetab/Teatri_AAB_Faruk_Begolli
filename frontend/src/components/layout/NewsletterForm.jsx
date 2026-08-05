@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { apiClient } from '../../api/client'
 
-export function NewsletterForm({ language }) {
+export function NewsletterForm({ language, invitation }) {
   const { t } = useTranslation()
   const [email, setEmail] = useState('')
   const [status, setStatus] = useState('idle')
@@ -30,7 +30,7 @@ export function NewsletterForm({ language }) {
 
   return (
     <form className="newsletter-form" onSubmit={handleSubmit}>
-      <p>{t('footer.newsletterText')}</p>
+      <p>{invitation || t('footer.newsletterText')}</p>
       <div className="newsletter-control">
         <label htmlFor="newsletter-email" className="sr-only">
           {t('newsletter.emailLabel')}

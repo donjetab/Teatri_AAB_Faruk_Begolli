@@ -7,6 +7,8 @@ public sealed record ShowListItemDto(
     string Synopsis,
     string? PosterUrl,
     string? Director,
+    int? ProductionYear,
+    bool IsFeatured,
     DateOnly? PremiereDate,
     DateTimeOffset? NextPerformanceDateUtc,
     string? ReservationUrl);

@@ -26,3 +26,9 @@ export function ProtectedAdminRoute() {
   if (loading) return <div className="admin-full-state">Loading secure session…</div>
   return user ? <Outlet /> : <Navigate to="/admin/login" replace state={{ from: location }} />
 }
+
+export function SuperAdminRoute() {
+  const { user, loading } = useAdminAuth()
+  if (loading) return <div className="admin-full-state">Loading secure session…</div>
+  return user?.role === 'SuperAdmin' ? <Outlet /> : <Navigate to="/admin" replace />
+}

@@ -359,10 +359,13 @@ internal sealed class MediaAssetConfiguration : IEntityTypeConfiguration<MediaAs
         builder.Property(x => x.FileUrl).HasMaxLength(1000).IsRequired();
         builder.Property(x => x.FileName).HasMaxLength(260).IsRequired();
         builder.Property(x => x.MimeType).HasMaxLength(120).IsRequired();
+        builder.Property(x => x.ContentHash).HasMaxLength(64);
+        builder.Property(x => x.PhotographerCredit).HasMaxLength(220);
 
         builder.HasIndex(x => x.FileUrl);
         builder.HasIndex(x => x.UploadedAt);
         builder.HasIndex(x => x.IsActive);
+        builder.HasIndex(x => x.ContentHash);
     }
 }
 
@@ -480,6 +483,7 @@ internal sealed class TheatreInformationConfiguration : IEntityTypeConfiguration
 {
     public void Configure(EntityTypeBuilder<TheatreInformation> builder)
     {
+        builder.Property(x => x.NavigationConfigurationJson).HasColumnType("nvarchar(max)");
         builder.Property(x => x.Address).HasMaxLength(300).IsRequired();
         builder.Property(x => x.Phone).HasMaxLength(80).IsRequired();
         builder.Property(x => x.Email).HasMaxLength(180).IsRequired();
@@ -608,6 +612,43 @@ internal sealed class NewsletterSubscriberConfiguration : IEntityTypeConfigurati
     }
 }
 
+internal sealed class StaticPageConfiguration : IEntityTypeConfiguration<StaticPage>
+{
+    public void Configure(EntityTypeBuilder<StaticPage> builder)
+    {
+        builder.Property(x => x.PageKey).HasMaxLength(80).IsRequired();
+        builder.HasIndex(x => x.PageKey).IsUnique();
+        builder.HasOne(x => x.FeaturedMediaAsset).WithMany().HasForeignKey(x => x.FeaturedMediaAssetId).OnDelete(DeleteBehavior.Restrict);
+        builder.HasOne(x => x.ParallaxMediaAsset).WithMany().HasForeignKey(x => x.ParallaxMediaAssetId).OnDelete(DeleteBehavior.Restrict);
+        builder.HasOne(x => x.SocialSharingMediaAsset).WithMany().HasForeignKey(x => x.SocialSharingMediaAssetId).OnDelete(DeleteBehavior.Restrict);
+        builder.Property(x => x.MapEmbedUrl).HasMaxLength(2000);
+        builder.Property(x => x.MapLinkUrl).HasMaxLength(2000);
+    }
+}
+
+internal sealed class StaticPageTranslationConfiguration : IEntityTypeConfiguration<StaticPageTranslation>
+{
+    public void Configure(EntityTypeBuilder<StaticPageTranslation> builder)
+    {
+        builder.Property(x => x.Title).HasMaxLength(220).IsRequired();
+        builder.Property(x => x.Slug).HasMaxLength(220).IsRequired();
+        builder.Property(x => x.MetaTitle).HasMaxLength(220);
+        builder.Property(x => x.MetaDescription).HasMaxLength(500);
+        builder.Property(x => x.Subtitle).HasMaxLength(500);
+        builder.Property(x => x.QuoteAuthor).HasMaxLength(220);
+        builder.Property(x => x.StatOneValue).HasMaxLength(40);
+        builder.Property(x => x.StatOneLabel).HasMaxLength(120);
+        builder.Property(x => x.StatTwoValue).HasMaxLength(40);
+        builder.Property(x => x.StatTwoLabel).HasMaxLength(120);
+        builder.Property(x => x.StatThreeValue).HasMaxLength(40);
+        builder.Property(x => x.StatThreeLabel).HasMaxLength(120);
+        builder.HasOne(x => x.StaticPage).WithMany(x => x.Translations).HasForeignKey(x => x.StaticPageId).OnDelete(DeleteBehavior.Cascade);
+        builder.HasOne(x => x.Language).WithMany().HasForeignKey(x => x.LanguageId).OnDelete(DeleteBehavior.Restrict);
+        builder.HasIndex(x => new { x.StaticPageId, x.LanguageId }).IsUnique();
+        builder.HasIndex(x => new { x.LanguageId, x.Slug }).IsUnique();
+    }
+}
+
 internal sealed class AdminUserConfiguration : IEntityTypeConfiguration<AdminUser>
 {
     public void Configure(EntityTypeBuilder<AdminUser> builder)
@@ -626,6 +667,7 @@ internal sealed class AdminActivityConfiguration : IEntityTypeConfiguration<Admi
     public void Configure(EntityTypeBuilder<AdminActivity> builder)
     {
         builder.Property(x => x.Action).HasMaxLength(100).IsRequired();
+        builder.Property(x => x.AdminDisplayName).HasMaxLength(160);
         builder.Property(x => x.EntityType).HasMaxLength(100).IsRequired();
         builder.Property(x => x.EntityId).HasMaxLength(100);
         builder.Property(x => x.Summary).HasMaxLength(600);

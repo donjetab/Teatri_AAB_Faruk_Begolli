@@ -35,6 +35,10 @@ namespace Theatre.Api.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
+                    b.Property<string>("AdminDisplayName")
+                        .HasMaxLength(160)
+                        .HasColumnType("nvarchar(160)");
+
                     b.Property<int?>("AdminUserId")
                         .HasColumnType("int");
 
@@ -486,6 +490,10 @@ namespace Theatre.Api.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<string>("ContentHash")
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
                     b.Property<string>("FileName")
                         .IsRequired()
                         .HasMaxLength(260)
@@ -510,6 +518,10 @@ namespace Theatre.Api.Migrations
                         .HasMaxLength(120)
                         .HasColumnType("nvarchar(120)");
 
+                    b.Property<string>("PhotographerCredit")
+                        .HasMaxLength(220)
+                        .HasColumnType("nvarchar(220)");
+
                     b.Property<DateTimeOffset?>("TakenAt")
                         .HasColumnType("datetimeoffset");
 
@@ -520,6 +532,8 @@ namespace Theatre.Api.Migrations
                         .HasColumnType("int");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("ContentHash");
 
                     b.HasIndex("FileUrl");
 
@@ -1239,6 +1253,141 @@ namespace Theatre.Api.Migrations
                     b.ToTable("ShowTranslations");
                 });
 
+            modelBuilder.Entity("Theatre.Api.Models.StaticPage", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<int?>("FeaturedMediaAssetId")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("IsPublished")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("MapEmbedUrl")
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<string>("MapLinkUrl")
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<string>("PageKey")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("nvarchar(80)");
+
+                    b.Property<int?>("ParallaxMediaAssetId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("SocialSharingMediaAssetId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("FeaturedMediaAssetId");
+
+                    b.HasIndex("PageKey")
+                        .IsUnique();
+
+                    b.HasIndex("ParallaxMediaAssetId");
+
+                    b.HasIndex("SocialSharingMediaAssetId");
+
+                    b.ToTable("StaticPages");
+                });
+
+            modelBuilder.Entity("Theatre.Api.Models.StaticPageTranslation", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Content")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("LanguageId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("MetaDescription")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("MetaTitle")
+                        .HasMaxLength(220)
+                        .HasColumnType("nvarchar(220)");
+
+                    b.Property<string>("QuoteAuthor")
+                        .HasMaxLength(220)
+                        .HasColumnType("nvarchar(220)");
+
+                    b.Property<string>("QuoteText")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Slug")
+                        .IsRequired()
+                        .HasMaxLength(220)
+                        .HasColumnType("nvarchar(220)");
+
+                    b.Property<string>("StatOneLabel")
+                        .HasMaxLength(120)
+                        .HasColumnType("nvarchar(120)");
+
+                    b.Property<string>("StatOneValue")
+                        .HasMaxLength(40)
+                        .HasColumnType("nvarchar(40)");
+
+                    b.Property<string>("StatThreeLabel")
+                        .HasMaxLength(120)
+                        .HasColumnType("nvarchar(120)");
+
+                    b.Property<string>("StatThreeValue")
+                        .HasMaxLength(40)
+                        .HasColumnType("nvarchar(40)");
+
+                    b.Property<string>("StatTwoLabel")
+                        .HasMaxLength(120)
+                        .HasColumnType("nvarchar(120)");
+
+                    b.Property<string>("StatTwoValue")
+                        .HasMaxLength(40)
+                        .HasColumnType("nvarchar(40)");
+
+                    b.Property<int>("StaticPageId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Subtitle")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(220)
+                        .HasColumnType("nvarchar(220)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("LanguageId", "Slug")
+                        .IsUnique();
+
+                    b.HasIndex("StaticPageId", "LanguageId")
+                        .IsUnique();
+
+                    b.ToTable("StaticPageTranslations");
+                });
+
             modelBuilder.Entity("Theatre.Api.Models.TheatreInformation", b =>
                 {
                     b.Property<int>("Id")
@@ -1299,6 +1448,10 @@ namespace Theatre.Api.Migrations
                     b.Property<decimal>("Longitude")
                         .HasPrecision(9, 6)
                         .HasColumnType("decimal(9,6)");
+
+                    b.Property<string>("NavigationConfigurationJson")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<int>("PerformancesCount")
                         .HasColumnType("int");
@@ -1851,6 +2004,49 @@ namespace Theatre.Api.Migrations
                     b.Navigation("Show");
                 });
 
+            modelBuilder.Entity("Theatre.Api.Models.StaticPage", b =>
+                {
+                    b.HasOne("Theatre.Api.Models.MediaAsset", "FeaturedMediaAsset")
+                        .WithMany()
+                        .HasForeignKey("FeaturedMediaAssetId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("Theatre.Api.Models.MediaAsset", "ParallaxMediaAsset")
+                        .WithMany()
+                        .HasForeignKey("ParallaxMediaAssetId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("Theatre.Api.Models.MediaAsset", "SocialSharingMediaAsset")
+                        .WithMany()
+                        .HasForeignKey("SocialSharingMediaAssetId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("FeaturedMediaAsset");
+
+                    b.Navigation("ParallaxMediaAsset");
+
+                    b.Navigation("SocialSharingMediaAsset");
+                });
+
+            modelBuilder.Entity("Theatre.Api.Models.StaticPageTranslation", b =>
+                {
+                    b.HasOne("Theatre.Api.Models.Language", "Language")
+                        .WithMany()
+                        .HasForeignKey("LanguageId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Theatre.Api.Models.StaticPage", "StaticPage")
+                        .WithMany("Translations")
+                        .HasForeignKey("StaticPageId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Language");
+
+                    b.Navigation("StaticPage");
+                });
+
             modelBuilder.Entity("Theatre.Api.Models.TheatreInformation", b =>
                 {
                     b.HasOne("Theatre.Api.Models.MediaAsset", "AboutPreviewMediaAsset")
@@ -1995,6 +2191,11 @@ namespace Theatre.Api.Migrations
                 {
                     b.Navigation("Shows");
 
+                    b.Navigation("Translations");
+                });
+
+            modelBuilder.Entity("Theatre.Api.Models.StaticPage", b =>
+                {
                     b.Navigation("Translations");
                 });
 

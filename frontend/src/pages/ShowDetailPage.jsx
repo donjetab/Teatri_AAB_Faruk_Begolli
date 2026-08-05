@@ -16,17 +16,19 @@ import { ErrorState } from '../components/ui/ErrorState'
 import { LoadingState } from '../components/ui/LoadingState'
 
 function consolidateCredits(credits) {
-  const directors = credits.filter((credit) => credit.typeCode === 'director')
-  const otherCredits = credits.filter((credit) => credit.typeCode !== 'director')
+  const actingCredits = credits.filter((credit) => credit.typeCode === 'cast')
+  const productionCredits = credits.filter((credit) => credit.typeCode !== 'cast')
   const rolesByPerson = new Map()
 
-  otherCredits.forEach((credit, creditIndex) => {
+  productionCredits.forEach((credit) => {
+    const creditIndex = credits.indexOf(credit)
     credit.people.forEach((person) => {
-      const entry = rolesByPerson.get(person) ?? { person, roles: [], order: creditIndex }
+      const personKey = person.trim().toLocaleLowerCase()
+      const entry = rolesByPerson.get(personKey) ?? { person, roles: [], order: creditIndex }
       if (!entry.roles.some((role) => role.typeCode === credit.typeCode)) {
         entry.roles.push({ typeCode: credit.typeCode, typeName: credit.typeName })
       }
-      rolesByPerson.set(person, entry)
+      rolesByPerson.set(personKey, entry)
     })
   })
 
@@ -44,12 +46,19 @@ function consolidateCredits(credits) {
     groupedCredits.set(key, group)
   })
 
-  return [
-    ...directors,
-    ...[...groupedCredits.values()]
-      .sort((left, right) => left.order - right.order)
-      .map(({ order: _order, ...credit }) => credit),
-  ]
+  const consolidated = [...groupedCredits.values()]
+  if (actingCredits.length) {
+    consolidated.push({
+      typeCode: 'cast',
+      typeName: actingCredits[0].typeName,
+      people: [...new Set(actingCredits.flatMap((credit) => credit.people))],
+      order: Math.min(...actingCredits.map((credit) => credits.indexOf(credit))),
+    })
+  }
+
+  return consolidated
+    .sort((left, right) => left.order - right.order)
+    .map(({ order: _order, ...credit }) => credit)
 }
 
 export function ShowDetailPage() {
@@ -215,8 +224,8 @@ export function ShowDetailPage() {
                 </div>
               )}
 
-              {displayCredits.map((credit) => (
-                <div className="show-detail-fact" key={credit.typeCode}>
+              {displayCredits.map((credit, index) => (
+                <div className="show-detail-fact" key={`${credit.typeCode}-${credit.typeName}-${index}`}>
                   <span className="show-detail-fact-icon">
                     <CreditIcon type={credit.typeCode} />
                   </span>

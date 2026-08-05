@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { Footer } from './Footer'
 import { Header } from './Header'
 import { getHome } from '../../api/home'
+import { getNavigation } from '../../api/navigation'
 import { getLanguageFromPath, getLocalizedPath, getRouteKey } from '../../routes/localizedRoutes'
 
 const seoContent = {
@@ -115,6 +116,7 @@ export function AppLayout() {
   const language = params.language ?? getLanguageFromPath(location.pathname)
   const routeKey = getRouteKey(location.pathname)
   const [homepageMeta, setHomepageMeta] = useState(null)
+  const [navigation, setNavigation] = useState(null)
   const [showBackToTop, setShowBackToTop] = useState(false)
   const [isHeaderScrolled, setIsHeaderScrolled] = useState(false)
 
@@ -167,6 +169,12 @@ export function AppLayout() {
 
     return () => controller.abort()
   }, [language])
+
+  useEffect(() => {
+    const controller = new AbortController()
+    getNavigation(controller.signal).then(setNavigation).catch(() => setNavigation(null))
+    return () => controller.abort()
+  }, [])
 
   useEffect(() => {
     const content = seoContent[language]?.[routeKey] ?? seoContent.sq.home
@@ -269,11 +277,11 @@ export function AppLayout() {
 
   return (
     <div className={`site-shell site-shell-${routeKey}`}>
-      <Header language={language} isScrolled={isHeaderScrolled} />
+      <Header language={language} isScrolled={isHeaderScrolled} navigation={navigation} />
       <main className="site-main" id="content">
         <Outlet />
       </main>
-      <Footer language={language} homepageMeta={homepageMeta} />
+      <Footer language={language} homepageMeta={homepageMeta} navigation={navigation} />
       <button
         type="button"
         className={`back-to-top${showBackToTop ? ' visible' : ''}`}

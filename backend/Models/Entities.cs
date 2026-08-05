@@ -254,6 +254,8 @@ public sealed class MediaAsset
     public string FileUrl { get; set; } = string.Empty;
     public string FileName { get; set; } = string.Empty;
     public string MimeType { get; set; } = string.Empty;
+    public string? ContentHash { get; set; }
+    public string? PhotographerCredit { get; set; }
     public int? Width { get; set; }
     public int? Height { get; set; }
     public long? FileSize { get; set; }
@@ -338,6 +340,7 @@ public sealed class TheatreInformation
     public int? LogoMediaAssetId { get; set; }
     public int? FaviconMediaAssetId { get; set; }
     public int? SocialSharingMediaAssetId { get; set; }
+    public string NavigationConfigurationJson { get; set; } = string.Empty;
     public bool HeroIsVisible { get; set; } = true;
     public bool ReservationBannerIsVisible { get; set; } = true;
     public bool PitfFeatureIsVisible { get; set; } = true;
@@ -448,6 +451,47 @@ public sealed class NewsletterSubscriber
     public DateTimeOffset? UnsubscribedAt { get; set; }
 }
 
+public sealed class StaticPage
+{
+    public int Id { get; set; }
+    public string PageKey { get; set; } = string.Empty;
+    public int? FeaturedMediaAssetId { get; set; }
+    public int? ParallaxMediaAssetId { get; set; }
+    public int? SocialSharingMediaAssetId { get; set; }
+    public string? MapEmbedUrl { get; set; }
+    public string? MapLinkUrl { get; set; }
+    public bool IsPublished { get; set; }
+    public DateTimeOffset CreatedAt { get; set; }
+    public DateTimeOffset UpdatedAt { get; set; }
+    public MediaAsset? FeaturedMediaAsset { get; set; }
+    public MediaAsset? ParallaxMediaAsset { get; set; }
+    public MediaAsset? SocialSharingMediaAsset { get; set; }
+    public ICollection<StaticPageTranslation> Translations { get; set; } = [];
+}
+
+public sealed class StaticPageTranslation
+{
+    public int Id { get; set; }
+    public int StaticPageId { get; set; }
+    public int LanguageId { get; set; }
+    public string Title { get; set; } = string.Empty;
+    public string Slug { get; set; } = string.Empty;
+    public string Content { get; set; } = string.Empty;
+    public string? Subtitle { get; set; }
+    public string? QuoteText { get; set; }
+    public string? QuoteAuthor { get; set; }
+    public string? StatOneValue { get; set; }
+    public string? StatOneLabel { get; set; }
+    public string? StatTwoValue { get; set; }
+    public string? StatTwoLabel { get; set; }
+    public string? StatThreeValue { get; set; }
+    public string? StatThreeLabel { get; set; }
+    public string? MetaTitle { get; set; }
+    public string? MetaDescription { get; set; }
+    public StaticPage StaticPage { get; set; } = null!;
+    public Language Language { get; set; } = null!;
+}
+
 public sealed class AdminUser
 {
     public int Id { get; set; }
@@ -465,6 +509,7 @@ public sealed class AdminActivity
 {
     public long Id { get; set; }
     public int? AdminUserId { get; set; }
+    public string? AdminDisplayName { get; set; }
     public string Action { get; set; } = string.Empty;
     public string EntityType { get; set; } = string.Empty;
     public string? EntityId { get; set; }

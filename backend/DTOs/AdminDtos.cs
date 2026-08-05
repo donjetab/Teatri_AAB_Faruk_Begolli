@@ -20,7 +20,10 @@ public sealed record LocalizedWebsiteInformationDto(
 
 public sealed record WebsiteInformationDto(
     int Id, string Address, string Phone, string Email, string? FacebookUrl, string? InstagramUrl,
-    string? ReservationUrl, int? LogoMediaAssetId, int? FaviconMediaAssetId, int? SocialSharingMediaAssetId,
+    string? ReservationUrl,
+    int? LogoMediaAssetId, string? LogoUrl,
+    int? FaviconMediaAssetId, string? FaviconUrl,
+    int? SocialSharingMediaAssetId, string? SocialSharingImageUrl,
     IReadOnlyList<LocalizedWebsiteInformationDto> Translations, DateTimeOffset UpdatedAt);
 
 public sealed record UpdateWebsiteInformationRequest(

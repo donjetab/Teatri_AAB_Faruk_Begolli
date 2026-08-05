@@ -59,6 +59,7 @@ public sealed class AdminCommunicationController(AppDbContext db, IClock clock) 
     }
 
     [HttpGet("subscribers")]
+    [Authorize(Policy = "SuperAdmin")]
     public async Task<ActionResult<AdminSubscriberListDto>> Subscribers([FromQuery] string? search, [FromQuery] bool? active, [FromQuery] int page = 1, [FromQuery] int pageSize = 50, CancellationToken token = default)
     {
         page = Math.Max(1, page); pageSize = Math.Clamp(pageSize, 1, 200);
@@ -72,6 +73,7 @@ public sealed class AdminCommunicationController(AppDbContext db, IClock clock) 
     }
 
     [HttpGet("subscribers/export")]
+    [Authorize(Policy = "SuperAdmin")]
     public async Task<IActionResult> ExportSubscribers(CancellationToken token)
     {
         var items = await db.NewsletterSubscribers.AsNoTracking().OrderBy(x => x.Email).ToListAsync(token);
@@ -83,6 +85,7 @@ public sealed class AdminCommunicationController(AppDbContext db, IClock clock) 
     }
 
     [HttpDelete("subscribers/{id:int}")]
+    [Authorize(Policy = "SuperAdmin")]
     public async Task<IActionResult> DeleteSubscriber(int id, CancellationToken token)
     {
         var item = await db.NewsletterSubscribers.FirstOrDefaultAsync(x => x.Id == id, token);

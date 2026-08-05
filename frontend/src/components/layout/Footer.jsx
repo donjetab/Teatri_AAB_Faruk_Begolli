@@ -4,10 +4,13 @@ import logoScene from '../../assets/Teatri Logo/Teatri Logo -W-RED.png'
 import { getLocalizedPath } from '../../routes/localizedRoutes'
 import { NewsletterForm } from './NewsletterForm'
 
-export function Footer({ language, homepageMeta }) {
+export function Footer({ language, homepageMeta, navigation }) {
   const { t } = useTranslation()
-
-  const links = ['home', 'about', 'shows', 'news', 'gallery']
+  const managed = navigation?.translations?.find(item => item.languageCode === language)
+  const links = navigation?.items?.filter(item => item.showInFooter).sort((a, b) => a.sortOrder - b.sortOrder).map(item => item.routeKey) ?? ['home', 'about', 'shows', 'news', 'gallery', 'location']
+  const mainLinks = links.filter(item => item !== 'location' && item !== 'contact')
+  const visitLinks = links.filter(item => item === 'location' || item === 'contact')
+  const label = item => managed?.labels?.[item] || t(`nav.${item}`)
 
   return (
     <footer className="site-footer">
@@ -17,30 +20,25 @@ export function Footer({ language, homepageMeta }) {
         </Link>
 
         <section className="footer-column">
-          <h2>{t('footer.links')}</h2>
+          <h2>{managed?.footerLinksTitle || t('footer.links')}</h2>
           <ul>
-            {links.map((item) => (
+            {mainLinks.map((item) => (
               <li key={item}>
-                <Link to={getLocalizedPath(item, language)}>{t(`nav.${item}`)}</Link>
+                <Link to={getLocalizedPath(item, language)}>{label(item)}</Link>
               </li>
             ))}
           </ul>
         </section>
 
         <section className="footer-column">
-          <h2>{t('footer.visit')}</h2>
+          <h2>{managed?.footerVisitTitle || t('footer.visit')}</h2>
           <ul>
-            <li>
-              <Link to={getLocalizedPath('contact', language)}>{t('footer.location')}</Link>
-            </li>
-            <li>
-              <Link to={getLocalizedPath('contact', language)}>{t('nav.contact')}</Link>
-            </li>
+            {visitLinks.map(item => <li key={item}><Link to={getLocalizedPath(item, language)}>{label(item)}</Link></li>)}
           </ul>
         </section>
 
         <section className="footer-column social-column">
-          <h2>{t('footer.follow')}</h2>
+          <h2>{managed?.footerFollowTitle || t('footer.follow')}</h2>
           <div className="social-links">
             {homepageMeta?.facebookUrl && (
               <a href={homepageMeta.facebookUrl} target="_blank" rel="noreferrer" aria-label="Facebook">
@@ -56,8 +54,8 @@ export function Footer({ language, homepageMeta }) {
         </section>
 
         <section className="footer-column newsletter-column">
-          <h2>{t('footer.newsletter')}</h2>
-          <NewsletterForm language={language} />
+          <h2>{managed?.footerNewsletterTitle || t('footer.newsletter')}</h2>
+          <NewsletterForm language={language} invitation={managed?.footerNewsletterText} />
         </section>
       </div>
     </footer>

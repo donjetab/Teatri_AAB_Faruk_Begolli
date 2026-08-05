@@ -15,10 +15,10 @@ function formatCompact(value) {
   return `${value}+`
 }
 
-export function TheatreStatistics({ statistics }) {
+export function TheatreStatistics({ statistics, managedStatistics }) {
   const { t } = useTranslation()
 
-  const items = [
+  const fallbackItems = [
     {
       key: 'founded',
       value: statistics.foundedYear,
@@ -38,6 +38,15 @@ export function TheatreStatistics({ statistics }) {
       icon: spectatorsIcon,
     },
   ]
+  const icons = [theatreIcon, actingIcon, spectatorsIcon]
+  const items = managedStatistics?.some((item) => item.value || item.label)
+    ? managedStatistics.map((item, index) => ({
+        key: `managed-${index}`,
+        value: item.value,
+        label: item.label,
+        icon: icons[index],
+      }))
+    : fallbackItems
 
   return (
     <dl className="theatre-stats">

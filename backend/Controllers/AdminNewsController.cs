@@ -13,7 +13,7 @@ namespace Theatre.Api.Controllers;
 
 [ApiController, Authorize(Policy = "Admin")]
 [Route("api/admin/news")]
-public sealed class AdminNewsController(AppDbContext db, IClock clock) : ControllerBase
+public sealed class AdminNewsController(AppDbContext db, IClock clock, IWebHostEnvironment environment) : ControllerBase
 {
     [HttpPost]
     public async Task<ActionResult<AdminNewsDetailDto>> Create(SaveAdminNewsRequest request, CancellationToken token)
@@ -71,14 +71,52 @@ public sealed class AdminNewsController(AppDbContext db, IClock clock) : Control
     public async Task<IActionResult> Delete(int id, CancellationToken token)
     {
         var item = await db.NewsArticles.Include(x => x.Translations).ThenInclude(x => x.Language)
+            .Include(x => x.GalleryAlbums).ThenInclude(x => x.GalleryAlbumMedia)
             .FirstOrDefaultAsync(x => x.Id == id, token);
         if (item is null) return NotFound();
 
         var title = AlbanianTitle(item);
+        var mediaIds = item.GalleryAlbums.SelectMany(x => x.GalleryAlbumMedia).Select(x => x.MediaAssetId)
+            .Concat(item.CoverMediaAssetId.HasValue ? [item.CoverMediaAssetId.Value] : [])
+            .Concat(item.CardThumbnailMediaAssetId.HasValue ? [item.CardThumbnailMediaAssetId.Value] : [])
+            .Distinct().ToArray();
         db.NewsArticles.Remove(item);
         AddActivity("Deleted", id, $"Deleted {title}");
         await db.SaveChangesAsync(token);
+        await DeleteOrphanedMedia(mediaIds, token);
         return NoContent();
+    }
+
+    private async Task DeleteOrphanedMedia(IEnumerable<int> mediaIds, CancellationToken token)
+    {
+        foreach (var mediaId in mediaIds)
+        {
+            var referenced = await db.Shows.AnyAsync(x => x.PosterMediaAssetId == mediaId || x.FeaturedMediaAssetId == mediaId, token)
+                || await db.People.AnyAsync(x => x.ProfileMediaAssetId == mediaId, token)
+                || await db.NewsArticles.AnyAsync(x => x.CoverMediaAssetId == mediaId || x.CardThumbnailMediaAssetId == mediaId, token)
+                || await db.PitfEditions.AnyAsync(x => x.LogoMediaAssetId == mediaId || x.CoverMediaAssetId == mediaId, token)
+                || await db.GalleryAlbums.AnyAsync(x => x.CoverMediaAssetId == mediaId, token)
+                || await db.GalleryAlbumMedia.AnyAsync(x => x.MediaAssetId == mediaId, token)
+                || await db.TheatreInformation.AnyAsync(x => x.HeroBackgroundMediaAssetId == mediaId
+                    || x.AboutPreviewMediaAssetId == mediaId || x.ReservationBannerMediaAssetId == mediaId
+                    || x.PitfFeatureMediaAssetId == mediaId || x.PitfPageMediaAssetId == mediaId
+                    || x.LogoMediaAssetId == mediaId || x.FaviconMediaAssetId == mediaId
+                    || x.SocialSharingMediaAssetId == mediaId, token);
+            if (referenced) continue;
+
+            var asset = await db.MediaAssets.FirstOrDefaultAsync(x => x.Id == mediaId && x.IsActive, token);
+            if (asset is null) continue;
+            asset.IsActive = false;
+            await db.SaveChangesAsync(token);
+
+            if (!asset.FileUrl.StartsWith("/uploads/", StringComparison.OrdinalIgnoreCase)) continue;
+            var relative = asset.FileUrl.TrimStart('/').Replace('/', Path.DirectorySeparatorChar);
+            var webRoot = Path.GetFullPath(environment.WebRootPath);
+            var physicalPath = Path.GetFullPath(Path.Combine(webRoot, relative));
+            if (physicalPath.StartsWith(webRoot + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase)
+                && System.IO.File.Exists(physicalPath))
+                System.IO.File.Delete(physicalPath);
+        }
     }
 
     [HttpPost("{id:int}/gallery")]

@@ -8,6 +8,7 @@ export const routeKeys = {
   news: { sq: '/sq/lajme', en: '/en/news' },
   pitf: { sq: '/sq/pitf', en: '/en/pitf' },
   gallery: { sq: '/sq/galeria', en: '/en/gallery' },
+  location: { sq: '/sq/kontakti', en: '/en/contact' },
   contact: { sq: '/sq/kontakti', en: '/en/contact' },
   reserve: { sq: '/sq/rezervo', en: '/en/reserve' },
 }

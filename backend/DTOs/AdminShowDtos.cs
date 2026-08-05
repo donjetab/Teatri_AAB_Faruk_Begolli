@@ -11,6 +11,14 @@ public sealed record AdminShowTranslationDto(
     [MaxLength(220)] string? MetaTitle,
     [MaxLength(320)] string? MetaDescription);
 
+public sealed record SaveAdminShowTranslationDto(
+    [Required, RegularExpression("^(sq|en)$")] string LanguageCode,
+    [Required, MaxLength(240)] string Title,
+    [Required, MaxLength(700)] string ShortDescription,
+    [Required] string FullDescription,
+    [MaxLength(220)] string? MetaTitle,
+    [MaxLength(320)] string? MetaDescription);
+
 public sealed record AdminShowListItemDto(
     int Id, string TitleSq, string TitleEn, string SlugSq, string Category, string Status, string LifecycleStatus,
     int? ProductionYear, DateOnly? PremiereDate, bool IsFeatured, int PerformanceCount,
@@ -42,7 +50,7 @@ public sealed record SaveAdminShowRequest(
     DateOnly? PremiereDate,
     [Required] string LifecycleStatus,
     bool IsFeatured,
-    [MinLength(2)] IReadOnlyList<AdminShowTranslationDto> Translations);
+    [MinLength(2)] IReadOnlyList<SaveAdminShowTranslationDto> Translations);
 
 public sealed record AdminShowListResponseDto(
     IReadOnlyList<AdminShowListItemDto> Items, int Page, int PageSize, int TotalCount,

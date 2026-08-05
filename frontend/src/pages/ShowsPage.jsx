@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { getStaticPage } from '../api/staticPages'
 import { Link, useParams } from 'react-router-dom'
 import { getShows } from '../api/shows'
 import { EmptyState } from '../components/ui/EmptyState'
@@ -26,7 +27,10 @@ export function ShowsPage() {
   const [shows, setShows] = useState([])
   const [activeFilter, setActiveFilter] = useState('all')
   const [status, setStatus] = useState('loading')
+  const [pageCopy, setPageCopy] = useState(null)
   const filters = ['all', 'drama', 'comedy', 'children']
+
+  useEffect(() => { const controller = new AbortController(); getStaticPage(language, 'shows-introduction', controller.signal).then(setPageCopy).catch(() => setPageCopy(null)); return () => controller.abort() }, [language])
 
   useEffect(() => {
     const controller = new AbortController()
@@ -48,12 +52,16 @@ export function ShowsPage() {
 
   const filteredShows = useMemo(
     () => [...shows]
-      .sort((left, right) => Number(right.slug === 'bretkosa') - Number(left.slug === 'bretkosa'))
+      .sort((left, right) =>
+        Number(right.isFeatured) - Number(left.isFeatured)
+        || (right.productionYear ?? -Infinity) - (left.productionYear ?? -Infinity)
+        || left.title.localeCompare(right.title, language),
+      )
       .filter((show) => {
         const category = categoriesBySlug[show.slug] ?? 'drama'
         return activeFilter === 'all' || activeFilter === category
       }),
-    [activeFilter, shows],
+    [activeFilter, language, shows],
   )
 
   return (
@@ -65,13 +73,13 @@ export function ShowsPage() {
       >
         <img className="page-hero-smoke" src={smoke} alt="" aria-hidden="true" />
         <div className="page-hero-content">
-          <h1 id="shows-page-title">{t('showsPage.heroTitle')}</h1>
+          <h1 id="shows-page-title">{pageCopy?.title || t('showsPage.heroTitle')}</h1>
           <div className="page-hero-rule" aria-hidden="true">
             <span />
             <img src={theatreIcon} alt="" aria-hidden="true" />
             <span />
           </div>
-          <p>{t('showsPage.heroSubtitle')}</p>
+          <p>{pageCopy?.subtitle || t('showsPage.heroSubtitle')}</p>
           <div className="shows-filter-bar" aria-label={t('showsPage.filtersLabel')}>
             {filters.map((filter) => (
               <button
