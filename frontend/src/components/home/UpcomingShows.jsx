@@ -25,7 +25,18 @@ export function UpcomingShows({ shows, language, reservationUrl }) {
             <ShowCard key={show.id} show={show} language={language} reservationUrl={reservationUrl} />
           ))
         ) : (
-          <p className="shows-empty">{t('home.noShows')}</p>
+          <article className="shows-empty" aria-live="polite">
+            <div className="shows-empty-mark" aria-hidden="true"><span>◆</span></div>
+            <div className="shows-empty-copy">
+              <span className="shows-empty-eyebrow">{t('home.noShowsEyebrow')}</span>
+              <h3>{t('home.noShowsTitle')}</h3>
+              <p>{t('home.noShowsText')}</p>
+            </div>
+            <Link to={getLocalizedPath('shows', language)} className="shows-empty-link">
+              <span>{t('home.browseRepertoire')}</span>
+              <span aria-hidden="true">→</span>
+            </Link>
+          </article>
         )}
       </div>
     </section>

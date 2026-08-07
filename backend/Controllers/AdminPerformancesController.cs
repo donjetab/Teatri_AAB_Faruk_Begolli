@@ -11,7 +11,7 @@ namespace Theatre.Api.Controllers;
 
 [ApiController, Authorize(Policy = "Admin")]
 [Route("api/admin/performances")]
-public sealed class AdminPerformancesController(AppDbContext db, IClock clock) : ControllerBase
+public sealed class AdminPerformancesController(AppDbContext db, IClock clock, IReservationService reservations, IAdminDeletionService deletion) : ControllerBase
 {
     [HttpGet("venues")]
     public async Task<ActionResult<IReadOnlyList<AdminVenueDto>>> GetVenues(CancellationToken token)
@@ -136,7 +136,10 @@ public sealed class AdminPerformancesController(AppDbContext db, IClock clock) :
             .OrderBy(x => x.StartDateTimeUtc).Skip((page - 1) * pageSize).Take(pageSize).ToListAsync(token);
         var items = entities.Select(ToDto).ToList();
         var shows = await db.Shows.AsNoTracking().Where(x => x.Status != ShowStatus.Archived).OrderByDescending(x => x.UpdatedAt)
-            .Select(x => new AdminLookupDto(x.Id, x.Translations.Where(t => t.Language.Code == "sq").Select(t => t.Title).FirstOrDefault() ?? $"Show {x.Id}")).ToListAsync(token);
+            .Select(x => new AdminPerformanceShowLookupDto(
+                x.Id,
+                x.Translations.Where(t => t.Language.Code == "sq").Select(t => t.Title).FirstOrDefault() ?? $"Show {x.Id}",
+                x.IsGuestPerformance)).ToListAsync(token);
         var locations = await db.Locations.AsNoTracking().Where(x => x.IsActive).Select(x => new AdminLookupDto(x.Id,
             x.Translations.Where(t => t.Language.Code == "sq").Select(t => t.Name).FirstOrDefault() ?? $"Venue {x.Id}")).ToListAsync(token);
         return Ok(new AdminPerformanceListDto(items, page, pageSize, total, shows, locations));
@@ -159,6 +162,8 @@ public sealed class AdminPerformancesController(AppDbContext db, IClock clock) :
         var entity = new ShowPerformance { CreatedAt = now, UpdatedAt = now };
         Apply(entity, request); db.ShowPerformances.Add(entity);
         AddActivity("Created", entity, "Created performance");
+        if (entity.ReservationMode == ReservationMode.Internal && entity.SeatingTemplateId.HasValue)
+            await reservations.CloneTemplateAsync(entity, entity.SeatingTemplateId.Value, token);
         await db.SaveChangesAsync(token);
         return await Get(entity.Id, token);
     }
@@ -166,10 +171,31 @@ public sealed class AdminPerformancesController(AppDbContext db, IClock clock) :
     [HttpPut("{id:int}")]
     public async Task<ActionResult<AdminPerformanceDto>> Update(int id, SaveAdminPerformanceRequest request, CancellationToken token)
     {
-        var entity = await db.ShowPerformances.FirstOrDefaultAsync(x => x.Id == id, token);
+        var entity = await db.ShowPerformances.Include(x => x.SeatingLayout).FirstOrDefaultAsync(x => x.Id == id, token);
         if (entity is null) return NotFound();
-        var error = await Validate(request, allowPastStart: true, token: token); if (error is not null) return BadRequest(error);
+        var startUnchanged = request.StartDateTimeUtc.ToUniversalTime() == entity.StartDateTimeUtc;
+        var error = await Validate(request, allowPastStart: startUnchanged, token: token); if (error is not null) return BadRequest(error);
+        var templateChanged = entity.ReservationMode != ReservationMode.Internal || entity.SeatingTemplateId != request.SeatingTemplateId;
+        if (templateChanged && entity.SeatingLayout is not null)
+        {
+            var hasSeatHistory = await db.SeatAllocations.AnyAsync(x => x.PerformanceSeat.Layout.PerformanceId == id, token);
+            var now = clock.UtcNow;
+            var expiredHolds = await db.PerformanceSeatHolds
+                .Where(x => x.PerformanceSeat.Layout.PerformanceId == id && x.ExpiresAt <= now)
+                .ToListAsync(token);
+            if (expiredHolds.Count > 0) db.PerformanceSeatHolds.RemoveRange(expiredHolds);
+            var hasHolds = await db.PerformanceSeatHolds.AnyAsync(x => x.PerformanceSeat.Layout.PerformanceId == id && x.ExpiresAt > now, token);
+            if (hasSeatHistory || hasHolds) return Conflict(new ProblemDetails { Title = "Seating layout is in use", Detail = "Release active holds and remove existing reservation history before changing this performance's seating template.", Status = 409 });
+        }
         Apply(entity, request); entity.UpdatedAt = clock.UtcNow;
+        if (templateChanged && entity.SeatingLayout is not null)
+        {
+            db.PerformanceSeatingLayouts.Remove(entity.SeatingLayout);
+            await db.SaveChangesAsync(token);
+            entity.SeatingLayout = null;
+        }
+        if (entity.ReservationMode == ReservationMode.Internal && entity.SeatingLayout is null && entity.SeatingTemplateId.HasValue)
+            await reservations.CloneTemplateAsync(entity, entity.SeatingTemplateId.Value, token);
         AddActivity("Updated", entity, "Updated performance");
         await db.SaveChangesAsync(token);
         return await Get(entity.Id, token);
@@ -184,18 +210,23 @@ public sealed class AdminPerformancesController(AppDbContext db, IClock clock) :
         var copy = new ShowPerformance { ShowId = source.ShowId, LocationId = source.LocationId, Hall = source.Hall,
             StartDateTimeUtc = source.StartDateTimeUtc.AddDays(7), EndDateTimeUtc = source.EndDateTimeUtc?.AddDays(7),
             TicketUrl = source.TicketUrl, ContactPhone = source.ContactPhone, Status = PerformanceStatus.Scheduled,
+            ReservationMode = source.ReservationMode, SeatingTemplateId = source.SeatingTemplateId,
             IsPublished = false, InternalNotes = source.InternalNotes, CreatedAt = now, UpdatedAt = now };
         db.ShowPerformances.Add(copy); AddActivity("Duplicated", copy, "Duplicated performance");
+        if (copy.ReservationMode == ReservationMode.Internal && copy.SeatingTemplateId.HasValue)
+            await reservations.CloneTemplateAsync(copy, copy.SeatingTemplateId.Value, token);
         await db.SaveChangesAsync(token); return await Get(copy.Id, token);
     }
 
     [HttpDelete("{id:int}")]
     public async Task<IActionResult> Delete(int id, CancellationToken token)
     {
-        var entity = await db.ShowPerformances.FirstOrDefaultAsync(x => x.Id == id, token);
+        var entity = await db.ShowPerformances.AsNoTracking().FirstOrDefaultAsync(x => x.Id == id, token);
         if (entity is null) return NotFound();
-        db.ShowPerformances.Remove(entity); AddActivity("Deleted", entity, "Deleted draft performance");
-        await db.SaveChangesAsync(token); return NoContent();
+        await using var transaction = await db.Database.BeginTransactionAsync(token);
+        await deletion.DeletePerformancesAsync([id], token);
+        AddActivity("Deleted", entity, "Permanently deleted performance and associated reservations");
+        await db.SaveChangesAsync(token); await transaction.CommitAsync(token); return NoContent();
     }
 
     private async Task<ValidationProblemDetails?> Validate(SaveAdminPerformanceRequest request, bool allowPastStart, CancellationToken token)
@@ -207,13 +238,20 @@ public sealed class AdminPerformancesController(AppDbContext db, IClock clock) :
         if (request.LocationId.HasValue && !await db.Locations.AnyAsync(x => x.Id == request.LocationId, token)) errors["LocationId"] = ["The selected venue does not exist."];
         var hasValidStatus = Enum.TryParse<PerformanceStatus>(request.Status, true, out var parsedStatus);
         if (!hasValidStatus) errors["Status"] = ["Invalid performance status."];
+        var hasMode = Enum.TryParse<ReservationMode>(request.ReservationMode, true, out var mode);
+        if (!hasMode) errors["ReservationMode"] = ["Invalid reservation mode."];
+        if (hasMode && mode == ReservationMode.Internal && !request.SeatingTemplateId.HasValue) errors["SeatingTemplateId"] = ["Select a seating template for internal reservations."];
+        if (request.SeatingTemplateId.HasValue && !await db.SeatingTemplates.AnyAsync(x => x.Id == request.SeatingTemplateId && x.IsActive, token)) errors["SeatingTemplateId"] = ["The selected seating template does not exist."];
+        if (hasMode && mode == ReservationMode.Internal && request.LocationId.HasValue && request.SeatingTemplateId.HasValue && !await db.SeatingTemplates.AnyAsync(x => x.Id == request.SeatingTemplateId && x.LocationId == request.LocationId, token)) errors["SeatingTemplateId"] = ["Select a seating template that belongs to the selected venue."];
         var bookingIsOptional = hasValidStatus && parsedStatus is PerformanceStatus.SoldOut or PerformanceStatus.Completed or PerformanceStatus.Cancelled
             || request.StartDateTimeUtc < clock.UtcNow;
-        if (!bookingIsOptional
+        if (!bookingIsOptional && (!hasMode || mode == ReservationMode.ExternalUrl)
             && string.IsNullOrWhiteSpace(request.TicketUrl)
             && string.IsNullOrWhiteSpace(request.ContactPhone))
-            errors["BookingContact"] = ["Add a ticket URL or contact phone for an upcoming performance."];
+            errors["BookingContact"] = ["Add either a reservation link or a contact phone number."];
         if (request.EndDateTimeUtc.HasValue && request.EndDateTimeUtc <= request.StartDateTimeUtc) errors["EndDateTimeUtc"] = ["End time must be after start time."];
+        if (request.ReservationOpensAtUtc.HasValue && request.ReservationClosesAtUtc.HasValue && request.ReservationClosesAtUtc <= request.ReservationOpensAtUtc)
+            errors["ReservationClosesAtUtc"] = ["Reservation closing time must be after opening time."];
         return errors.Count == 0 ? null : new ValidationProblemDetails(errors);
     }
 
@@ -222,8 +260,14 @@ public sealed class AdminPerformancesController(AppDbContext db, IClock clock) :
         entity.ShowId = request.ShowId; entity.LocationId = request.LocationId; entity.Hall = Clean(request.Hall);
         entity.StartDateTimeUtc = request.StartDateTimeUtc.ToUniversalTime(); entity.EndDateTimeUtc = request.EndDateTimeUtc?.ToUniversalTime();
         entity.TicketUrl = Clean(request.TicketUrl); entity.ContactPhone = Clean(request.ContactPhone);
+        entity.ReservationMode = Enum.Parse<ReservationMode>(request.ReservationMode, true); entity.SeatingTemplateId = request.SeatingTemplateId;
         entity.Status = Enum.Parse<PerformanceStatus>(request.Status, true); entity.IsPublished = request.IsPublished;
         entity.InternalNotes = Clean(request.InternalNotes);
+        entity.MaxSeatsPerReservation = request.MaxSeatsPerReservation;
+        entity.ReservationOpensAtUtc = request.ReservationOpensAtUtc?.ToUniversalTime();
+        entity.ReservationClosesAtUtc = request.ReservationClosesAtUtc?.ToUniversalTime();
+        entity.ReservationsEnabled = request.ReservationsEnabled;
+        entity.ReservationUnavailableMessage = Clean(request.ReservationUnavailableMessage);
     }
     private void AddActivity(string action, ShowPerformance entity, string summary) => db.AdminActivities.Add(new AdminActivity {
         AdminUserId = int.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var userId) ? userId : null,
@@ -232,6 +276,7 @@ public sealed class AdminPerformancesController(AppDbContext db, IClock clock) :
     private static AdminPerformanceDto ToDto(ShowPerformance x) => new(x.Id, x.ShowId,
         x.Show.Translations.Where(t => t.Language.Code == "sq").Select(t => t.Title).FirstOrDefault() ?? $"Show {x.ShowId}",
         x.LocationId, x.Location == null ? null : x.Location.Translations.Where(t => t.Language.Code == "sq").Select(t => t.Name).FirstOrDefault(),
-        x.Hall, x.StartDateTimeUtc, x.EndDateTimeUtc, x.TicketUrl, x.ContactPhone, x.Status.ToString(), x.IsPublished,
-        x.InternalNotes, x.CreatedAt, x.UpdatedAt);
+        x.Hall, x.StartDateTimeUtc, x.EndDateTimeUtc, x.TicketUrl, x.ContactPhone, x.ReservationMode.ToString(), x.SeatingTemplateId, x.Status.ToString(), x.IsPublished,
+        x.InternalNotes, x.MaxSeatsPerReservation, x.ReservationOpensAtUtc, x.ReservationClosesAtUtc,
+        x.ReservationsEnabled, x.ReservationUnavailableMessage, x.CreatedAt, x.UpdatedAt);
 }

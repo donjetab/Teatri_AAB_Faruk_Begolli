@@ -44,7 +44,7 @@ export function AdminShowsPage() {
     setRefreshKey(current => current + 1)
   }
   const deletePlay = async show => {
-    if (!await dialog.confirm({ title: 'Delete play permanently?', message: `“${show.titleSq}” and its managed content will be removed. This cannot be undone.`, confirmLabel: 'Delete permanently', danger: true })) return
+    if (!await dialog.confirm({ title: 'Delete play and everything associated with it?', message: `“${show.titleSq}”, all of its performances, reservations, seat allocations and managed content will be permanently removed. This cannot be undone.`, confirmLabel: 'Delete everything', danger: true })) return
     try {
       await adminApi.deleteShow(show.id, true)
       setToastType('success')

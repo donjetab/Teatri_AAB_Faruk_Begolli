@@ -13,7 +13,7 @@ public sealed class AdminExistingContentController(AppDbContext db) : Controller
 {
     [HttpGet("news")]
     public async Task<ActionResult<AdminExistingContentListDto>> News(
-        [FromQuery] string? search, [FromQuery] string? status, [FromQuery] int page = 1,
+        [FromQuery] string? search, [FromQuery] string? status, [FromQuery] string? articleType, [FromQuery] int page = 1,
         [FromQuery] int pageSize = 25, CancellationToken token = default)
     {
         page = Math.Max(1, page); pageSize = Math.Clamp(pageSize, 1, 100);
@@ -28,6 +28,8 @@ public sealed class AdminExistingContentController(AppDbContext db) : Controller
         }
         if (status?.Equals("published", StringComparison.OrdinalIgnoreCase) == true) query = query.Where(x => x.IsPublished);
         if (status?.Equals("draft", StringComparison.OrdinalIgnoreCase) == true) query = query.Where(x => !x.IsPublished);
+        if (articleType?.Equals("authored", StringComparison.OrdinalIgnoreCase) == true) query = query.Where(x => x.ArticleType == NewsArticleType.Authored);
+        if (articleType?.Equals("external", StringComparison.OrdinalIgnoreCase) == true) query = query.Where(x => x.ArticleType == NewsArticleType.External);
         var total = await query.CountAsync(token);
         var items = await query.OrderByDescending(x => x.PublishedAt ?? x.UpdatedAt).Skip((page - 1) * pageSize).Take(pageSize)
             .Select(x => new AdminExistingContentItemDto(x.Id,
@@ -37,6 +39,7 @@ public sealed class AdminExistingContentController(AppDbContext db) : Controller
                 x.Translations.Where(t => t.Language.Code == "en").Select(t => t.Slug).FirstOrDefault() ?? "",
                 x.IsPublished ? "Published" : "Draft", x.IsFeatured, x.UpdatedAt, x.PublishedAt,
                 x.CardThumbnailMediaAsset != null ? x.CardThumbnailMediaAsset.FileUrl :
+                    x.CardThumbnailExternalUrl != null ? x.CardThumbnailExternalUrl :
                     x.CoverMediaAsset != null && x.CoverMediaAsset.MimeType.StartsWith("image/")
                         ? x.CoverMediaAsset.FileUrl : null,
                 x.ExternalSourceName ?? (x.ArticleType == NewsArticleType.External ? "External article" : "Authored article"), x.RelatedExternalLinks.Count)).ToListAsync(token);

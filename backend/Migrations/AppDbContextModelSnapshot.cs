@@ -231,6 +231,45 @@ namespace Theatre.Api.Migrations
                     b.ToTable("CreditTypeTranslations");
                 });
 
+            modelBuilder.Entity("Theatre.Api.Models.Customer", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTimeOffset?>("AnonymizedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("Email")
+                        .HasMaxLength(254)
+                        .HasColumnType("nvarchar(254)");
+
+                    b.Property<string>("FullName")
+                        .IsRequired()
+                        .HasMaxLength(180)
+                        .HasColumnType("nvarchar(180)");
+
+                    b.Property<string>("NormalizedPhone")
+                        .IsRequired()
+                        .HasMaxLength(24)
+                        .HasColumnType("nvarchar(24)");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("NormalizedPhone")
+                        .IsUnique();
+
+                    b.ToTable("Customers");
+                });
+
             modelBuilder.Entity("Theatre.Api.Models.GalleryAlbum", b =>
                 {
                     b.Property<int>("Id")
@@ -589,6 +628,10 @@ namespace Theatre.Api.Migrations
                         .HasMaxLength(32)
                         .HasColumnType("nvarchar(32)");
 
+                    b.Property<string>("CardThumbnailExternalUrl")
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
                     b.Property<int?>("CardThumbnailMediaAssetId")
                         .HasColumnType("int");
 
@@ -819,6 +862,150 @@ namespace Theatre.Api.Migrations
                     b.ToTable("OperationalEvents");
                 });
 
+            modelBuilder.Entity("Theatre.Api.Models.PerformanceSeat", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("PerformanceSeatingLayoutId")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("PositionX")
+                        .HasPrecision(9, 2)
+                        .HasColumnType("decimal(9,2)");
+
+                    b.Property<decimal>("PositionY")
+                        .HasPrecision(9, 2)
+                        .HasColumnType("decimal(9,2)");
+
+                    b.Property<decimal>("Rotation")
+                        .HasPrecision(6, 2)
+                        .HasColumnType("decimal(6,2)");
+
+                    b.Property<string>("RowLabel")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("nvarchar(40)");
+
+                    b.Property<int>("RowOrder")
+                        .HasColumnType("int");
+
+                    b.Property<string>("SeatLabel")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("nvarchar(40)");
+
+                    b.Property<int>("SeatOrder")
+                        .HasColumnType("int");
+
+                    b.Property<string>("SectionName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<int>("SectionOrder")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PerformanceSeatingLayoutId", "SectionName", "RowLabel", "SeatLabel")
+                        .IsUnique();
+
+                    b.ToTable("PerformanceSeats");
+                });
+
+            modelBuilder.Entity("Theatre.Api.Models.PerformanceSeatHold", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<DateTimeOffset>("ExpiresAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<Guid>("HoldToken")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("PerformanceSeatId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ExpiresAt");
+
+                    b.HasIndex("HoldToken");
+
+                    b.HasIndex("PerformanceSeatId")
+                        .IsUnique();
+
+                    b.ToTable("PerformanceSeatHolds");
+                });
+
+            modelBuilder.Entity("Theatre.Api.Models.PerformanceSeatingLayout", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<decimal>("CanvasHeight")
+                        .HasPrecision(9, 2)
+                        .HasColumnType("decimal(9,2)");
+
+                    b.Property<decimal>("CanvasWidth")
+                        .HasPrecision(9, 2)
+                        .HasColumnType("decimal(9,2)");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<int>("PerformanceId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("SourceTemplateId")
+                        .HasColumnType("int");
+
+                    b.Property<decimal?>("StageHeight")
+                        .HasPrecision(9, 2)
+                        .HasColumnType("decimal(9,2)");
+
+                    b.Property<string>("StageLabel")
+                        .HasMaxLength(80)
+                        .HasColumnType("nvarchar(80)");
+
+                    b.Property<decimal?>("StageWidth")
+                        .HasPrecision(9, 2)
+                        .HasColumnType("decimal(9,2)");
+
+                    b.Property<decimal?>("StageX")
+                        .HasPrecision(9, 2)
+                        .HasColumnType("decimal(9,2)");
+
+                    b.Property<decimal?>("StageY")
+                        .HasPrecision(9, 2)
+                        .HasColumnType("decimal(9,2)");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PerformanceId")
+                        .IsUnique();
+
+                    b.ToTable("PerformanceSeatingLayouts");
+                });
+
             modelBuilder.Entity("Theatre.Api.Models.Person", b =>
                 {
                     b.Property<int>("Id")
@@ -995,6 +1182,347 @@ namespace Theatre.Api.Migrations
                     b.ToTable("PitfEditionTranslations");
                 });
 
+            modelBuilder.Entity("Theatre.Api.Models.Reservation", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("AdminComment")
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<string>("ConfirmationStatus")
+                        .IsRequired()
+                        .HasMaxLength(24)
+                        .HasColumnType("nvarchar(24)");
+
+                    b.Property<int>("CustomerId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("PerformanceId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTimeOffset>("ReservedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("Source")
+                        .IsRequired()
+                        .HasMaxLength(24)
+                        .HasColumnType("nvarchar(24)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(24)
+                        .HasColumnType("nvarchar(24)");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CustomerId");
+
+                    b.HasIndex("PerformanceId", "Status");
+
+                    b.ToTable("Reservations");
+                });
+
+            modelBuilder.Entity("Theatre.Api.Models.ReservationAdminAudit", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<string>("ActionType")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("nvarchar(80)");
+
+                    b.Property<int?>("AdminUserId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<int?>("CustomerId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("EntityId")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("nvarchar(80)");
+
+                    b.Property<string>("EntityType")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("nvarchar(80)");
+
+                    b.Property<string>("NewValuesJson")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("PreviousValuesJson")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int?>("ReservationId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AdminUserId");
+
+                    b.HasIndex("CustomerId");
+
+                    b.HasIndex("ReservationId");
+
+                    b.HasIndex("EntityType", "EntityId", "CreatedAt");
+
+                    b.ToTable("ReservationAdminAudits");
+                });
+
+            modelBuilder.Entity("Theatre.Api.Models.ReservationAuditEvent", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<int?>("AdminUserId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("Details")
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<string>("EventType")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("nvarchar(80)");
+
+                    b.Property<int>("ReservationId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ReservationId", "CreatedAt");
+
+                    b.ToTable("ReservationAuditEvents");
+                });
+
+            modelBuilder.Entity("Theatre.Api.Models.SeatAllocation", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<string>("AdminComment")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("PerformanceSeatId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTimeOffset?>("ReleasedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<int?>("ReservationId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasMaxLength(24)
+                        .HasColumnType("nvarchar(24)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PerformanceSeatId")
+                        .IsUnique()
+                        .HasFilter("[IsActive] = 1");
+
+                    b.HasIndex("ReservationId");
+
+                    b.ToTable("SeatAllocations", t =>
+                        {
+                            t.HasCheckConstraint("CK_SeatAllocation_Owner", "([Type] = 'AdminBlock' AND [ReservationId] IS NULL) OR ([Type] = 'Reservation' AND [ReservationId] IS NOT NULL)");
+                        });
+                });
+
+            modelBuilder.Entity("Theatre.Api.Models.SeatingTemplate", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<decimal>("CanvasHeight")
+                        .HasPrecision(9, 2)
+                        .HasColumnType("decimal(9,2)");
+
+                    b.Property<decimal>("CanvasWidth")
+                        .HasPrecision(9, 2)
+                        .HasColumnType("decimal(9,2)");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsDefault")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("LocationId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(180)
+                        .HasColumnType("nvarchar(180)");
+
+                    b.Property<decimal?>("StageHeight")
+                        .HasPrecision(9, 2)
+                        .HasColumnType("decimal(9,2)");
+
+                    b.Property<string>("StageLabel")
+                        .HasMaxLength(80)
+                        .HasColumnType("nvarchar(80)");
+
+                    b.Property<decimal?>("StageWidth")
+                        .HasPrecision(9, 2)
+                        .HasColumnType("decimal(9,2)");
+
+                    b.Property<decimal?>("StageX")
+                        .HasPrecision(9, 2)
+                        .HasColumnType("decimal(9,2)");
+
+                    b.Property<decimal?>("StageY")
+                        .HasPrecision(9, 2)
+                        .HasColumnType("decimal(9,2)");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("LocationId", "Name")
+                        .IsUnique();
+
+                    b.ToTable("SeatingTemplates");
+                });
+
+            modelBuilder.Entity("Theatre.Api.Models.SeatingTemplateRow", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("DisplayOrder")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Label")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("nvarchar(40)");
+
+                    b.Property<int>("SeatingTemplateSectionId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SeatingTemplateSectionId", "DisplayOrder")
+                        .IsUnique();
+
+                    b.ToTable("SeatingTemplateRows");
+                });
+
+            modelBuilder.Entity("Theatre.Api.Models.SeatingTemplateSeat", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("DisplayOrder")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Label")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("nvarchar(40)");
+
+                    b.Property<decimal>("PositionX")
+                        .HasPrecision(9, 2)
+                        .HasColumnType("decimal(9,2)");
+
+                    b.Property<decimal>("PositionY")
+                        .HasPrecision(9, 2)
+                        .HasColumnType("decimal(9,2)");
+
+                    b.Property<decimal>("Rotation")
+                        .HasPrecision(6, 2)
+                        .HasColumnType("decimal(6,2)");
+
+                    b.Property<int>("SeatingTemplateRowId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SeatingTemplateRowId", "DisplayOrder")
+                        .IsUnique();
+
+                    b.ToTable("SeatingTemplateSeats");
+                });
+
+            modelBuilder.Entity("Theatre.Api.Models.SeatingTemplateSection", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("DisplayOrder")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<int>("SeatingTemplateId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SeatingTemplateId", "DisplayOrder")
+                        .IsUnique();
+
+                    b.ToTable("SeatingTemplateSections");
+                });
+
             modelBuilder.Entity("Theatre.Api.Models.Show", b =>
                 {
                     b.Property<int>("Id")
@@ -1016,6 +1544,9 @@ namespace Theatre.Api.Migrations
                         .HasColumnType("int");
 
                     b.Property<bool>("IsFeatured")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsGuestPerformance")
                         .HasColumnType("bit");
 
                     b.Property<string>("LifecycleStatus")
@@ -1211,6 +1742,30 @@ namespace Theatre.Api.Migrations
                     b.Property<int?>("LocationId")
                         .HasColumnType("int");
 
+                    b.Property<int?>("MaxSeatsPerReservation")
+                        .HasColumnType("int");
+
+                    b.Property<DateTimeOffset?>("ReservationClosesAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("ReservationMode")
+                        .IsRequired()
+                        .HasMaxLength(24)
+                        .HasColumnType("nvarchar(24)");
+
+                    b.Property<DateTimeOffset?>("ReservationOpensAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("ReservationUnavailableMessage")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<bool>("ReservationsEnabled")
+                        .HasColumnType("bit");
+
+                    b.Property<int?>("SeatingTemplateId")
+                        .HasColumnType("int");
+
                     b.Property<int>("ShowId")
                         .HasColumnType("int");
 
@@ -1234,6 +1789,8 @@ namespace Theatre.Api.Migrations
                     b.HasIndex("IsPublished");
 
                     b.HasIndex("LocationId");
+
+                    b.HasIndex("SeatingTemplateId");
 
                     b.HasIndex("ShowId");
 
@@ -1456,11 +2013,18 @@ namespace Theatre.Api.Migrations
                         .HasMaxLength(180)
                         .HasColumnType("nvarchar(180)");
 
+                    b.Property<string>("FacebookDisplayName")
+                        .HasMaxLength(180)
+                        .HasColumnType("nvarchar(180)");
+
                     b.Property<string>("FacebookUrl")
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
 
                     b.Property<int?>("FaviconMediaAssetId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("FooterLogoMediaAssetId")
                         .HasColumnType("int");
 
                     b.Property<int>("FoundedYear")
@@ -1471,6 +2035,10 @@ namespace Theatre.Api.Migrations
 
                     b.Property<bool>("HeroIsVisible")
                         .HasColumnType("bit");
+
+                    b.Property<string>("InstagramDisplayName")
+                        .HasMaxLength(180)
+                        .HasColumnType("nvarchar(180)");
 
                     b.Property<string>("InstagramUrl")
                         .HasMaxLength(500)
@@ -1549,6 +2117,8 @@ namespace Theatre.Api.Migrations
                     b.HasIndex("AboutPreviewMediaAssetId");
 
                     b.HasIndex("FaviconMediaAssetId");
+
+                    b.HasIndex("FooterLogoMediaAssetId");
 
                     b.HasIndex("HeroBackgroundMediaAssetId");
 
@@ -1874,6 +2444,39 @@ namespace Theatre.Api.Migrations
                     b.Navigation("NewsArticle");
                 });
 
+            modelBuilder.Entity("Theatre.Api.Models.PerformanceSeat", b =>
+                {
+                    b.HasOne("Theatre.Api.Models.PerformanceSeatingLayout", "Layout")
+                        .WithMany("Seats")
+                        .HasForeignKey("PerformanceSeatingLayoutId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Layout");
+                });
+
+            modelBuilder.Entity("Theatre.Api.Models.PerformanceSeatHold", b =>
+                {
+                    b.HasOne("Theatre.Api.Models.PerformanceSeat", "PerformanceSeat")
+                        .WithMany("Holds")
+                        .HasForeignKey("PerformanceSeatId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("PerformanceSeat");
+                });
+
+            modelBuilder.Entity("Theatre.Api.Models.PerformanceSeatingLayout", b =>
+                {
+                    b.HasOne("Theatre.Api.Models.ShowPerformance", "Performance")
+                        .WithOne("SeatingLayout")
+                        .HasForeignKey("Theatre.Api.Models.PerformanceSeatingLayout", "PerformanceId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Performance");
+                });
+
             modelBuilder.Entity("Theatre.Api.Models.Person", b =>
                 {
                     b.HasOne("Theatre.Api.Models.MediaAsset", "ProfileMediaAsset")
@@ -1937,6 +2540,122 @@ namespace Theatre.Api.Migrations
                     b.Navigation("Language");
 
                     b.Navigation("PitfEdition");
+                });
+
+            modelBuilder.Entity("Theatre.Api.Models.Reservation", b =>
+                {
+                    b.HasOne("Theatre.Api.Models.Customer", "Customer")
+                        .WithMany("Reservations")
+                        .HasForeignKey("CustomerId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Theatre.Api.Models.ShowPerformance", "Performance")
+                        .WithMany("Reservations")
+                        .HasForeignKey("PerformanceId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Customer");
+
+                    b.Navigation("Performance");
+                });
+
+            modelBuilder.Entity("Theatre.Api.Models.ReservationAdminAudit", b =>
+                {
+                    b.HasOne("Theatre.Api.Models.AdminUser", "AdminUser")
+                        .WithMany()
+                        .HasForeignKey("AdminUserId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("Theatre.Api.Models.Customer", "Customer")
+                        .WithMany()
+                        .HasForeignKey("CustomerId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("Theatre.Api.Models.Reservation", "Reservation")
+                        .WithMany()
+                        .HasForeignKey("ReservationId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("AdminUser");
+
+                    b.Navigation("Customer");
+
+                    b.Navigation("Reservation");
+                });
+
+            modelBuilder.Entity("Theatre.Api.Models.ReservationAuditEvent", b =>
+                {
+                    b.HasOne("Theatre.Api.Models.Reservation", "Reservation")
+                        .WithMany("AuditEvents")
+                        .HasForeignKey("ReservationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Reservation");
+                });
+
+            modelBuilder.Entity("Theatre.Api.Models.SeatAllocation", b =>
+                {
+                    b.HasOne("Theatre.Api.Models.PerformanceSeat", "PerformanceSeat")
+                        .WithMany("Allocations")
+                        .HasForeignKey("PerformanceSeatId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Theatre.Api.Models.Reservation", "Reservation")
+                        .WithMany("SeatAllocations")
+                        .HasForeignKey("ReservationId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("PerformanceSeat");
+
+                    b.Navigation("Reservation");
+                });
+
+            modelBuilder.Entity("Theatre.Api.Models.SeatingTemplate", b =>
+                {
+                    b.HasOne("Theatre.Api.Models.Location", "Location")
+                        .WithMany("SeatingTemplates")
+                        .HasForeignKey("LocationId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Location");
+                });
+
+            modelBuilder.Entity("Theatre.Api.Models.SeatingTemplateRow", b =>
+                {
+                    b.HasOne("Theatre.Api.Models.SeatingTemplateSection", "Section")
+                        .WithMany("Rows")
+                        .HasForeignKey("SeatingTemplateSectionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Section");
+                });
+
+            modelBuilder.Entity("Theatre.Api.Models.SeatingTemplateSeat", b =>
+                {
+                    b.HasOne("Theatre.Api.Models.SeatingTemplateRow", "Row")
+                        .WithMany("Seats")
+                        .HasForeignKey("SeatingTemplateRowId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Row");
+                });
+
+            modelBuilder.Entity("Theatre.Api.Models.SeatingTemplateSection", b =>
+                {
+                    b.HasOne("Theatre.Api.Models.SeatingTemplate", "SeatingTemplate")
+                        .WithMany("Sections")
+                        .HasForeignKey("SeatingTemplateId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("SeatingTemplate");
                 });
 
             modelBuilder.Entity("Theatre.Api.Models.Show", b =>
@@ -2017,6 +2736,11 @@ namespace Theatre.Api.Migrations
                         .HasForeignKey("LocationId")
                         .OnDelete(DeleteBehavior.SetNull);
 
+                    b.HasOne("Theatre.Api.Models.SeatingTemplate", "SeatingTemplate")
+                        .WithMany("Performances")
+                        .HasForeignKey("SeatingTemplateId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.HasOne("Theatre.Api.Models.Show", "Show")
                         .WithMany("Performances")
                         .HasForeignKey("ShowId")
@@ -2024,6 +2748,8 @@ namespace Theatre.Api.Migrations
                         .IsRequired();
 
                     b.Navigation("Location");
+
+                    b.Navigation("SeatingTemplate");
 
                     b.Navigation("Show");
                 });
@@ -2102,6 +2828,11 @@ namespace Theatre.Api.Migrations
                         .HasForeignKey("FaviconMediaAssetId")
                         .OnDelete(DeleteBehavior.Restrict);
 
+                    b.HasOne("Theatre.Api.Models.MediaAsset", "FooterLogoMediaAsset")
+                        .WithMany()
+                        .HasForeignKey("FooterLogoMediaAssetId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.HasOne("Theatre.Api.Models.MediaAsset", "HeroBackgroundMediaAsset")
                         .WithMany()
                         .HasForeignKey("HeroBackgroundMediaAssetId")
@@ -2135,6 +2866,8 @@ namespace Theatre.Api.Migrations
                     b.Navigation("AboutPreviewMediaAsset");
 
                     b.Navigation("FaviconMediaAsset");
+
+                    b.Navigation("FooterLogoMediaAsset");
 
                     b.Navigation("HeroBackgroundMediaAsset");
 
@@ -2175,6 +2908,11 @@ namespace Theatre.Api.Migrations
                     b.Navigation("Translations");
                 });
 
+            modelBuilder.Entity("Theatre.Api.Models.Customer", b =>
+                {
+                    b.Navigation("Reservations");
+                });
+
             modelBuilder.Entity("Theatre.Api.Models.GalleryAlbum", b =>
                 {
                     b.Navigation("GalleryAlbumMedia");
@@ -2185,6 +2923,8 @@ namespace Theatre.Api.Migrations
             modelBuilder.Entity("Theatre.Api.Models.Location", b =>
                 {
                     b.Navigation("Performances");
+
+                    b.Navigation("SeatingTemplates");
 
                     b.Navigation("Translations");
                 });
@@ -2205,6 +2945,18 @@ namespace Theatre.Api.Migrations
                     b.Navigation("Translations");
                 });
 
+            modelBuilder.Entity("Theatre.Api.Models.PerformanceSeat", b =>
+                {
+                    b.Navigation("Allocations");
+
+                    b.Navigation("Holds");
+                });
+
+            modelBuilder.Entity("Theatre.Api.Models.PerformanceSeatingLayout", b =>
+                {
+                    b.Navigation("Seats");
+                });
+
             modelBuilder.Entity("Theatre.Api.Models.Person", b =>
                 {
                     b.Navigation("ShowCredits");
@@ -2217,6 +2969,30 @@ namespace Theatre.Api.Migrations
                     b.Navigation("GalleryAlbums");
 
                     b.Navigation("Translations");
+                });
+
+            modelBuilder.Entity("Theatre.Api.Models.Reservation", b =>
+                {
+                    b.Navigation("AuditEvents");
+
+                    b.Navigation("SeatAllocations");
+                });
+
+            modelBuilder.Entity("Theatre.Api.Models.SeatingTemplate", b =>
+                {
+                    b.Navigation("Performances");
+
+                    b.Navigation("Sections");
+                });
+
+            modelBuilder.Entity("Theatre.Api.Models.SeatingTemplateRow", b =>
+                {
+                    b.Navigation("Seats");
+                });
+
+            modelBuilder.Entity("Theatre.Api.Models.SeatingTemplateSection", b =>
+                {
+                    b.Navigation("Rows");
                 });
 
             modelBuilder.Entity("Theatre.Api.Models.Show", b =>
@@ -2235,6 +3011,13 @@ namespace Theatre.Api.Migrations
                     b.Navigation("Shows");
 
                     b.Navigation("Translations");
+                });
+
+            modelBuilder.Entity("Theatre.Api.Models.ShowPerformance", b =>
+                {
+                    b.Navigation("Reservations");
+
+                    b.Navigation("SeatingLayout");
                 });
 
             modelBuilder.Entity("Theatre.Api.Models.StaticPage", b =>

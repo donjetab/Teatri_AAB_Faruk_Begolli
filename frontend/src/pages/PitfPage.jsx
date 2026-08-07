@@ -66,7 +66,7 @@ export function PitfPage() {
   const editions = pitf?.editions ?? []
 
   return <article className="pitf-page">
-    <section className="pitf-page-hero about-hero" style={{ '--about-hero-image': `url("${pitfHeader}")` }} aria-labelledby="pitf-page-title">
+    <section className="pitf-page-hero about-hero" style={{ '--about-hero-image': `url("${resolveMediaUrl(pageCopy?.headerImageUrl) || pitfHeader}")` }} aria-labelledby="pitf-page-title">
       <img className="about-smoke" src={smoke} alt="" aria-hidden="true" />
       <div className="about-hero-content"><h1 id="pitf-page-title">{pageCopy?.title || 'PITF'}</h1><div className="about-hero-rule" aria-hidden="true"><span /><img src={theatreIcon} alt="" /><span /></div><p>{pageCopy?.subtitle || t('pitfPage.fullName')}</p></div>
     </section>

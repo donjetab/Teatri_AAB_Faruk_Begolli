@@ -88,7 +88,7 @@ export function AboutPage() {
     <article className="about-page">
       <section
         className="about-hero"
-        style={{ '--about-hero-image': `url("${page?.socialSharingImageUrl ? resolveMediaUrl(page.socialSharingImageUrl) : aboutBackground}")` }}
+        style={{ '--about-hero-image': `url("${page?.headerImageUrl ? resolveMediaUrl(page.headerImageUrl) : aboutBackground}")` }}
         aria-labelledby="about-page-title"
       >
         <img className="about-smoke" src={smokeOne} alt="" aria-hidden="true" />

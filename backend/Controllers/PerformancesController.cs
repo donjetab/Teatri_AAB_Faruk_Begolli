@@ -23,7 +23,7 @@ public sealed class PerformancesController(AppDbContext db) : ControllerBase
         var now = DateTimeOffset.UtcNow;
         var items = await db.ShowPerformances.AsNoTracking()
             .Where(x => (x.IsPublished || x.Status == PerformanceStatus.Postponed || x.Status == PerformanceStatus.Cancelled)
-                && (x.StartDateTimeUtc >= now || x.Status == PerformanceStatus.Postponed || x.Status == PerformanceStatus.Cancelled)
+                && x.StartDateTimeUtc >= now
                 && x.Show.Status == ShowStatus.Published && x.Status != PerformanceStatus.Completed)
             .OrderBy(x => x.StartDateTimeUtc)
             .Select(x => new PublicPerformanceDto(
@@ -40,7 +40,8 @@ public sealed class PerformancesController(AppDbContext db) : ControllerBase
                 x.Location == null ? null
                     : x.Location.Translations.Where(t => t.LanguageId == requestedLanguageId.Value).Select(t => t.Address).FirstOrDefault()
                         ?? x.Location.Translations.Where(t => t.LanguageId == defaultLanguageId).Select(t => t.Address).FirstOrDefault(),
-                x.Hall, x.Status.ToString(), x.TicketUrl, x.ContactPhone ?? fallbackPhone))
+                x.Hall, x.Status.ToString(), x.TicketUrl, x.ContactPhone ?? fallbackPhone, x.ReservationMode.ToString(),
+                x.ReservationMode == ReservationMode.Internal ? $"/{languageCode}/{(languageCode == "sq" ? "rezervo" : "reserve")}/{x.Id}" : null))
             .ToListAsync(token);
         return Ok(items);
     }

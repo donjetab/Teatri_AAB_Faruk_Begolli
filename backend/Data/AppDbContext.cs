@@ -37,6 +37,18 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
     public DbSet<ShowTranslation> ShowTranslations => Set<ShowTranslation>();
     public DbSet<TheatreInformation> TheatreInformation => Set<TheatreInformation>();
     public DbSet<TheatreInformationTranslation> TheatreInformationTranslations => Set<TheatreInformationTranslation>();
+    public DbSet<SeatingTemplate> SeatingTemplates => Set<SeatingTemplate>();
+    public DbSet<SeatingTemplateSection> SeatingTemplateSections => Set<SeatingTemplateSection>();
+    public DbSet<SeatingTemplateRow> SeatingTemplateRows => Set<SeatingTemplateRow>();
+    public DbSet<SeatingTemplateSeat> SeatingTemplateSeats => Set<SeatingTemplateSeat>();
+    public DbSet<PerformanceSeatingLayout> PerformanceSeatingLayouts => Set<PerformanceSeatingLayout>();
+    public DbSet<PerformanceSeat> PerformanceSeats => Set<PerformanceSeat>();
+    public DbSet<PerformanceSeatHold> PerformanceSeatHolds => Set<PerformanceSeatHold>();
+    public DbSet<Customer> Customers => Set<Customer>();
+    public DbSet<Reservation> Reservations => Set<Reservation>();
+    public DbSet<SeatAllocation> SeatAllocations => Set<SeatAllocation>();
+    public DbSet<ReservationAuditEvent> ReservationAuditEvents => Set<ReservationAuditEvent>();
+    public DbSet<ReservationAdminAudit> ReservationAdminAudits => Set<ReservationAdminAudit>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

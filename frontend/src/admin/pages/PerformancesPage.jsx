@@ -4,8 +4,12 @@ import { adminApi } from '../api'
 import { LoadingSkeleton, PageHeader, StatusBadge, Toast } from '../components/AdminUi'
 import { useAdminDialog } from '../components/AdminDialog'
 
-const empty = { showId: '', locationId: '', venueChoice: '', hall: '', newVenueNameSq: '', newVenueNameEn: '', newVenueAddressSq: '', newVenueAddressEn: '', startDateTimeUtc: '', ticketUrl: '', contactPhone: '', status: 'Scheduled', isPublished: false, internalNotes: '' }
-const localValue = value => value ? new Date(value).toISOString().slice(0, 16) : ''
+const empty = { playKind: 'ours', showId: '', locationId: '', venueChoice: '', hall: '', newVenueNameSq: '', newVenueNameEn: '', newVenueAddressSq: '', newVenueAddressEn: '', startDateTimeUtc: '', ticketUrl: '', contactPhone: '', reservationMode: 'ExternalUrl', seatingTemplateId: '', status: 'Scheduled', isPublished: false, internalNotes: '', maxSeatsPerReservation: '', reservationOpensAtUtc: '', reservationClosesAtUtc: '', reservationsEnabled: true, reservationUnavailableMessage: '' }
+const localValue = value => {
+  if (!value) return ''
+  const date = new Date(value)
+  return new Date(date.getTime() - date.getTimezoneOffset() * 60000).toISOString().slice(0, 16)
+}
 const currentLocalMinute = () => {
   const now = new Date()
   return new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 16)
@@ -21,11 +25,15 @@ const payload = form => ({
   ...form,
   showId: Number(form.showId),
   locationId: form.venueChoice && form.venueChoice !== 'add' ? Number(form.venueChoice) : null,
-  hall: form.hall?.trim() || null,
+  hall: null,
   startDateTimeUtc: new Date(form.startDateTimeUtc).toISOString(),
   endDateTimeUtc: null,
   ticketUrl: form.ticketUrl?.trim() || null,
   contactPhone: form.contactPhone?.trim() || null,
+  seatingTemplateId: form.reservationMode === 'Internal' ? Number(form.seatingTemplateId) : null,
+  maxSeatsPerReservation: null,
+  reservationOpensAtUtc: form.reservationOpensAtUtc ? new Date(form.reservationOpensAtUtc).toISOString() : null,
+  reservationClosesAtUtc: form.reservationClosesAtUtc ? new Date(form.reservationClosesAtUtc).toISOString() : null,
 })
 
 export function PerformancesPage() {
@@ -48,6 +56,7 @@ export function PerformancesPage() {
   const [venueList, setVenueList] = useState([])
   const [venueEdit, setVenueEdit] = useState(null)
   const [venueError, setVenueError] = useState('')
+  const [seatingTemplates, setSeatingTemplates] = useState([])
 
   const load = () => {
     setLoading(true)
@@ -62,6 +71,7 @@ export function PerformancesPage() {
   }
 
   useEffect(() => { void load() }, [filters.showId, filters.locationId, filters.status])
+  useEffect(() => { adminApi.seatingTemplates().then(setSeatingTemplates).catch(() => setSeatingTemplates([])) }, [])
   useEffect(() => {
     if (!editing || !form.startDateTimeUtc || !form.venueChoice || form.venueChoice === 'add') {
       setScheduleConflicts([])
@@ -87,6 +97,7 @@ export function PerformancesPage() {
     setDateError('')
     setForm({
       ...item,
+      playKind: data?.shows?.find(show => show.id === item.showId)?.isGuestPerformance ? 'guest' : 'ours',
       locationId: item.locationId ?? '',
       venueChoice: item.locationId ? String(item.locationId) : '',
       startDateTimeUtc: localValue(item.startDateTimeUtc),
@@ -94,6 +105,13 @@ export function PerformancesPage() {
       ticketUrl: item.ticketUrl ?? '',
       contactPhone: item.contactPhone ?? '',
       internalNotes: item.internalNotes ?? '',
+      reservationMode: item.reservationMode ?? 'ExternalUrl',
+      seatingTemplateId: item.seatingTemplateId ? String(item.seatingTemplateId) : '',
+      maxSeatsPerReservation: item.maxSeatsPerReservation ? String(item.maxSeatsPerReservation) : '',
+      reservationOpensAtUtc: localValue(item.reservationOpensAtUtc),
+      reservationClosesAtUtc: localValue(item.reservationClosesAtUtc),
+      reservationsEnabled: item.reservationsEnabled ?? true,
+      reservationUnavailableMessage: item.reservationUnavailableMessage ?? '',
     })
   }
   useEffect(() => {
@@ -105,16 +123,19 @@ export function PerformancesPage() {
   }, [searchParams, editing])
   const save = async event => {
     event.preventDefault()
-    if (editing === 'new' && new Date(form.startDateTimeUtc) < new Date()) {
-      setDateError('Choose the current time or a future date. New performances cannot be scheduled in the past.')
+    const originalStart = editing === 'new' ? null : data?.items.find(item => item.id === editing)?.startDateTimeUtc
+    const startChanged = !originalStart || new Date(form.startDateTimeUtc).getTime() !== new Date(originalStart).getTime()
+    if (startChanged && new Date(form.startDateTimeUtc) < new Date()) {
+      setDateError('Choose the current time or a future date. A performance cannot be moved into the past.')
       return
     }
     setDateError('')
     const bookingIsOptional = ['SoldOut', 'Completed', 'Cancelled'].includes(form.status) || new Date(form.startDateTimeUtc) < new Date()
-    if (!bookingIsOptional && !form.ticketUrl.trim() && !form.contactPhone.trim()) {
-      setBookingError('Add at least one booking method for an upcoming performance: a ticket URL or a contact phone number.')
+    if (!bookingIsOptional && form.reservationMode === 'ExternalUrl' && !form.ticketUrl.trim() && !form.contactPhone.trim()) {
+      setBookingError('Add either a reservation link or a contact phone number.')
       return
     }
+    if (form.reservationMode === 'Internal' && !form.seatingTemplateId) { setBookingError('Select a seating template for internal reservations.'); return }
     setBookingError('')
     let performanceForm = form
     if (form.venueChoice === 'add') {
@@ -177,10 +198,9 @@ export function PerformancesPage() {
   }
   const duplicate = async id => { await adminApi.duplicatePerformance(id); setToast('Performance duplicated one week later as a draft.'); load() }
   const remove = async item => {
-    if (!await dialog.confirm({ title: 'Delete performance?', message: `The performance for “${item.showTitle}” on ${formatAdminDateTime(item.startDateTimeUtc)} will be permanently removed. If it is published, it will also disappear from the public website.`, confirmLabel: 'Delete performance', danger: true })) return
-    await adminApi.deletePerformance(item.id)
-    setToast('Performance deleted.')
-    load()
+    if (!await dialog.confirm({ title: 'Delete performance and all associated data?', message: `The performance for “${item.showTitle}” on ${formatAdminDateTime(item.startDateTimeUtc)}, all reservations, seat allocations and seating history will be permanently removed. This cannot be undone.`, confirmLabel: 'Delete everything', danger: true })) return
+    try { await adminApi.deletePerformance(item.id); setToast('Performance and associated reservation data deleted.'); load() }
+    catch (requestError) { setError(requestError.response?.data?.detail ?? requestError.response?.data?.title ?? 'The performance could not be deleted.') }
   }
   const calendar = useMemo(() => {
     const year = calendarCursor.getFullYear()
@@ -203,6 +223,7 @@ export function PerformancesPage() {
     return { year, month, cells }
   }, [calendarCursor, data])
   const moveCalendar = direction => setCalendarCursor(current => new Date(current.getFullYear(), current.getMonth() + direction, 1))
+  const performancePlayOptions = (data?.shows ?? []).filter(item => form.playKind === 'guest' ? item.isGuestPerformance : !item.isGuestPerformance)
 
   return <>
     <PageHeader eyebrow="Content" title="Performances" description="Schedule and publish performance dates without reservation or seat calculations." actions={<><button className="admin-outline-button" onClick={openVenueManager}>Manage venues</button><button className="admin-primary-button" onClick={openNew}>Add performance</button></>} />
@@ -243,13 +264,17 @@ export function PerformancesPage() {
         {scheduleConflicts.length > 0 && <div className="performance-conflict-warning" role="alert"><div>!</div><span><strong>Possible scheduling conflict</strong>{scheduleConflicts.map(item => <small key={item.id}>{item.showTitle} is scheduled at {new Date(item.startDateTimeUtc).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} in {[item.venue, item.hall].filter(Boolean).join(' · ')}.</small>)}</span></div>}
         <form className="admin-form" onSubmit={save}>
           <div className="form-grid">
-            <label>Play *<select required value={form.showId} onChange={event => setForm({ ...form, showId: event.target.value })}><option value="">Select play</option>{data.shows.map(item => <option value={item.id} key={item.id}>{item.label}</option>)}</select></label>
-            <label>Venue<select value={form.venueChoice} onChange={event => setForm({ ...form, venueChoice: event.target.value, locationId: event.target.value === 'add' ? '' : event.target.value, hall: '', newVenueNameSq: '', newVenueNameEn: '', newVenueAddressSq: '', newVenueAddressEn: '' })}><option value="">No venue</option>{data.locations.map(item => <option value={item.id} key={item.id}>{item.label}</option>)}<option value="add">+ Add a reusable venue</option></select></label>
-            <label>Start (DD/MM/YYYY) *<input required type="datetime-local" lang="en-GB" min={editing === 'new' ? currentLocalMinute() : undefined} value={form.startDateTimeUtc} onChange={event => { setForm({ ...form, startDateTimeUtc: event.target.value }); setDateError('') }} /></label>
+            <div className="reservation-mode-switch full" aria-label="Play type"><button type="button" className={form.playKind === 'ours' ? 'active' : ''} onClick={() => setForm({ ...form, playKind: 'ours', showId: '' })}>Our plays</button><button type="button" className={form.playKind === 'guest' ? 'active' : ''} onClick={() => setForm({ ...form, playKind: 'guest', showId: '' })}>Guest plays</button></div>
+            <label>Play *<select required value={form.showId} onChange={event => setForm({ ...form, showId: event.target.value })}><option value="">Select {form.playKind === 'guest' ? 'guest play' : 'our play'}</option>{performancePlayOptions.map(item => <option value={item.id} key={item.id}>{item.label}</option>)}</select></label>
+            <label>Venue<select value={form.venueChoice} onChange={event => setForm({ ...form, venueChoice: event.target.value, locationId: event.target.value === 'add' ? '' : event.target.value, seatingTemplateId: '', hall: '', newVenueNameSq: '', newVenueNameEn: '', newVenueAddressSq: '', newVenueAddressEn: '' })}><option value="">No venue</option>{data.locations.map(item => <option value={item.id} key={item.id}>{item.label}</option>)}<option value="add">+ Add a reusable venue</option></select></label>
+            <label>Start (DD/MM/YYYY) *<input required type="datetime-local" lang="en-GB" min={editing === 'new' || new Date(data?.items.find(item => item.id === editing)?.startDateTimeUtc ?? 0) >= new Date() ? currentLocalMinute() : undefined} value={form.startDateTimeUtc} onChange={event => { setForm({ ...form, startDateTimeUtc: event.target.value }); setDateError('') }} /></label>
             {form.venueChoice === 'add' && <div className="add-venue-fields full"><label>Venue name — Albanian *<input required value={form.newVenueNameSq} onChange={event => setForm({ ...form, newVenueNameSq: event.target.value })} placeholder="Teatri Kombëtar i Kosovës" /></label><label>Venue name — English *<input required value={form.newVenueNameEn} onChange={event => setForm({ ...form, newVenueNameEn: event.target.value })} placeholder="National Theatre of Kosovo" /></label><label>Address — Albanian *<input required value={form.newVenueAddressSq} onChange={event => setForm({ ...form, newVenueAddressSq: event.target.value })} placeholder="Prishtinë, Kosovë" /></label><label>Address — English *<input required value={form.newVenueAddressEn} onChange={event => setForm({ ...form, newVenueAddressEn: event.target.value })} placeholder="Pristina, Kosovo" /></label><button type="button" className="admin-outline-button" disabled={savingVenue || !form.newVenueNameSq.trim() || !form.newVenueNameEn.trim() || !form.newVenueAddressSq.trim() || !form.newVenueAddressEn.trim()} onClick={addVenue}>{savingVenue ? 'Adding…' : 'Add venue to dropdown'}</button></div>}
-            <label>Hall<input value={form.hall} onChange={event => setForm({ ...form, hall: event.target.value })} placeholder="Optional hall or stage" /></label>
             <label>Status<select value={form.status} onChange={event => { const status = event.target.value; setForm({ ...form, status, isPublished: status === 'Postponed' || status === 'Cancelled' ? true : form.isPublished }); if (status === 'SoldOut') setBookingError('') }}><option>Scheduled</option><option>SoldOut</option><option>Postponed</option><option>Cancelled</option><option>Completed</option></select></label>
-            {form.status !== 'SoldOut' && <><label>Ticket URL<input type="url" value={form.ticketUrl} onChange={event => { setForm({ ...form, ticketUrl: event.target.value }); if (event.target.value.trim() || form.contactPhone.trim()) setBookingError('') }} placeholder="Add a link or use the phone field" /></label><label>Contact phone<input value={form.contactPhone} onChange={event => { setForm({ ...form, contactPhone: event.target.value }); if (event.target.value.trim() || form.ticketUrl.trim()) setBookingError('') }} placeholder="Required for upcoming performances without a ticket link" /></label><p className="admin-help booking-contact-help full">Booking details are required for upcoming performances, but optional for past, completed or cancelled performances.</p></>}
+            <label>Reservation method<select value={form.reservationMode} onChange={event => setForm({ ...form, reservationMode: event.target.value })}><option value="ExternalUrl">Reservation link or phone</option><option value="Internal">Internal seating reservation</option></select></label>
+            {form.reservationMode === 'Internal' && <label>Seating template<select required value={form.seatingTemplateId} onChange={event => setForm({ ...form, seatingTemplateId: event.target.value })}><option value="">Select template</option>{seatingTemplates.filter(x => x.isActive && (!form.venueChoice || x.locationId === Number(form.venueChoice))).map(x => <option key={x.id} value={x.id}>{x.venue} · {x.name}</option>)}</select></label>}
+            {form.reservationMode === 'Internal' && <><label>Reservations open<input type="datetime-local" value={form.reservationOpensAtUtc} onChange={event => setForm({ ...form, reservationOpensAtUtc: event.target.value })} /></label><label>Reservations close<input type="datetime-local" value={form.reservationClosesAtUtc} onChange={event => setForm({ ...form, reservationClosesAtUtc: event.target.value })} /></label><label className="admin-switch-row"><input type="checkbox" checked={form.reservationsEnabled} onChange={event => setForm({ ...form, reservationsEnabled: event.target.checked })} /> Reservations enabled</label><label className="full">Public unavailable message<textarea rows="2" maxLength="500" value={form.reservationUnavailableMessage} onChange={event => setForm({ ...form, reservationUnavailableMessage: event.target.value })} placeholder="Optional message shown while reservations are unavailable" /></label></>}
+            {form.status !== 'SoldOut' && form.reservationMode === 'ExternalUrl' && <><label>Reservation link (optional)<input type="url" value={form.ticketUrl} onChange={event => { setForm({ ...form, ticketUrl: event.target.value }); if (event.target.value.trim() || form.contactPhone.trim()) setBookingError('') }} placeholder="https://…" /></label><label>Reservation phone (optional)<input type="tel" value={form.contactPhone} onChange={event => { setForm({ ...form, contactPhone: event.target.value }); if (event.target.value.trim() || form.ticketUrl.trim()) setBookingError('') }} placeholder="+383…" /></label><p className="full admin-field-help">Provide at least one: a reservation link or a phone number.</p></>}
+            {form.status !== 'SoldOut' && <label>Contact phone<input value={form.contactPhone} onChange={event => setForm({ ...form, contactPhone: event.target.value })} placeholder="Optional contact number" /></label>}
             {form.status === 'SoldOut' && <div className="performance-sold-out-note full"><strong>Sold out</strong><span>Booking links and phone controls will be hidden on the public website.</span></div>}
             <label className="full">Internal notes<textarea rows="4" value={form.internalNotes} onChange={event => setForm({ ...form, internalNotes: event.target.value })} /></label>
             <label className="admin-switch-row full"><input type="checkbox" checked={form.isPublished} onChange={event => setForm({ ...form, isPublished: event.target.checked })} /> Published on the website</label>

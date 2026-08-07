@@ -12,12 +12,7 @@ export function ShowCard({ show, language, reservationUrl }) {
   const posterUrl = resolveMediaUrl(show.posterUrl)
   const date = new Date(show.nearestPerformanceDateUtc)
   const monthKey = date.toLocaleString('en-US', { month: 'short', timeZone: 'UTC' }).toLowerCase()
-  const reservePageUrl = `#${getLocalizedPath('reserve', language)}`
-  const normalizeTicketUrl = (url) =>
-    !url || url === '#/sq/rezervo' || url === 'https://example.com/reservations'
-      ? reservePageUrl
-      : url
-  const ticketUrl = normalizeTicketUrl(show.ticketUrl || reservationUrl) || getShowUrl(language, show.slug)
+  const externalUrl = show.reservationMode === 'ExternalUrl' && show.ticketUrl && show.ticketUrl !== 'https://example.com/reservations' ? show.ticketUrl : null
 
   return (
     <article className="show-card">
@@ -40,9 +35,9 @@ export function ShowCard({ show, language, reservationUrl }) {
           {show.director && <p>{t('home.directedBy', { director: show.director })}</p>}
         </div>
       </Link>
-      <a className="show-ticket-link" href={ticketUrl} aria-label={t('home.reserveForShow', { title: show.title })}>
-        {i18n.language === 'sq' ? 'Bileta' : 'Tickets'}
-      </a>
+      {show.reservationMode === 'Internal' && show.internalReservationUrl ? <Link className="show-ticket-link" to={show.internalReservationUrl} aria-label={t('home.reserveForShow', { title: show.title })}>{i18n.language === 'sq' ? 'Rezervo' : 'Reserve'}</Link>
+        : externalUrl ? <a className="show-ticket-link" href={externalUrl} target="_blank" rel="noopener noreferrer" aria-label={t('home.reserveForShow', { title: show.title })}>{i18n.language === 'sq' ? 'Bileta' : 'Tickets'}</a>
+          : <span className="show-ticket-link is-unavailable">{i18n.language === 'sq' ? 'E padisponueshme' : 'Unavailable'}</span>}
     </article>
   )
 }

@@ -28,7 +28,7 @@ public sealed class HomepageService(AppDbContext db, IClock clock) : IHomepageSe
             return null;
         }
 
-        var upcomingShows = await GetUpcomingShowsAsync(languageIds.RequestedLanguageId.Value, languageIds.FallbackLanguageId, cancellationToken);
+        var upcomingShows = await GetUpcomingShowsAsync(languageCode, languageIds.RequestedLanguageId.Value, languageIds.FallbackLanguageId, cancellationToken);
         var pitfFeatured = await GetPitfFeaturedAsync(languageIds.RequestedLanguageId.Value, languageIds.FallbackLanguageId, cancellationToken);
 
         return home with
@@ -76,6 +76,10 @@ public sealed class HomepageService(AppDbContext db, IClock clock) : IHomepageSe
                 x.Email,
                 x.FacebookUrl,
                 x.InstagramUrl,
+                x.FacebookDisplayName,
+                x.InstagramDisplayName,
+                LogoUrl = x.LogoMediaAsset == null ? null : x.LogoMediaAsset.FileUrl,
+                FooterLogoUrl = x.FooterLogoMediaAsset == null ? null : x.FooterLogoMediaAsset.FileUrl,
                 Translation = x.Translations
                     .Where(t => t.LanguageId == languageId || t.LanguageId == fallbackLanguageId)
                     .OrderByDescending(t => t.LanguageId == languageId)
@@ -96,7 +100,8 @@ public sealed class HomepageService(AppDbContext db, IClock clock) : IHomepageSe
                         t.ReservationCallToActionTitle,
                         t.ReservationCallToActionText,
                         t.ReservationButtonText,
-                        t.AddressDisplayText
+                        t.AddressDisplayText,
+                        t.FooterCopyrightText
                     })
                     .FirstOrDefault(),
                 Hero = x.HeroBackgroundMediaAsset == null ? null : new MediaProjection(
@@ -143,7 +148,14 @@ public sealed class HomepageService(AppDbContext db, IClock clock) : IHomepageSe
                         .Where(t => t.LanguageId == languageId || t.LanguageId == fallbackLanguageId)
                         .OrderByDescending(t => t.LanguageId == languageId)
                         .Select(t => t.Caption)
-                        .FirstOrDefault())
+                        .FirstOrDefault()),
+                Pitf = x.PitfFeatureMediaAsset == null ? null : new MediaProjection(
+                    x.PitfFeatureMediaAsset.Id, x.PitfFeatureMediaAsset.FileUrl,
+                    x.PitfFeatureMediaAsset.Width, x.PitfFeatureMediaAsset.Height,
+                    x.PitfFeatureMediaAsset.Translations.Where(t => t.LanguageId == languageId || t.LanguageId == fallbackLanguageId)
+                        .OrderByDescending(t => t.LanguageId == languageId).Select(t => t.AltText).FirstOrDefault() ?? string.Empty,
+                    x.PitfFeatureMediaAsset.Translations.Where(t => t.LanguageId == languageId || t.LanguageId == fallbackLanguageId)
+                        .OrderByDescending(t => t.LanguageId == languageId).Select(t => t.Caption).FirstOrDefault())
             })
             .FirstOrDefaultAsync(cancellationToken);
 
@@ -175,8 +187,10 @@ public sealed class HomepageService(AppDbContext db, IClock clock) : IHomepageSe
             ValueOrDefault(query.Translation.ReservationButtonText, query.Translation.Code, "Rezervo biletën", "Reserve ticket"),
             NormalizeReservationUrl(query.ReservationUrl),
             ValueOrDefault(query.Translation.PitfFeatureTitle, query.Translation.Code, "Prishtina International Theatre Festival", "Prishtina International Theatre Festival"),
+            query.Translation.PitfShortDescription,
             ValueOrDefault(query.Translation.PitfFeatureButtonText, query.Translation.Code, "Programi PITF", "PITF program"),
             query.PitfDestinationUrl ?? "https://pitf.teatriaab.com/",
+            ToDto(query.Pitf),
             query.HeroIsVisible,
             query.ReservationBannerIsVisible,
             query.PitfFeatureIsVisible,
@@ -184,19 +198,20 @@ public sealed class HomepageService(AppDbContext db, IClock clock) : IHomepageSe
             query.Phone,
             query.Email,
             query.FacebookUrl,
-            query.InstagramUrl);
+            query.InstagramUrl,
+            query.FacebookDisplayName,
+            query.InstagramDisplayName,
+            query.LogoUrl,
+            query.FooterLogoUrl,
+            query.Translation.FooterCopyrightText);
     }
 
     private static string ValueOrDefault(string? value, string languageCode, string sq, string en) =>
         string.IsNullOrWhiteSpace(value) ? (languageCode == "sq" ? sq : en) : value;
 
-    private static string? NormalizeReservationUrl(string? value) =>
-        string.IsNullOrWhiteSpace(value) ||
-        value.Equals("https://example.com/reservations", StringComparison.OrdinalIgnoreCase)
-            ? "#/sq/rezervo"
-            : value;
+    private static string NormalizeReservationUrl(string? value) => "#/sq/rezervo";
 
-    private async Task<IReadOnlyList<UpcomingShowDto>> GetUpcomingShowsAsync(int languageId, int fallbackLanguageId, CancellationToken cancellationToken)
+    private async Task<IReadOnlyList<UpcomingShowDto>> GetUpcomingShowsAsync(string languageCode, int languageId, int fallbackLanguageId, CancellationToken cancellationToken)
     {
         var nowUtc = clock.UtcNow.ToUniversalTime();
 
@@ -207,10 +222,12 @@ public sealed class HomepageService(AppDbContext db, IClock clock) : IHomepageSe
             .OrderBy(x => x.StartDateTimeUtc)
             .Select(x => new
             {
+                PerformanceId = x.Id,
                 ShowId = x.Show.Id,
                 x.StartDateTimeUtc,
                 x.Status,
                 x.TicketUrl,
+                x.ReservationMode,
                 PosterUrl = x.Show.PosterMediaAsset == null ? null : x.Show.PosterMediaAsset.FileUrl,
                 Translation = x.Show.Translations
                     .Where(t => t.LanguageId == languageId || t.LanguageId == fallbackLanguageId)
@@ -232,6 +249,7 @@ public sealed class HomepageService(AppDbContext db, IClock clock) : IHomepageSe
             .Take(3)
             .Select(x => new UpcomingShowDto(
                 x.ShowId,
+                x.PerformanceId,
                 x.Translation!.Title,
                 x.Translation.Slug,
                 x.Translation.LanguageId != languageId,
@@ -239,7 +257,9 @@ public sealed class HomepageService(AppDbContext db, IClock clock) : IHomepageSe
                 x.Director,
                 x.StartDateTimeUtc.ToUniversalTime(),
                 x.Status.ToString(),
-                x.TicketUrl))
+                x.TicketUrl,
+                x.ReservationMode.ToString(),
+                x.ReservationMode == ReservationMode.Internal ? $"/{languageCode}/{(languageCode == "sq" ? "rezervo" : "reserve")}/{x.PerformanceId}" : null))
             .ToList();
     }
 

@@ -6,8 +6,9 @@ import { ArrowRightIcon } from '../icons/ArrowRightIcon'
 import { DesktopNavigation } from './DesktopNavigation'
 import { LanguageSwitcher } from './LanguageSwitcher'
 import { MobileNavigation } from './MobileNavigation'
+import { resolveMediaUrl } from '../../api/client'
 
-export function Header({ language, isScrolled = false, navigation }) {
+export function Header({ language, isScrolled = false, navigation, logoUrl }) {
   const { t } = useTranslation()
 
   return (
@@ -17,7 +18,7 @@ export function Header({ language, isScrolled = false, navigation }) {
       </a>
       <div className="site-header-inner">
         <Link to={getLocalizedPath('home', language)} className="brand-link" aria-label={t('brand')}>
-          <img src={logoWhite} alt={t('brand')} className="brand-logo" />
+          <img src={resolveMediaUrl(logoUrl) || logoWhite} alt={t('brand')} className="brand-logo" />
         </Link>
         <div className="header-actions">
           <DesktopNavigation language={language} navigation={navigation} />

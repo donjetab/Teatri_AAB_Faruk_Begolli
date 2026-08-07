@@ -119,7 +119,9 @@ internal sealed class ShowPerformanceConfiguration : IEntityTypeConfiguration<Sh
         builder.Property(x => x.ContactPhone).HasMaxLength(80);
         builder.Property(x => x.Hall).HasMaxLength(180);
         builder.Property(x => x.InternalNotes).HasMaxLength(2000);
+        builder.Property(x => x.ReservationUnavailableMessage).HasMaxLength(500);
         builder.Property(x => x.Status).HasConversion<string>().HasMaxLength(32).IsRequired();
+        builder.Property(x => x.ReservationMode).HasConversion<string>().HasMaxLength(24).IsRequired();
 
         builder.HasOne(x => x.Show)
             .WithMany(x => x.Performances)
@@ -130,6 +132,9 @@ internal sealed class ShowPerformanceConfiguration : IEntityTypeConfiguration<Sh
             .WithMany(x => x.Performances)
             .HasForeignKey(x => x.LocationId)
             .OnDelete(DeleteBehavior.SetNull);
+
+        builder.HasOne(x => x.SeatingTemplate).WithMany(x => x.Performances)
+            .HasForeignKey(x => x.SeatingTemplateId).OnDelete(DeleteBehavior.Restrict);
 
         builder.HasIndex(x => x.StartDateTimeUtc);
         builder.HasIndex(x => x.Status);
@@ -238,6 +243,7 @@ internal sealed class NewsArticleConfiguration : IEntityTypeConfiguration<NewsAr
     {
         builder.Property(x => x.ArticleType).HasConversion<string>().HasMaxLength(32).IsRequired();
         builder.Property(x => x.ExternalUrl).HasMaxLength(2000);
+        builder.Property(x => x.CardThumbnailExternalUrl).HasMaxLength(2000);
         builder.Property(x => x.ExternalSourceName).HasMaxLength(200);
 
         builder.ToTable(table => table.HasCheckConstraint(
@@ -491,6 +497,8 @@ internal sealed class TheatreInformationConfiguration : IEntityTypeConfiguration
         builder.Property(x => x.Longitude).HasPrecision(9, 6);
         builder.Property(x => x.FacebookUrl).HasMaxLength(500);
         builder.Property(x => x.InstagramUrl).HasMaxLength(500);
+        builder.Property(x => x.FacebookDisplayName).HasMaxLength(180);
+        builder.Property(x => x.InstagramDisplayName).HasMaxLength(180);
         builder.Property(x => x.ReservationUrl).HasMaxLength(500);
         builder.Property(x => x.PrimaryButtonLink).HasMaxLength(500);
         builder.Property(x => x.AboutButtonLink).HasMaxLength(500);
@@ -504,6 +512,7 @@ internal sealed class TheatreInformationConfiguration : IEntityTypeConfiguration
         builder.HasOne(x => x.PitfFeatureMediaAsset).WithMany().HasForeignKey(x => x.PitfFeatureMediaAssetId).OnDelete(DeleteBehavior.Restrict);
         builder.HasOne(x => x.PitfPageMediaAsset).WithMany().HasForeignKey(x => x.PitfPageMediaAssetId).OnDelete(DeleteBehavior.Restrict);
         builder.HasOne(x => x.LogoMediaAsset).WithMany().HasForeignKey(x => x.LogoMediaAssetId).OnDelete(DeleteBehavior.Restrict);
+        builder.HasOne(x => x.FooterLogoMediaAsset).WithMany().HasForeignKey(x => x.FooterLogoMediaAssetId).OnDelete(DeleteBehavior.Restrict);
         builder.HasOne(x => x.FaviconMediaAsset).WithMany().HasForeignKey(x => x.FaviconMediaAssetId).OnDelete(DeleteBehavior.Restrict);
         builder.HasOne(x => x.SocialSharingMediaAsset).WithMany().HasForeignKey(x => x.SocialSharingMediaAssetId).OnDelete(DeleteBehavior.Restrict);
     }

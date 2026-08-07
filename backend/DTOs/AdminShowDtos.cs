@@ -21,7 +21,7 @@ public sealed record SaveAdminShowTranslationDto(
 
 public sealed record AdminShowListItemDto(
     int Id, string TitleSq, string TitleEn, string SlugSq, string Category, string Status, string LifecycleStatus,
-    int? ProductionYear, DateOnly? PremiereDate, bool IsFeatured, int PerformanceCount,
+    int? ProductionYear, DateOnly? PremiereDate, bool IsFeatured, bool IsGuestPerformance, int PerformanceCount,
     DateTimeOffset UpdatedAt, string? PosterUrl);
 
 public sealed record AdminShowDetailDto(
@@ -29,7 +29,7 @@ public sealed record AdminShowDetailDto(
     string? PosterUrl, string? FeaturedImageUrl,
     int? DurationMinutes, int? ProductionYear, int? AgeRecommendation, string? OriginalLanguage,
     string? TrailerUrl, string? VideoUrl, DateOnly? PremiereDate, string Status,
-    string LifecycleStatus, bool IsFeatured, DateTimeOffset CreatedAt, DateTimeOffset UpdatedAt,
+    string LifecycleStatus, bool IsFeatured, bool IsGuestPerformance, DateTimeOffset CreatedAt, DateTimeOffset UpdatedAt,
     DateTimeOffset? PublishedAt, IReadOnlyList<AdminShowTranslationDto> Translations,
     IReadOnlyList<AdminShowGalleryMediaDto> GalleryMedia, bool UseLocalGalleryFallback);
 
@@ -50,6 +50,7 @@ public sealed record SaveAdminShowRequest(
     DateOnly? PremiereDate,
     [Required] string LifecycleStatus,
     bool IsFeatured,
+    bool IsGuestPerformance,
     [MinLength(2)] IReadOnlyList<SaveAdminShowTranslationDto> Translations);
 
 public sealed record AdminShowListResponseDto(

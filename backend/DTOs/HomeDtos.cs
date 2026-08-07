@@ -23,8 +23,10 @@ public sealed record HomeResponseDto(
     string ReservationButtonText,
     string? ReservationUrl,
     string PitfFeatureTitle,
+    string PitfFeatureDescription,
     string PitfFeatureButtonText,
     string PitfDestinationUrl,
+    MediaAssetDto? PitfFeatureImage,
     bool HeroIsVisible,
     bool ReservationBannerIsVisible,
     bool PitfFeatureIsVisible,
@@ -32,7 +34,12 @@ public sealed record HomeResponseDto(
     string Phone,
     string Email,
     string? FacebookUrl,
-    string? InstagramUrl);
+    string? InstagramUrl,
+    string? FacebookDisplayName,
+    string? InstagramDisplayName,
+    string? LogoUrl,
+    string? FooterLogoUrl,
+    string FooterCopyrightText);
 
 public sealed record MediaAssetDto(
     int Id,
@@ -49,6 +56,7 @@ public sealed record TheatreStatisticsDto(
 
 public sealed record UpcomingShowDto(
     int Id,
+    int PerformanceId,
     string Title,
     string Slug,
     bool IsFallbackTranslation,
@@ -56,7 +64,9 @@ public sealed record UpcomingShowDto(
     string? Director,
     DateTimeOffset NearestPerformanceDateUtc,
     string PerformanceStatus,
-    string? TicketUrl);
+    string? TicketUrl,
+    string ReservationMode,
+    string? InternalReservationUrl);
 
 public sealed record PitfFeaturedDto(
     int Id,

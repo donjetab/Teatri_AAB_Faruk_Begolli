@@ -5,7 +5,7 @@ namespace Theatre.Api.DTOs;
 public sealed record AdminNewsTranslationDto(string LanguageCode, string Title, string Slug, string Summary,
     string Content, string? MetaTitle, string? MetaDescription);
 public sealed record AdminNewsDetailDto(int Id, string ArticleType, int? CoverMediaAssetId, string? CoverUrl,
-    string? CoverMimeType, int? CardThumbnailMediaAssetId, string? CardThumbnailUrl,
+    string? CoverMimeType, int? CardThumbnailMediaAssetId, string? CardThumbnailUrl, string? CardThumbnailExternalUrl,
     string? ExternalUrl, string? ExternalSourceName, bool IsPublished, bool IsFeatured,
     DateTimeOffset? PublishedAt, DateTimeOffset CreatedAt, DateTimeOffset UpdatedAt,
     IReadOnlyList<AdminNewsTranslationDto> Translations, IReadOnlyList<AdminNewsGalleryMediaDto> GalleryMedia,
@@ -18,6 +18,7 @@ public sealed record AdminNewsExternalLinkDto(
 public sealed record AttachNewsGalleryMediaRequest([Range(1, int.MaxValue)] int MediaAssetId);
 public sealed record ReorderNewsGalleryRequest([MinLength(1)] IReadOnlyList<int> MediaAssetIds);
 public sealed record SaveAdminNewsRequest([Required] string ArticleType, int? CoverMediaAssetId, int? CardThumbnailMediaAssetId,
+    [Url, MaxLength(2000)] string? CardThumbnailExternalUrl,
     [Url] string? ExternalUrl, [MaxLength(200)] string? ExternalSourceName, bool IsPublished,
     bool IsFeatured, DateTimeOffset? PublishedAt, [MinLength(2)] IReadOnlyList<AdminNewsTranslationDto> Translations,
     IReadOnlyList<AdminNewsExternalLinkDto>? RelatedLinks);

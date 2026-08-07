@@ -7,6 +7,7 @@ import { getGalleryImages } from '../api/gallery'
 import { resolveMediaUrl } from '../api/client'
 import { getStaticPage } from '../api/staticPages'
 import { useParams } from 'react-router-dom'
+import { ArrowRightIcon } from '../components/icons/ArrowRightIcon'
 
 const INITIAL_IMAGE_COUNT = 12
 const IMAGE_BATCH_SIZE = 8
@@ -57,7 +58,7 @@ export function GalleryPage() {
     <article className="gallery-page">
       <section
         className="gallery-page-hero page-hero"
-        style={{ '--page-hero-image': `url("${galleryHeader}")` }}
+        style={{ '--page-hero-image': `url("${resolveMediaUrl(pageCopy?.headerImageUrl) || galleryHeader}")` }}
         aria-labelledby="gallery-page-title"
       >
         <img className="page-hero-smoke" src={smoke} alt="" aria-hidden="true" />
@@ -130,7 +131,7 @@ export function GalleryPage() {
             )}
             aria-label={t('galleryPage.previousImage')}
           >
-            ‹
+            <ArrowRightIcon className="direction-arrow direction-arrow-left" />
           </button>
           <img
             src={images[selectedImageIndex].src}
@@ -142,7 +143,7 @@ export function GalleryPage() {
             onClick={() => setSelectedImageIndex((selectedImageIndex + 1) % images.length)}
             aria-label={t('galleryPage.nextImage')}
           >
-            ›
+            <ArrowRightIcon className="direction-arrow" />
           </button>
         </div>
       )}

@@ -5,13 +5,15 @@ import goldLines from '../../assets/decorative-gold-lines.png'
 import pitfHomepageImage from '../../assets/hp_pitf.jpg'
 import pitfWordImage from '../../assets/PITF-fading.png'
 import { ArrowRightIcon } from '../icons/ArrowRightIcon'
+import { resolveMediaUrl } from '../../api/client'
 import { defaultLanguage, getManagedDestination, languages } from '../../routes/localizedRoutes'
 
-export function PitfPreview({ pitf, title, buttonText, destinationUrl }) {
+export function PitfPreview({ pitf, title, description, buttonText, destinationUrl, image }) {
   const { t } = useTranslation()
   const { language: languageParam } = useParams()
   const language = languages.includes(languageParam) ? languageParam : defaultLanguage
   const buttonTarget = getManagedDestination(destinationUrl, language, 'pitf')
+  const featureImage = resolveMediaUrl(image?.url) || pitfHomepageImage
   if (!pitf) {
     return null
   }
@@ -24,7 +26,7 @@ export function PitfPreview({ pitf, title, buttonText, destinationUrl }) {
           <img className="pitf-ghost" src={pitfWordImage} alt="" loading="lazy" aria-hidden="true" />
           <img
             className="pitf-main-image"
-            src={pitfHomepageImage}
+            src={featureImage}
             alt={pitf.image?.altText ?? pitf.title}
             loading="lazy"
           />
@@ -35,7 +37,7 @@ export function PitfPreview({ pitf, title, buttonText, destinationUrl }) {
           <h2 id="pitf-title">
             <span>{title || pitf.title}</span>
           </h2>
-          <p>{pitf.shortDescription}</p>
+          <p>{description || pitf.shortDescription}</p>
           {buttonTarget.startsWith('http') ? <a href={buttonTarget} target="_blank" rel="noreferrer" className="home-button">
             <span>{buttonText || t('home.pitfProgram')}</span>
             <span className="circle-arrow" aria-hidden="true">

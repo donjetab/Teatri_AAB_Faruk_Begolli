@@ -10,6 +10,7 @@ import { PitfPage } from './pages/PitfPage'
 import { GalleryPage } from './pages/GalleryPage'
 import { ContactPage } from './pages/ContactPage'
 import { ReservePage } from './pages/ReservePage'
+import { InternalReservationPage } from './pages/InternalReservationPage'
 import { NewsPage } from './pages/NewsPage'
 import { NewsDetailPage } from './pages/NewsDetailPage'
 import { defaultLanguage, getLocalizedPath } from './routes/localizedRoutes'
@@ -22,6 +23,8 @@ import { WebsiteInformationPage } from './admin/pages/WebsiteInformationPage'
 import { HomepageManagementPage } from './admin/pages/HomepageManagementPage'
 import { TranslationsPage } from './admin/pages/TranslationsPage'
 import { ReservationsPage } from './admin/pages/ReservationsPage'
+import { CustomersPage } from './admin/pages/CustomersPage'
+import { SeatingTemplatesPage } from './admin/pages/SeatingTemplatesPage'
 import { SectionPlaceholderPage } from './admin/pages/SectionPlaceholderPage'
 import { ChangePasswordPage } from './admin/pages/ChangePasswordPage'
 import { AdminShowsPage } from './admin/pages/ShowsPage'
@@ -65,6 +68,9 @@ function App() {
           <Route path="homepage" element={<HomepageManagementPage />} />
           <Route path="translations" element={<TranslationsPage />} />
           <Route path="reservations" element={<ReservationsPage />} />
+          <Route path="customers" element={<CustomersPage />} />
+          <Route path="seating-templates" element={<SeatingTemplatesPage />} />
+          <Route path="performances/:performanceId/seating" element={<SeatingTemplatesPage />} />
           <Route path="account" element={<ChangePasswordPage />} />
           <Route path="shows" element={<AdminShowsPage />} />
           <Route path="shows/:id" element={<ShowEditorPage />} />
@@ -107,7 +113,9 @@ function App() {
         <Route path="kontakti" element={<ContactPage />} />
         <Route path="contact" element={<ContactPage />} />
         <Route path="rezervo" element={<ReservePage />} />
+        <Route path="rezervo/:performanceId" element={<InternalReservationPage />} />
         <Route path="reserve" element={<ReservePage />} />
+        <Route path="reserve/:performanceId" element={<InternalReservationPage />} />
       </Route>
       <Route path="*" element={<Navigate to={getLocalizedPath('home', defaultLanguage)} replace />} />
     </Routes></AdminAuthProvider>

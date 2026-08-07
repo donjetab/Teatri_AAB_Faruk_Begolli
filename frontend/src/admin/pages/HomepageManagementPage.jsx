@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react'
 import { adminApi } from '../api'
 import { LanguageTabs, LoadingSkeleton, PageHeader, Toast } from '../components/AdminUi'
+import { MediaPicker } from '../components/MediaPicker'
 
 const sections = [
-  { title: 'Hero section', fields: [['Hero slogan', 'heroSlogan'], ['Supporting text', 'heroSupportingText'], ['Primary button text', 'heroButtonText']], destination: ['Primary button destination', 'primaryButtonLink'] },
-  { title: 'About preview', fields: [['Title', 'aboutTitle'], ['Description', 'aboutShort', true]] },
-  { title: 'Reservation banner', fields: [['Title', 'reservationTitle'], ['Description', 'reservationText', true], ['Button text', 'reservationButtonText']], destination: ['Reservation destination', 'reservationUrl'] },
-  { title: 'PITF feature', fields: [['Title', 'pitfTitle'], ['Description', 'pitfDescription', true], ['Button text', 'pitfButtonText']], destination: ['PITF button destination', 'pitfDestinationUrl'] },
+  { title: 'Hero section', media: ['Hero background', 'heroMediaAssetId'], fields: [['Hero slogan', 'heroSlogan'], ['Supporting text', 'heroSupportingText'], ['Primary button text', 'heroButtonText']], destination: ['Primary button destination', 'primaryButtonLink'] },
+  { title: 'About preview', media: ['About preview image', 'aboutMediaAssetId'], fields: [['Title', 'aboutTitle'], ['Description', 'aboutShort', true]] },
+  { title: 'Reservation banner', media: ['Reservation banner background', 'reservationMediaAssetId'], fields: [['Title', 'reservationTitle'], ['Description', 'reservationText', true], ['Button text', 'reservationButtonText']], destination: ['Reservation destination', 'reservationUrl'] },
+  { title: 'PITF feature', media: ['PITF feature image', 'pitfMediaAssetId'], fields: [['Title', 'pitfTitle'], ['Description', 'pitfDescription', true], ['Button text', 'pitfButtonText']], destination: ['PITF button destination', 'pitfDestinationUrl'] },
 ]
 const pageOptions = [
   ['#/sq', 'Homepage'], ['#/sq/shfaqjet', 'Shows / Plays'], ['#/sq/per-ne', 'About the theatre'],
@@ -41,7 +42,8 @@ export function HomepageManagementPage() {
         <div className="panel-heading"><h2>{section.title}</h2></div>
         <div className="form-grid">
           {section.fields.map(([label, key, large]) => <label className={large ? 'full' : ''} key={key}>{label}{key === 'heroSupportingText' && <small>Optional — leave empty to hide this text.</small>}{large ? <textarea rows="5" value={tr[key]} onChange={e => changeTr(key, e.target.value)} /> : <input value={tr[key]} onChange={e => changeTr(key, e.target.value)} />}</label>)}
-          {section.destination && <label>{section.destination[0]}<select value={form[section.destination[1]] ?? ''} onChange={e => change(section.destination[1], e.target.value)}>{pageOptions.map(([value, label]) => <option value={value} key={value}>{label}</option>)}</select><small>The matching English page is selected automatically.</small></label>}
+          {section.destination && <label>{section.destination[0]}<select value={section.destination[1] === 'reservationUrl' ? '#/sq/rezervo' : (form[section.destination[1]] ?? '')} onChange={e => change(section.destination[1], e.target.value)}>{(section.destination[1] === 'reservationUrl' ? [['#/sq/rezervo', 'Reserve tickets']] : pageOptions).map(([value, label]) => <option value={value} key={value}>{label}</option>)}</select><small>The matching English page is selected automatically.</small></label>}
+          {section.media && <div className="full"><MediaPicker label={section.media[0]} type="image/" value={form[section.media[1]]} onSelect={media => change(section.media[1], media?.id ?? null)} /></div>}
         </div>
       </section>)}
       {error && <div className="admin-form-error">{error}</div>}

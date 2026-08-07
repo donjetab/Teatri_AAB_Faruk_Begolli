@@ -34,7 +34,7 @@ public sealed class NewsController(AppDbContext db) : ControllerBase
                 PublishedAt = x.PublishedAt!.Value,
                 CoverUrl = x.CoverMediaAsset == null ? null : x.CoverMediaAsset.FileUrl,
                 CoverMimeType = x.CoverMediaAsset == null ? null : x.CoverMediaAsset.MimeType,
-                CardThumbnailUrl = x.CardThumbnailMediaAsset == null ? null : x.CardThumbnailMediaAsset.FileUrl,
+                CardThumbnailUrl = x.CardThumbnailMediaAsset == null ? x.CardThumbnailExternalUrl : x.CardThumbnailMediaAsset.FileUrl,
                 GalleryVisual = x.GalleryAlbums.Where(album => album.IsPublished)
                     .SelectMany(album => album.GalleryAlbumMedia)
                     .OrderByDescending(media => media.IsCover)

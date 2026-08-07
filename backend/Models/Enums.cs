@@ -53,3 +53,9 @@ public enum ContactMessageStatus
     Archived,
     Spam
 }
+
+public enum ReservationMode { ExternalUrl, Internal }
+public enum ReservationStatus { Active, Released, Cancelled }
+public enum ConfirmationStatus { Unconfirmed, Confirmed }
+public enum ReservationSource { PublicWebsite, Admin }
+public enum SeatAllocationType { Reservation, AdminBlock }

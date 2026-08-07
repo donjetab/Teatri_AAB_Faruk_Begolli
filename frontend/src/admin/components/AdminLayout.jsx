@@ -5,7 +5,7 @@ import logo from '../../assets/theatre-icon.png'
 import { AdminDialogProvider } from './AdminDialog'
 
 const groups = [
-  { label: 'Overview', items: [['Dashboard', '/admin', '⌂'], ['Reservations', '/admin/reservations', '▣']] },
+  { label: 'Overview', items: [['Dashboard', '/admin', '⌂'], ['Reservations', '/admin/reservations', '▣'], ['Seating templates', '/admin/seating-templates', '◉'], ['Customers', '/admin/customers', '♙']] },
   { label: 'Content', items: [['Homepage', '/admin/homepage', '◇'], ['Shows / Plays', '/admin/shows', '◈'], ['Performances', '/admin/performances', '▦'], ['News', '/admin/news', '▤'], ['PITF', '/admin/pitf', '◉'], ['Gallery', '/admin/gallery', '▧'], ['Pages', '/admin/pages', '□']] },
   { label: 'Communication', items: [['Contact Messages', '/admin/messages', '✉'], ['Subscribers', '/admin/subscribers', '♧', true]] },
   { label: 'Website', items: [['Website Information', '/admin/website-information', '⚙'], ['Navigation & Footer', '/admin/navigation', '☷', true], ['Translations', '/admin/translations', '文'], ['SEO & Links', '/admin/seo', '↗'], ['Media Library', '/admin/media', '▣']] },

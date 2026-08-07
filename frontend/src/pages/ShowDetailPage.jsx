@@ -6,6 +6,7 @@ import { resolveMediaUrl } from '../api/client'
 import smoke from '../assets/smoke_3.png'
 import theatreIcon from '../assets/acting-icon-gold.png'
 import { CalendarIcon, CreditIcon } from '../components/shows/CreditIcon'
+import { ArrowRightIcon } from '../components/icons/ArrowRightIcon'
 import { ErrorState } from '../components/ui/ErrorState'
 import { LoadingState } from '../components/ui/LoadingState'
 import { setPageMetadata } from '../utils/seo'
@@ -273,7 +274,7 @@ export function ShowDetailPage() {
                 disabled={galleryStart === 0}
                 aria-label={t('showDetail.previousImages')}
               >
-                ‹
+                <ArrowRightIcon className="direction-arrow direction-arrow-left" />
               </button>
               <button
                 type="button"
@@ -283,7 +284,7 @@ export function ShowDetailPage() {
                 disabled={galleryStart + visibleGalleryCount >= galleryImages.length}
                 aria-label={t('showDetail.nextImages')}
               >
-                ›
+                <ArrowRightIcon className="direction-arrow" />
               </button>
             </div>
           </div>
@@ -362,7 +363,7 @@ export function ShowDetailPage() {
             )}
             aria-label={t('showDetail.previousImage')}
           >
-            ‹
+            <ArrowRightIcon className="direction-arrow direction-arrow-left" />
           </button>
           <img
             src={galleryImages[selectedImageIndex]}
@@ -382,7 +383,7 @@ export function ShowDetailPage() {
             )}
             aria-label={t('showDetail.nextImage')}
           >
-            ›
+            <ArrowRightIcon className="direction-arrow" />
           </button>
         </div>
       )}

@@ -13,6 +13,8 @@ namespace Theatre.Api.Controllers;
 [Route("api/admin/pages")]
 public sealed class AdminStaticPagesController(AppDbContext db, IClock clock) : ControllerBase
 {
+    private const string DefaultMapEmbedUrl = "https://www.google.com/maps/embed?pb=!1m14!1m8!1m3!1d11740.15791744908!2d21.112945!3d42.639323!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x13549f005d591c87%3A0x2473b114eef9fd14!2zVGVhdHJpIEFBQiDigJxGYXJ1ayBCZWdvbGxp4oCd!5e0!3m2!1sen!2sus!4v1785141268194!5m2!1sen!2sus";
+    private const string DefaultMapLinkUrl = "https://www.google.com/maps/search/?api=1&query=42.6389837%2C21.1126562";
     private static readonly (string Key, string Sq, string En)[] Definitions =
     [
         ("about", "Për ne", "About"), ("contact", "Kontakti", "Contact"),
@@ -88,6 +90,11 @@ public sealed class AdminStaticPagesController(AppDbContext db, IClock clock) : 
         foreach (var page in pages)
         {
             page.IsPublished = true;
+            if (page.PageKey == "contact")
+            {
+                page.MapEmbedUrl ??= DefaultMapEmbedUrl;
+                page.MapLinkUrl ??= DefaultMapLinkUrl;
+            }
             foreach (var translation in page.Translations)
                 ApplyPublicDefaults(page.PageKey, translation);
         }

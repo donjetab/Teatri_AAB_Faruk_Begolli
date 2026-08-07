@@ -119,7 +119,7 @@ export function NewsPage() {
     <article className="news-page">
       <section
         className="news-page-hero page-hero"
-        style={{ '--page-hero-image': `url("${newsHeader}")` }}
+        style={{ '--page-hero-image': `url("${resolveMediaUrl(pageCopy?.headerImageUrl) || newsHeader}")` }}
         aria-labelledby="news-page-title"
       >
         <img className="page-hero-smoke" src={smoke} alt="" aria-hidden="true" />
@@ -232,7 +232,7 @@ export function NewsPage() {
                   onClick={() => goToPage(safeCurrentPage - 1)}
                   aria-label={t('newsPage.previousPage')}
                 >
-                  ‹
+                  <ArrowRightIcon className="direction-arrow direction-arrow-left" />
                 </button>
                 {paginationItems.map((item) => (
                   typeof item === 'number' ? (
@@ -257,7 +257,7 @@ export function NewsPage() {
                   onClick={() => goToPage(safeCurrentPage + 1)}
                   aria-label={t('newsPage.nextPage')}
                 >
-                  ›
+                  <ArrowRightIcon className="direction-arrow" />
                 </button>
               </nav>
             )}

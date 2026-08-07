@@ -65,6 +65,10 @@ public sealed class ErrorHandlingMiddleware(RequestDelegate next, ILogger<ErrorH
         {
             var detail = exception.Message switch
             {
+                var message when message.Contains("SeatAllocations", StringComparison.OrdinalIgnoreCase) =>
+                    "One or more selected seats have just been taken. Refresh availability and choose again.",
+                var message when message.Contains("PerformanceSeatHolds", StringComparison.OrdinalIgnoreCase) =>
+                    "One or more selected seats are temporarily held by another visitor. Refresh availability and choose again.",
                 var message when message.Contains("People_FullName", StringComparison.OrdinalIgnoreCase) =>
                     "A person with this name already exists. Reuse the existing person or change the name.",
                 var message when message.Contains("ShowTranslations", StringComparison.OrdinalIgnoreCase) =>

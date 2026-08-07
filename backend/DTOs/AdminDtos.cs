@@ -20,8 +20,9 @@ public sealed record LocalizedWebsiteInformationDto(
 
 public sealed record WebsiteInformationDto(
     int Id, string Address, string Phone, string Email, string? FacebookUrl, string? InstagramUrl,
-    string? ReservationUrl,
+    string? FacebookDisplayName, string? InstagramDisplayName, string? ReservationUrl,
     int? LogoMediaAssetId, string? LogoUrl,
+    int? FooterLogoMediaAssetId, string? FooterLogoUrl,
     int? FaviconMediaAssetId, string? FaviconUrl,
     int? SocialSharingMediaAssetId, string? SocialSharingImageUrl,
     IReadOnlyList<LocalizedWebsiteInformationDto> Translations, DateTimeOffset UpdatedAt);
@@ -30,8 +31,8 @@ public sealed record UpdateWebsiteInformationRequest(
     [Required, MaxLength(300)] string Address,
     [Required, Phone, MaxLength(80)] string Phone,
     [Required, EmailAddress, MaxLength(180)] string Email,
-    [Url] string? FacebookUrl, [Url] string? InstagramUrl, [Url] string? ReservationUrl,
-    int? LogoMediaAssetId, int? FaviconMediaAssetId, int? SocialSharingMediaAssetId,
+    [Url] string? FacebookUrl, [Url] string? InstagramUrl, string? FacebookDisplayName, string? InstagramDisplayName, string? ReservationUrl,
+    int? LogoMediaAssetId, int? FooterLogoMediaAssetId, int? FaviconMediaAssetId, int? SocialSharingMediaAssetId,
     [MinLength(2)] IReadOnlyList<LocalizedWebsiteInformationDto> Translations);
 
 public sealed record LocalizedHomepageDto(

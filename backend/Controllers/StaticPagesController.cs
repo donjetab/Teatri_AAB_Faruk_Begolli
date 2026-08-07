@@ -40,6 +40,7 @@ public sealed class StaticPagesController(AppDbContext db) : ControllerBase
                 ParallaxImageUrl = x.ParallaxMediaAsset == null ? null : x.ParallaxMediaAsset.FileUrl,
                 x.MapEmbedUrl,
                 x.MapLinkUrl,
+                HeaderImageUrl = x.SocialSharingMediaAsset == null ? null : x.SocialSharingMediaAsset.FileUrl,
                 SocialSharingImageUrl = x.SocialSharingMediaAsset == null ? defaultSocialImageUrl : x.SocialSharingMediaAsset.FileUrl
             }).FirstOrDefaultAsync(token);
         return page is null ? NotFound() : Ok(page);

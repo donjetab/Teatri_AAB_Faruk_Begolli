@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { apiClient } from '../api/client'
+import { apiClient, resolveMediaUrl } from '../api/client'
 import { getHome } from '../api/home'
 import { ReservationBanner } from '../components/home/ReservationBanner'
 import contactHeader from '../assets/Kolegji-AAB.jpg'
@@ -77,7 +77,7 @@ export function ContactPage() {
     <article className="contact-page">
       <section
         className="contact-page-hero page-hero"
-        style={{ '--page-hero-image': `url("${contactHeader}")` }}
+        style={{ '--page-hero-image': `url("${resolveMediaUrl(pageCopy?.headerImageUrl) || contactHeader}")` }}
         aria-labelledby="contact-page-title"
       >
         <img className="page-hero-smoke" src={smoke} alt="" aria-hidden="true" />
@@ -179,7 +179,7 @@ export function ContactPage() {
             <a href={home?.instagramUrl ?? 'https://www.instagram.com/aabtheatre'} target="_blank" rel="noreferrer">
               <InstagramIcon />
               <small>Instagram</small>
-              <strong>@teatriaabfarukbegolli</strong>
+              <strong>{home?.instagramDisplayName || '@teatriaabfarukbegolli'}</strong>
               <span aria-hidden="true">⟶</span>
             </a>
             <a href={`tel:${phone.replace(/\s/g, '')}`}>
@@ -191,7 +191,7 @@ export function ContactPage() {
             <a href={home?.facebookUrl ?? 'https://www.facebook.com/aabtheatre'} target="_blank" rel="noreferrer">
               <FacebookIcon />
               <small>Facebook</small>
-              <strong>Teatri AAB Faruk Begolli</strong>
+              <strong>{home?.facebookDisplayName || 'Teatri AAB Faruk Begolli'}</strong>
               <span aria-hidden="true">⟶</span>
             </a>
           </div>

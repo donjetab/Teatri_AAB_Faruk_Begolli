@@ -25,6 +25,7 @@ public sealed class Show
     public ShowStatus Status { get; set; } = ShowStatus.Draft;
     public ShowLifecycleStatus LifecycleStatus { get; set; } = ShowLifecycleStatus.Upcoming;
     public bool IsFeatured { get; set; }
+    public bool IsGuestPerformance { get; set; }
     public bool UseLocalGalleryFallback { get; set; } = true;
     public DateTimeOffset CreatedAt { get; set; }
     public DateTimeOffset UpdatedAt { get; set; }
@@ -85,9 +86,16 @@ public sealed class ShowPerformance
     public DateTimeOffset StartDateTimeUtc { get; set; }
     public DateTimeOffset? EndDateTimeUtc { get; set; }
     public string? TicketUrl { get; set; }
+    public ReservationMode ReservationMode { get; set; } = ReservationMode.ExternalUrl;
+    public int? SeatingTemplateId { get; set; }
     public string? ContactPhone { get; set; }
     public string? Hall { get; set; }
     public string? InternalNotes { get; set; }
+    public int? MaxSeatsPerReservation { get; set; }
+    public DateTimeOffset? ReservationOpensAtUtc { get; set; }
+    public DateTimeOffset? ReservationClosesAtUtc { get; set; }
+    public bool ReservationsEnabled { get; set; } = true;
+    public string? ReservationUnavailableMessage { get; set; }
     public bool IsPublished { get; set; }
     public PerformanceStatus Status { get; set; } = PerformanceStatus.Scheduled;
     public DateTimeOffset CreatedAt { get; set; }
@@ -95,6 +103,9 @@ public sealed class ShowPerformance
 
     public Show Show { get; set; } = null!;
     public Location? Location { get; set; }
+    public SeatingTemplate? SeatingTemplate { get; set; }
+    public PerformanceSeatingLayout? SeatingLayout { get; set; }
+    public ICollection<Reservation> Reservations { get; set; } = [];
 }
 
 public sealed class Person
@@ -165,6 +176,7 @@ public sealed class NewsArticle
     public NewsArticleType ArticleType { get; set; } = NewsArticleType.Authored;
     public int? CoverMediaAssetId { get; set; }
     public int? CardThumbnailMediaAssetId { get; set; }
+    public string? CardThumbnailExternalUrl { get; set; }
     public string? ExternalUrl { get; set; }
     public string? ExternalSourceName { get; set; }
     public bool IsPublished { get; set; }
@@ -338,6 +350,7 @@ public sealed class TheatreInformation
     public int? PitfFeatureMediaAssetId { get; set; }
     public int? PitfPageMediaAssetId { get; set; }
     public int? LogoMediaAssetId { get; set; }
+    public int? FooterLogoMediaAssetId { get; set; }
     public int? FaviconMediaAssetId { get; set; }
     public int? SocialSharingMediaAssetId { get; set; }
     public string NavigationConfigurationJson { get; set; } = string.Empty;
@@ -352,6 +365,8 @@ public sealed class TheatreInformation
     public decimal Longitude { get; set; }
     public string? FacebookUrl { get; set; }
     public string? InstagramUrl { get; set; }
+    public string? FacebookDisplayName { get; set; }
+    public string? InstagramDisplayName { get; set; }
     public string? ReservationUrl { get; set; }
     public string? PrimaryButtonLink { get; set; }
     public string? AboutButtonLink { get; set; }
@@ -365,6 +380,7 @@ public sealed class TheatreInformation
     public MediaAsset? PitfFeatureMediaAsset { get; set; }
     public MediaAsset? PitfPageMediaAsset { get; set; }
     public MediaAsset? LogoMediaAsset { get; set; }
+    public MediaAsset? FooterLogoMediaAsset { get; set; }
     public MediaAsset? FaviconMediaAsset { get; set; }
     public MediaAsset? SocialSharingMediaAsset { get; set; }
     public ICollection<TheatreInformationTranslation> Translations { get; set; } = [];
@@ -411,6 +427,7 @@ public sealed class Location
 
     public ICollection<LocationTranslation> Translations { get; set; } = [];
     public ICollection<ShowPerformance> Performances { get; set; } = [];
+    public ICollection<SeatingTemplate> SeatingTemplates { get; set; } = [];
 }
 
 public sealed class LocationTranslation

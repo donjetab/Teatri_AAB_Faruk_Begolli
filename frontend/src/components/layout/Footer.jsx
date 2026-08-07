@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import logoScene from '../../assets/Teatri Logo/Teatri Logo -W-RED.png'
 import { getLocalizedPath } from '../../routes/localizedRoutes'
 import { NewsletterForm } from './NewsletterForm'
+import { resolveMediaUrl } from '../../api/client'
 
 export function Footer({ language, homepageMeta, navigation }) {
   const { t } = useTranslation()
@@ -16,7 +17,7 @@ export function Footer({ language, homepageMeta, navigation }) {
     <footer className="site-footer">
       <div className="site-footer-inner">
         <Link to={getLocalizedPath('home', language)} className="footer-logo-link" aria-label={t('brand')}>
-          <img src={logoScene} alt={t('brand')} className="footer-logo" />
+          <img src={resolveMediaUrl(homepageMeta?.footerLogoUrl) || logoScene} alt={t('brand')} className="footer-logo" />
         </Link>
 
         <section className="footer-column">
@@ -58,6 +59,7 @@ export function Footer({ language, homepageMeta, navigation }) {
           <NewsletterForm language={language} invitation={managed?.footerNewsletterText} />
         </section>
       </div>
+      {homepageMeta?.footerCopyrightText && <p className="footer-copyright">{homepageMeta.footerCopyrightText}</p>}
     </footer>
   )
 }

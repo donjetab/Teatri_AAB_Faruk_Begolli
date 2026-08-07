@@ -287,6 +287,11 @@ public sealed class AdminNewsController(AppDbContext db, IClock clock, IWebHostE
             !await db.MediaAssets.AnyAsync(x =>
                 x.Id == request.CardThumbnailMediaAssetId && x.IsActive && x.MimeType.StartsWith("image/"), token))
             return ValidationProblem("The selected card thumbnail must be an active image.");
+        var externalThumbnailUrl = Clean(request.CardThumbnailExternalUrl);
+        if (externalThumbnailUrl is not null &&
+            (!Uri.TryCreate(externalThumbnailUrl, UriKind.Absolute, out var thumbnailUri) ||
+             (thumbnailUri.Scheme != Uri.UriSchemeHttp && thumbnailUri.Scheme != Uri.UriSchemeHttps)))
+            return ValidationProblem("The online thumbnail must be a valid HTTP or HTTPS URL.");
 
         var languages = await db.Languages.Where(x => x.IsActive).ToDictionaryAsync(x => x.Code, token);
         if (!request.Translations.Any(x => x.LanguageCode == "sq") ||
@@ -316,6 +321,7 @@ public sealed class AdminNewsController(AppDbContext db, IClock clock, IWebHostE
         }
         item.ArticleType = type; item.CoverMediaAssetId = request.CoverMediaAssetId;
         item.CardThumbnailMediaAssetId = request.CardThumbnailMediaAssetId;
+        item.CardThumbnailExternalUrl = externalThumbnailUrl;
         item.ExternalUrl = type == NewsArticleType.External ? Clean(request.ExternalUrl) : null;
         item.ExternalSourceName = type == NewsArticleType.External ? Clean(request.ExternalSourceName) : null;
         var incomingLinks = type == NewsArticleType.Authored ? request.RelatedLinks ?? [] : [];
@@ -385,7 +391,7 @@ public sealed class AdminNewsController(AppDbContext db, IClock clock, IWebHostE
     }
     private static AdminNewsDetailDto ToDto(NewsArticle x) => new(x.Id, x.ArticleType.ToString(), x.CoverMediaAssetId,
         x.CoverMediaAsset?.FileUrl, x.CoverMediaAsset?.MimeType, x.CardThumbnailMediaAssetId,
-        x.CardThumbnailMediaAsset?.FileUrl, x.ExternalUrl, x.ExternalSourceName, x.IsPublished, x.IsFeatured, x.PublishedAt,
+        x.CardThumbnailMediaAsset?.FileUrl, x.CardThumbnailExternalUrl, x.ExternalUrl, x.ExternalSourceName, x.IsPublished, x.IsFeatured, x.PublishedAt,
         x.CreatedAt, x.UpdatedAt, x.Translations.OrderBy(t => t.Language.Code).Select(t => new AdminNewsTranslationDto(
             t.Language.Code, t.Title, t.Slug, t.Summary, t.Content, t.MetaTitle, t.MetaDescription)).ToList(),
         x.GalleryAlbums.SelectMany(a => a.GalleryAlbumMedia).OrderBy(m => m.DisplayOrder)

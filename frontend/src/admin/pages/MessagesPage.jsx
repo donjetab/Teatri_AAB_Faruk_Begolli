@@ -20,13 +20,16 @@ export function MessagesPage() {
   const save = async () => { const updated = await adminApi.saveMessage(selected.id, { status: selected.status, internalNotes: selected.internalNotes }); setSelected(updated); setToast('Message updated.'); load() }
   const remove = async () => {
     if (!await dialog.confirm({ title: 'Delete spam message?', message: 'This contact message will be permanently removed.', confirmLabel: 'Delete message', danger: true })) return
-    await adminApi.deleteMessage(selected.id); setSelected(null); setToast('Spam deleted.'); load()
+    try {
+      if (selected.status === 'Spam') await adminApi.saveMessage(selected.id, { status: 'Spam', internalNotes: selected.internalNotes })
+      await adminApi.deleteMessage(selected.id); setSelected(null); setToast('Spam deleted.'); await load()
+    } catch (error) { setToast(error.response?.data?.detail ?? error.response?.data?.title ?? 'Spam could not be deleted.') }
   }
   const replyUrl = selected ? `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(selected.email)}&su=${encodeURIComponent(selected.subject.toLowerCase().startsWith('re:') ? selected.subject : `Re: ${selected.subject}`)}&body=${encodeURIComponent(`Hello ${selected.name},\n\nThank you for contacting Teatri AAB “Faruk Begolli”.\n\n\n\nKind regards,\nTeatri AAB “Faruk Begolli”`)}` : ''
 
   return <>
     <PageHeader eyebrow="Communication" title="Contact Messages" description="Review contact submissions while keeping personal information inside the protected admin area." />
-    <section className="admin-panel"><div className="communication-summary"><div><strong>{data?.unreadCount ?? 0}</strong><span>New messages</span></div><input placeholder="Search sender, email or subject…" value={filters.search} onChange={e => setFilters({ ...filters, search: e.target.value })} /><select value={filters.status} onChange={e => setFilters({ ...filters, status: e.target.value })}><option value="">All statuses</option>{['New','Read','Resolved','Archived','Spam'].map(x => <option key={x}>{x}</option>)}</select></div></section>
+    <section className="admin-panel"><div className="communication-summary"><div><strong>{data?.unreadCount ?? 0}</strong><span>New messages</span></div><div><strong>{data?.totalCount ?? 0}</strong><span>Matching messages</span></div><input placeholder="Search sender, email or subject…" value={filters.search} onChange={e => setFilters({ ...filters, search: e.target.value })} /><select value={filters.status} onChange={e => setFilters({ ...filters, status: e.target.value })}><option value="">All statuses</option>{['New','Read','Resolved','Archived','Spam'].map(x => <option key={x}>{x}</option>)}</select></div></section>
     {!data ? <LoadingSkeleton /> : <section className="admin-panel"><div className="admin-table-wrap"><table className="admin-table"><thead><tr><th>Sender</th><th>Subject</th><th>Submitted</th><th>Status</th><th /></tr></thead><tbody>{data.items.map(item => <tr key={item.id} className={item.status === 'New' ? 'unread-row' : ''}><td><strong>{item.name}</strong><small className="private-detail">{item.email}</small></td><td>{item.subject}</td><td>{new Date(item.createdAt).toLocaleString()}</td><td><StatusBadge status={item.status} /></td><td><button className="admin-text-button" onClick={() => open(item)}>Open</button></td></tr>)}</tbody></table></div></section>}
     {selected && <div className="admin-modal-backdrop" onMouseDown={e => e.target === e.currentTarget && setSelected(null)}><section className="admin-modal message-detail">
       <div className="admin-modal-heading"><div><span>Contact submission</span><h2>{selected.subject}</h2></div><button type="button" onClick={() => setSelected(null)}>×</button></div>

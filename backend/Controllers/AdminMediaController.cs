@@ -26,7 +26,7 @@ public sealed class AdminMediaController(AppDbContext db, IWebHostEnvironment en
         if (!string.IsNullOrWhiteSpace(search)) query = query.Where(x => x.FileName.Contains(search.Trim()));
         if (!string.IsNullOrWhiteSpace(type)) query = query.Where(x => x.MimeType.StartsWith(type));
         if (unused == true) query = query.Where(x =>
-            !db.Shows.Any(s => s.PosterMediaAssetId == x.Id || s.FeaturedMediaAssetId == x.Id)
+            !db.Shows.Any(s => s.PosterMediaAssetId == x.Id || s.FeaturedMediaAssetId == x.Id || s.TrailerUrl == x.FileUrl)
             && !db.People.Any(p => p.ProfileMediaAssetId == x.Id)
             && !db.GalleryAlbumMedia.Any(g => g.MediaAssetId == x.Id)
             && !db.GalleryAlbums.Any(g => g.CoverMediaAssetId == x.Id)
@@ -35,7 +35,7 @@ public sealed class AdminMediaController(AppDbContext db, IWebHostEnvironment en
             && !db.StaticPages.Any(p => p.FeaturedMediaAssetId == x.Id || p.ParallaxMediaAssetId == x.Id || p.SocialSharingMediaAssetId == x.Id)
             && !db.TheatreInformation.Any(t => t.HeroBackgroundMediaAssetId == x.Id || t.AboutPreviewMediaAssetId == x.Id
                 || t.ReservationBannerMediaAssetId == x.Id || t.PitfFeatureMediaAssetId == x.Id || t.PitfPageMediaAssetId == x.Id
-                || t.LogoMediaAssetId == x.Id || t.FaviconMediaAssetId == x.Id || t.SocialSharingMediaAssetId == x.Id));
+                || t.LogoMediaAssetId == x.Id || t.FooterLogoMediaAssetId == x.Id || t.FaviconMediaAssetId == x.Id || t.SocialSharingMediaAssetId == x.Id));
         var total = await query.CountAsync(token);
         var items = await query.OrderByDescending(x => x.UploadedAt).Skip((page - 1) * pageSize).Take(pageSize).Select(x => new AdminMediaDto(
             x.Id, x.FileUrl, x.FileName, x.MimeType, x.Width, x.Height, x.FileSize, x.IsActive, x.UploadedAt,
@@ -43,7 +43,7 @@ public sealed class AdminMediaController(AppDbContext db, IWebHostEnvironment en
             x.Translations.Where(t => t.Language.Code == "en").Select(t => t.AltText).FirstOrDefault(),
             x.Translations.Where(t => t.Language.Code == "sq").Select(t => t.Caption).FirstOrDefault(),
             x.Translations.Where(t => t.Language.Code == "en").Select(t => t.Caption).FirstOrDefault(), x.PhotographerCredit,
-            db.Shows.Count(s => s.PosterMediaAssetId == x.Id || s.FeaturedMediaAssetId == x.Id)
+            db.Shows.Count(s => s.PosterMediaAssetId == x.Id || s.FeaturedMediaAssetId == x.Id || s.TrailerUrl == x.FileUrl)
             + db.People.Count(p => p.ProfileMediaAssetId == x.Id)
             + db.GalleryAlbumMedia.Count(g => g.MediaAssetId == x.Id)
             + db.GalleryAlbums.Count(g => g.CoverMediaAssetId == x.Id)
@@ -52,7 +52,7 @@ public sealed class AdminMediaController(AppDbContext db, IWebHostEnvironment en
             + db.StaticPages.Count(p => p.FeaturedMediaAssetId == x.Id || p.ParallaxMediaAssetId == x.Id || p.SocialSharingMediaAssetId == x.Id)
             + db.TheatreInformation.Count(t => t.HeroBackgroundMediaAssetId == x.Id || t.AboutPreviewMediaAssetId == x.Id
                 || t.ReservationBannerMediaAssetId == x.Id || t.PitfFeatureMediaAssetId == x.Id || t.PitfPageMediaAssetId == x.Id
-                || t.LogoMediaAssetId == x.Id || t.FaviconMediaAssetId == x.Id || t.SocialSharingMediaAssetId == x.Id))).ToListAsync(token);
+                || t.LogoMediaAssetId == x.Id || t.FooterLogoMediaAssetId == x.Id || t.FaviconMediaAssetId == x.Id || t.SocialSharingMediaAssetId == x.Id))).ToListAsync(token);
         return Ok(new AdminMediaListDto(items, page, pageSize, total));
     }
 
@@ -65,7 +65,7 @@ public sealed class AdminMediaController(AppDbContext db, IWebHostEnvironment en
             x.Translations.Where(t => t.Language.Code == "en").Select(t => t.AltText).FirstOrDefault(),
             x.Translations.Where(t => t.Language.Code == "sq").Select(t => t.Caption).FirstOrDefault(),
             x.Translations.Where(t => t.Language.Code == "en").Select(t => t.Caption).FirstOrDefault(), x.PhotographerCredit,
-            db.Shows.Count(s => s.PosterMediaAssetId == x.Id || s.FeaturedMediaAssetId == x.Id)
+            db.Shows.Count(s => s.PosterMediaAssetId == x.Id || s.FeaturedMediaAssetId == x.Id || s.TrailerUrl == x.FileUrl)
             + db.People.Count(p => p.ProfileMediaAssetId == x.Id)
             + db.GalleryAlbumMedia.Count(g => g.MediaAssetId == x.Id)
             + db.GalleryAlbums.Count(g => g.CoverMediaAssetId == x.Id)
@@ -74,20 +74,26 @@ public sealed class AdminMediaController(AppDbContext db, IWebHostEnvironment en
             + db.StaticPages.Count(p => p.FeaturedMediaAssetId == x.Id || p.ParallaxMediaAssetId == x.Id || p.SocialSharingMediaAssetId == x.Id)
             + db.TheatreInformation.Count(t => t.HeroBackgroundMediaAssetId == x.Id || t.AboutPreviewMediaAssetId == x.Id
                 || t.ReservationBannerMediaAssetId == x.Id || t.PitfFeatureMediaAssetId == x.Id || t.PitfPageMediaAssetId == x.Id
-                || t.LogoMediaAssetId == x.Id || t.FaviconMediaAssetId == x.Id || t.SocialSharingMediaAssetId == x.Id))).FirstOrDefaultAsync(token);
+                || t.LogoMediaAssetId == x.Id || t.FooterLogoMediaAssetId == x.Id || t.FaviconMediaAssetId == x.Id || t.SocialSharingMediaAssetId == x.Id))).FirstOrDefaultAsync(token);
         return item is null ? NotFound() : Ok(item);
     }
 
     [HttpGet("{id:int}/usage")]
     public async Task<ActionResult<IReadOnlyList<AdminMediaUsageDto>>> Usage(int id, CancellationToken token)
     {
-        if (!await db.MediaAssets.AnyAsync(x => x.Id == id && x.IsActive, token)) return NotFound();
+        var asset = await db.MediaAssets.AsNoTracking().FirstOrDefaultAsync(x => x.Id == id && x.IsActive, token);
+        if (asset is null) return NotFound();
         var result = new List<AdminMediaUsageDto>();
         var shows = await db.Shows.AsNoTracking().Include(x => x.Translations).ThenInclude(x => x.Language)
-            .Where(x => x.PosterMediaAssetId == id || x.FeaturedMediaAssetId == id).ToListAsync(token);
+            .Where(x => x.PosterMediaAssetId == id || x.FeaturedMediaAssetId == id || x.TrailerUrl == asset.FileUrl).ToListAsync(token);
         result.AddRange(shows.Select(x => new AdminMediaUsageDto("Play", x.Id,
             x.Translations.FirstOrDefault(t => t.Language.Code == "sq")?.Title ?? $"Play #{x.Id}",
-            x.PosterMediaAssetId == id && x.FeaturedMediaAssetId == id ? "Poster and featured image" : x.PosterMediaAssetId == id ? "Poster" : "Featured image", $"/admin/shows/{x.Id}")));
+            string.Join(", ", new[]
+            {
+                x.PosterMediaAssetId == id ? "Poster" : null,
+                x.FeaturedMediaAssetId == id ? "Featured image" : null,
+                x.TrailerUrl == asset.FileUrl ? "Trailer" : null
+            }.Where(role => role is not null)), $"/admin/shows/{x.Id}")));
         var news = await db.NewsArticles.AsNoTracking().Include(x => x.Translations).ThenInclude(x => x.Language)
             .Where(x => x.CoverMediaAssetId == id || x.CardThumbnailMediaAssetId == id).ToListAsync(token);
         result.AddRange(news.Select(x => new AdminMediaUsageDto("News", x.Id,
@@ -113,6 +119,7 @@ public sealed class AdminMediaController(AppDbContext db, IWebHostEnvironment en
             if (info.PitfFeatureMediaAssetId == id) roles.Add("Homepage PITF feature");
             if (info.PitfPageMediaAssetId == id) roles.Add("PITF page");
             if (info.LogoMediaAssetId == id) roles.Add("Website logo");
+            if (info.FooterLogoMediaAssetId == id) roles.Add("Footer logo");
             if (info.FaviconMediaAssetId == id) roles.Add("Favicon");
             if (info.SocialSharingMediaAssetId == id) roles.Add("Social sharing image");
             if (roles.Count > 0) result.Add(new AdminMediaUsageDto("Website", info.Id, "Website information", string.Join(", ", roles), "/admin/website-information"));
@@ -197,6 +204,8 @@ public sealed class AdminMediaController(AppDbContext db, IWebHostEnvironment en
         asset.ContentHash = hash;
         asset.Width = null;
         asset.Height = null;
+        var trailerShows = await db.Shows.Where(x => x.TrailerUrl == previousFileUrl).ToListAsync(token);
+        foreach (var show in trailerShows) show.TrailerUrl = asset.FileUrl;
         await db.SaveChangesAsync(token);
         DeleteManagedFile(previousFileUrl);
         return Ok(new AdminMediaDto(asset.Id, asset.FileUrl, asset.FileName, asset.MimeType, asset.Width, asset.Height,
@@ -213,7 +222,7 @@ public sealed class AdminMediaController(AppDbContext db, IWebHostEnvironment en
     {
         var asset = await db.MediaAssets.FirstOrDefaultAsync(x => x.Id == id, token);
         if (asset is null) return NotFound();
-        var used = await db.Shows.AnyAsync(x => x.PosterMediaAssetId == id || x.FeaturedMediaAssetId == id, token)
+        var used = await db.Shows.AnyAsync(x => x.PosterMediaAssetId == id || x.FeaturedMediaAssetId == id || x.TrailerUrl == asset.FileUrl, token)
             || await db.People.AnyAsync(x => x.ProfileMediaAssetId == id, token)
             || await db.NewsArticles.AnyAsync(x => x.CoverMediaAssetId == id || x.CardThumbnailMediaAssetId == id, token)
             || await db.PitfEditions.AnyAsync(x => x.CoverMediaAssetId == id || x.LogoMediaAssetId == id, token)
@@ -223,7 +232,7 @@ public sealed class AdminMediaController(AppDbContext db, IWebHostEnvironment en
             || await db.TheatreInformation.AnyAsync(x => x.HeroBackgroundMediaAssetId == id
                 || x.AboutPreviewMediaAssetId == id || x.ReservationBannerMediaAssetId == id
                 || x.PitfFeatureMediaAssetId == id || x.PitfPageMediaAssetId == id
-                || x.LogoMediaAssetId == id || x.FaviconMediaAssetId == id || x.SocialSharingMediaAssetId == id, token);
+                || x.LogoMediaAssetId == id || x.FooterLogoMediaAssetId == id || x.FaviconMediaAssetId == id || x.SocialSharingMediaAssetId == id, token);
         if (used) return Conflict(new ProblemDetails { Title = "Media is in use", Detail = "Remove or replace all content references before deleting this asset.", Status = 409 });
         asset.IsActive = false;
         await db.SaveChangesAsync(token);

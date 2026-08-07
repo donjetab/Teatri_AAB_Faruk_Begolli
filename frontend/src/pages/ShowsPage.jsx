@@ -67,7 +67,7 @@ export function ShowsPage() {
     <article className="shows-page">
       <section
         className="shows-page-hero page-hero"
-        style={{ '--page-hero-image': `url("${showsHeaderBackground}")` }}
+        style={{ '--page-hero-image': `url("${resolveMediaUrl(pageCopy?.headerImageUrl) || showsHeaderBackground}")` }}
         aria-labelledby="shows-page-title"
       >
         <img className="page-hero-smoke" src={smoke} alt="" aria-hidden="true" />

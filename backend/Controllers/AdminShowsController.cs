@@ -14,7 +14,7 @@ namespace Theatre.Api.Controllers;
 
 [ApiController, Authorize(Policy = "Admin")]
 [Route("api/admin/shows")]
-public sealed class AdminShowsController(AppDbContext db, IClock clock) : ControllerBase
+public sealed class AdminShowsController(AppDbContext db, IClock clock, IAdminDeletionService deletion) : ControllerBase
 {
     [HttpGet("credit-types")]
     public async Task<ActionResult<IReadOnlyList<AdminCreditTypeDto>>> GetCreditTypes(CancellationToken token)
@@ -63,7 +63,7 @@ public sealed class AdminShowsController(AppDbContext db, IClock clock) : Contro
                 x.Translations.Where(t => t.Language.Code == "en").Select(t => t.Title).FirstOrDefault() ?? "Untitled",
                 x.Translations.Where(t => t.Language.Code == "sq").Select(t => t.Slug).FirstOrDefault() ?? "",
                 x.ShowCategory.Translations.Where(t => t.Language.Code == "sq").Select(t => t.Name).FirstOrDefault() ?? "—",
-                x.Status.ToString(), x.LifecycleStatus.ToString(), x.ProductionYear, x.PremiereDate, x.IsFeatured,
+                x.Status.ToString(), x.LifecycleStatus.ToString(), x.ProductionYear, x.PremiereDate, x.IsFeatured, x.IsGuestPerformance,
                 x.Performances.Count, x.UpdatedAt, x.PosterMediaAsset == null ? null : x.PosterMediaAsset.FileUrl))
             .ToListAsync(token);
         var categories = await db.ShowCategories.AsNoTracking().Where(x => x.IsActive).OrderBy(x => x.DisplayOrder)
@@ -285,6 +285,7 @@ public sealed class AdminShowsController(AppDbContext db, IClock clock) : Contro
             ProductionYear = source.ProductionYear, AgeRecommendation = source.AgeRecommendation,
             OriginalLanguage = source.OriginalLanguage, TrailerUrl = source.TrailerUrl, VideoUrl = source.VideoUrl,
             PremiereDate = source.PremiereDate, LifecycleStatus = source.LifecycleStatus,
+            IsGuestPerformance = source.IsGuestPerformance,
             Status = ShowStatus.Draft, IsFeatured = false, CreatedAt = now, UpdatedAt = now
         };
         foreach (var translation in source.Translations)
@@ -304,16 +305,17 @@ public sealed class AdminShowsController(AppDbContext db, IClock clock) : Contro
     [HttpDelete("{id:int}")]
     public async Task<IActionResult> Delete(int id, [FromQuery] bool confirmHistorical = false, CancellationToken token = default)
     {
-        var show = await db.Shows.Include(x => x.Performances).Include(x => x.GalleryAlbums).FirstOrDefaultAsync(x => x.Id == id, token);
+        var show = await db.Shows.Include(x => x.GalleryAlbums).FirstOrDefaultAsync(x => x.Id == id, token);
         if (show is null) return NotFound();
+        var performanceIds = await db.ShowPerformances.AsNoTracking().Where(x => x.ShowId == id).Select(x => x.Id).ToArrayAsync(token);
         var isSuperAdmin = User.IsInRole(nameof(AdminRole.SuperAdmin));
         if (show.Status != ShowStatus.Draft && (!isSuperAdmin || !confirmHistorical))
             return Conflict(new ProblemDetails { Title = "Archive this play instead", Detail = "Only a Super Admin may permanently delete historical content after explicit confirmation.", Status = 409 });
-        if (show.Performances.Count != 0)
-            return Conflict(new ProblemDetails { Title = "Play has scheduled performances", Detail = "Remove its performances before permanently deleting this play.", Status = 409 });
+        await using var transaction = await db.Database.BeginTransactionAsync(token);
+        await deletion.DeletePerformancesAsync(performanceIds, token);
         AddActivity("Deleted", show, $"Deleted play {id}");
         db.Shows.Remove(show);
-        await db.SaveChangesAsync(token);
+        await db.SaveChangesAsync(token); await transaction.CommitAsync(token);
         return NoContent();
     }
 
@@ -374,6 +376,7 @@ public sealed class AdminShowsController(AppDbContext db, IClock clock) : Contro
         show.PremiereDate = request.PremiereDate;
         show.LifecycleStatus = Enum.Parse<ShowLifecycleStatus>(request.LifecycleStatus, true);
         show.IsFeatured = request.IsFeatured;
+        show.IsGuestPerformance = request.IsGuestPerformance;
     }
 
     private async Task ApplyTranslationsAsync(Show show, IReadOnlyList<SaveAdminShowTranslationDto> translations, CancellationToken token)
@@ -420,7 +423,7 @@ public sealed class AdminShowsController(AppDbContext db, IClock clock) : Contro
         x.Id, x.ShowCategoryId, x.PosterMediaAssetId, x.FeaturedMediaAssetId,
         x.PosterMediaAsset?.FileUrl, x.FeaturedMediaAsset?.FileUrl, x.DurationMinutes,
         x.ProductionYear, x.AgeRecommendation, x.OriginalLanguage, x.TrailerUrl, x.VideoUrl,
-        x.PremiereDate, x.Status.ToString(), x.LifecycleStatus.ToString(), x.IsFeatured,
+        x.PremiereDate, x.Status.ToString(), x.LifecycleStatus.ToString(), x.IsFeatured, x.IsGuestPerformance,
         x.CreatedAt, x.UpdatedAt, x.PublishedAt,
         x.Translations.OrderBy(t => t.Language.Code).Select(t => new AdminShowTranslationDto(
             t.Language.Code, t.Title, t.Slug, t.ShortDescription, t.FullDescription, t.MetaTitle, t.MetaDescription)).ToList(),

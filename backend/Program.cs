@@ -30,6 +30,10 @@ builder.Services.AddSwaggerGen(options =>
 builder.Services.AddScoped<IHomepageService, HomepageService>();
 builder.Services.AddScoped<INewsletterService, NewsletterService>();
 builder.Services.AddScoped<IContactService, ContactService>();
+builder.Services.AddScoped<IPhoneNumberNormalizer, PhoneNumberNormalizer>();
+builder.Services.AddScoped<IReservationService, ReservationService>();
+builder.Services.AddScoped<IAdminDeletionService, AdminDeletionService>();
+builder.Services.AddHostedService<SeatingTemplateInitializer>();
 builder.Services.AddSingleton<IClock, Theatre.Api.Services.SystemClock>();
 builder.Services.AddHostedService<PerformanceStatusUpdater>();
 builder.Services.AddScoped<IPasswordHasher<AdminUser>, PasswordHasher<AdminUser>>();
@@ -85,7 +89,13 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
     });
 builder.Services.AddAuthorizationBuilder()
     .AddPolicy("Admin", policy => policy.RequireRole(nameof(AdminRole.SuperAdmin), nameof(AdminRole.ContentEditor)))
-    .AddPolicy("SuperAdmin", policy => policy.RequireRole(nameof(AdminRole.SuperAdmin)));
+    .AddPolicy("SuperAdmin", policy => policy.RequireRole(nameof(AdminRole.SuperAdmin)))
+    .AddPolicy("ViewReservations", policy => policy.RequireRole(nameof(AdminRole.SuperAdmin), nameof(AdminRole.ContentEditor)))
+    .AddPolicy("ManageReservations", policy => policy.RequireRole(nameof(AdminRole.SuperAdmin), nameof(AdminRole.ContentEditor)))
+    .AddPolicy("BlockSeats", policy => policy.RequireRole(nameof(AdminRole.SuperAdmin), nameof(AdminRole.ContentEditor)))
+    .AddPolicy("ExportCustomerData", policy => policy.RequireRole(nameof(AdminRole.SuperAdmin)))
+    .AddPolicy("ManageTheatreSchemas", policy => policy.RequireRole(nameof(AdminRole.SuperAdmin)))
+    .AddPolicy("ViewReservationAudit", policy => policy.RequireRole(nameof(AdminRole.SuperAdmin), nameof(AdminRole.ContentEditor)));
 
 builder.Services.AddCors(options =>
 {

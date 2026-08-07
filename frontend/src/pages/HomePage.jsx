@@ -75,7 +75,7 @@ export function HomePage() {
       {home.heroIsVisible !== false && <HeroSection home={home} language={language} />}
       <AboutPreview home={home} statistics={aboutStatistics} />
       <UpcomingShows shows={home.upcomingShows ?? []} language={language} reservationUrl={home.reservationUrl} />
-      {home.pitfFeatureIsVisible !== false && <PitfPreview pitf={home.pitfFeatured} title={home.pitfFeatureTitle} buttonText={home.pitfFeatureButtonText} destinationUrl={home.pitfDestinationUrl} />}
+      {home.pitfFeatureIsVisible !== false && <PitfPreview pitf={home.pitfFeatured} title={home.pitfFeatureTitle} description={home.pitfFeatureDescription} buttonText={home.pitfFeatureButtonText} destinationUrl={home.pitfDestinationUrl} image={home.pitfFeatureImage} />}
       {home.reservationBannerIsVisible !== false && <ReservationBanner home={home} />}
     </div>
   )

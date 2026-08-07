@@ -5,6 +5,7 @@ import { Footer } from './Footer'
 import { Header } from './Header'
 import { getHome } from '../../api/home'
 import { getNavigation } from '../../api/navigation'
+import { getStaticPage } from '../../api/staticPages'
 import { getLanguageFromPath, getLocalizedPath, getRouteKey } from '../../routes/localizedRoutes'
 import { setPageMetadata, setStructuredData } from '../../utils/seo'
 
@@ -79,6 +80,8 @@ const seoContent = {
   },
 }
 
+const staticPageKeys = { about: 'about', shows: 'shows-introduction', news: 'news-introduction', pitf: 'pitf-introduction', gallery: 'gallery-introduction', contact: 'contact', location: 'contact', reserve: 'reservations' }
+
 function upsertLink(rel, attributes) {
   const selector = Object.entries({ rel, ...attributes })
     .filter(([key]) => key !== 'href')
@@ -118,6 +121,7 @@ export function AppLayout() {
   const routeKey = getRouteKey(location.pathname)
   const [homepageMeta, setHomepageMeta] = useState(null)
   const [navigation, setNavigation] = useState(null)
+  const [managedPage, setManagedPage] = useState(null)
   const [showBackToTop, setShowBackToTop] = useState(false)
   const [isHeaderScrolled, setIsHeaderScrolled] = useState(false)
 
@@ -164,6 +168,11 @@ export function AppLayout() {
           reservationUrl: data.reservationUrl,
           facebookUrl: data.facebookUrl,
           instagramUrl: data.instagramUrl,
+          facebookDisplayName: data.facebookDisplayName,
+          instagramDisplayName: data.instagramDisplayName,
+          logoUrl: data.logoUrl,
+          footerLogoUrl: data.footerLogoUrl,
+          footerCopyrightText: data.footerCopyrightText,
         })
       })
       .catch((error) => {
@@ -182,11 +191,19 @@ export function AppLayout() {
   }, [])
 
   useEffect(() => {
+    const pageKey = staticPageKeys[routeKey]
+    if (!pageKey) { setManagedPage(null); return undefined }
+    const controller = new AbortController()
+    getStaticPage(language, pageKey, controller.signal).then(setManagedPage).catch(() => setManagedPage(null))
+    return () => controller.abort()
+  }, [language, routeKey])
+
+  useEffect(() => {
     const content = seoContent[language]?.[routeKey] ?? seoContent.sq.home
     const origin = window.location.origin
     const basePath = import.meta.env.BASE_URL.replace(/\/$/, '')
 
-    setPageMetadata({ title: content.title, description: content.description })
+    setPageMetadata({ title: managedPage?.seoTitle || content.title, description: managedPage?.seoDescription || content.description, image: managedPage?.socialSharingImageUrl })
 
     upsertLink('canonical', {
       href: `${origin}${basePath}${getLocalizedPath(routeKey, language)}`,
@@ -203,7 +220,7 @@ export function AppLayout() {
       hreflang: 'x-default',
       href: `${origin}${basePath}${getLocalizedPath(routeKey, 'sq')}`,
     })
-  }, [language, routeKey])
+  }, [language, managedPage, routeKey])
 
   useEffect(() => {
     if (!homepageMeta) return undefined
@@ -296,7 +313,7 @@ export function AppLayout() {
 
   return (
     <div className={`site-shell site-shell-${routeKey}`}>
-      <Header language={language} isScrolled={isHeaderScrolled} navigation={navigation} />
+      <Header language={language} isScrolled={isHeaderScrolled} navigation={navigation} logoUrl={homepageMeta?.logoUrl} />
       <main className="site-main" id="content">
         <Outlet />
       </main>

@@ -5,7 +5,7 @@ import ctaBackground from '../../assets/cta-background.png'
 import ctaBackgroundMobile from '../../assets/cta-background-mobile.png'
 import { resolveMediaUrl } from '../../api/client'
 import { ArrowRightIcon } from '../icons/ArrowRightIcon'
-import { defaultLanguage, getLocalizedPath, getManagedDestination, languages } from '../../routes/localizedRoutes'
+import { defaultLanguage, getLocalizedPath, languages } from '../../routes/localizedRoutes'
 
 function splitReservationTitle(title) {
   const parts = title.split(/\s+/)
@@ -19,7 +19,7 @@ export function ReservationBanner({ home }) {
   const language = languages.includes(languageParam) ? languageParam : defaultLanguage
   const background = resolveMediaUrl(home.reservationBanner?.url) || ctaBackground
   const [firstLine, secondLine] = splitReservationTitle(home.reservationTitle ?? t('home.reservationTitleFallback'))
-  const buttonTarget = getManagedDestination(home.reservationUrl, language, 'reserve')
+  const buttonTarget = getLocalizedPath('reserve', language)
 
   return (
     <section className="reservation-section" aria-labelledby="reservation-title">

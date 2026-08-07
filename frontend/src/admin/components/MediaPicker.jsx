@@ -9,6 +9,13 @@ export function MediaPicker({ label, value, currentUrl, type = 'image/', onChang
   const [page, setPage] = useState(1)
   const [uploading, setUploading] = useState(false)
   const [previewing, setPreviewing] = useState(false)
+  const [savedItem, setSavedItem] = useState(null)
+  useEffect(() => {
+    if (!value) { setSavedItem(null); return undefined }
+    let active = true
+    adminApi.mediaItem(value).then(item => { if (active) setSavedItem(item) }).catch(() => { if (active) setSavedItem(null) })
+    return () => { active = false }
+  }, [value])
   useEffect(() => {
     if (!open) return
     const timer = setTimeout(() => adminApi.media({ type, search, page, pageSize: 100 }).then(result => {
@@ -16,13 +23,13 @@ export function MediaPicker({ label, value, currentUrl, type = 'image/', onChang
     }), 150)
     return () => clearTimeout(timer)
   }, [open, search, type, page])
-  const current = data?.items?.find(x => x.id === value)
+  const current = data?.items?.find(x => x.id === value) ?? (savedItem?.id === value ? savedItem : null)
   const previewUrl = current?.fileUrl ?? currentUrl
   const isVideo = type.startsWith('video')
   const isMixed = !type
   const previewIsVideo = current?.mimeType?.startsWith('video/') || (isVideo && !current)
-  const choose = item => { onChange?.(item.id); onSelect?.(item); setOpen(false) }
-  const remove = () => { onChange?.(null); onSelect?.(null) }
+  const choose = item => { setSavedItem(item); onChange?.(item.id); onSelect?.(item); setOpen(false) }
+  const remove = () => { setSavedItem(null); onChange?.(null); onSelect?.(null) }
   const upload = async event => {
     const file = event.target.files?.[0]
     event.target.value = ''

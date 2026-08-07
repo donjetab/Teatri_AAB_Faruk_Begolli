@@ -25,7 +25,7 @@ public sealed class AdminDashboardController(AppDbContext db, IClock clock) : Co
             new("upcomingPerformances", await db.ShowPerformances.CountAsync(x => x.StartDateTimeUtc > now && x.Status != PerformanceStatus.Cancelled, cancellationToken), "Upcoming performances"),
             new("publishedNews", await db.NewsArticles.CountAsync(x => x.IsPublished, cancellationToken), "Published news"),
             new("draftNews", await db.NewsArticles.CountAsync(x => !x.IsPublished, cancellationToken), "Draft news"),
-            new("unreadMessages", await db.ContactMessages.CountAsync(x => !x.IsRead, cancellationToken), "Unread messages"),
+            new("unreadMessages", await db.ContactMessages.CountAsync(x => x.Status == ContactMessageStatus.New, cancellationToken), "New messages"),
             new("subscribers", await db.NewsletterSubscribers.CountAsync(x => x.IsActive, cancellationToken), "Subscribers"),
             new("missingSq", await MissingTranslationsAsync(1, cancellationToken), "Missing Albanian"),
             new("missingEn", await MissingTranslationsAsync(2, cancellationToken), "Missing English"),
@@ -40,7 +40,7 @@ public sealed class AdminDashboardController(AppDbContext db, IClock clock) : Co
             x.Translations.OrderBy(t => t.LanguageId).Select(t => t.Title).FirstOrDefault() ?? "Untitled", null, x.UpdatedAt, x.Status.ToString())).ToListAsync(cancellationToken);
         var news = await db.NewsArticles.OrderByDescending(x => x.UpdatedAt).Take(5).Select(x => new DashboardItemDto(x.Id,
             x.Translations.OrderBy(t => t.LanguageId).Select(t => t.Title).FirstOrDefault() ?? "Untitled", null, x.UpdatedAt, x.IsPublished ? "Published" : "Draft")).ToListAsync(cancellationToken);
-        var messages = await db.ContactMessages.OrderByDescending(x => x.CreatedAt).Take(5).Select(x => new DashboardItemDto(x.Id, x.Subject, x.Name, x.CreatedAt, x.IsRead ? "Read" : "Unread")).ToListAsync(cancellationToken);
+        var messages = await db.ContactMessages.OrderByDescending(x => x.CreatedAt).Take(5).Select(x => new DashboardItemDto(x.Id, x.Subject, x.Name, x.CreatedAt, x.Status.ToString())).ToListAsync(cancellationToken);
         var activity = await db.AdminActivities.OrderByDescending(x => x.CreatedAt).Take(8).Select(x => new DashboardItemDto((int)x.Id, x.Action, x.Summary, x.CreatedAt, x.EntityType)).ToListAsync(cancellationToken);
         return Ok(new AdminDashboardDto(metrics, performances, plays, news, messages, activity));
     }

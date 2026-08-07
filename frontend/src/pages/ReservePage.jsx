@@ -65,7 +65,7 @@ export function ReservePage() {
     <article className="reserve-page">
       <section
         className="reserve-page-hero page-hero"
-        style={{ '--page-hero-image': `url("${reserveHeader}")` }}
+        style={{ '--page-hero-image': `url("${resolveMediaUrl(pageCopy?.headerImageUrl) || reserveHeader}")` }}
         aria-labelledby="reserve-page-title"
       >
         <img className="page-hero-smoke" src={smoke} alt="" aria-hidden="true" />
@@ -125,7 +125,11 @@ export function ReservePage() {
                       <i aria-hidden="true" />
                       {show.status === 'SoldOut' ? (language === 'sq' ? 'E shitur' : 'Sold out') : isPostponed ? (language === 'sq' ? 'Shfaqja është shtyrë' : 'Performance postponed') : isCancelled ? (language === 'sq' ? 'Shfaqja është anuluar' : 'Performance cancelled') : (language === 'sq' ? 'E hapur për rezervim' : 'Open for booking')}
                     </span>
-                    {show.ticketUrl && show.status !== 'SoldOut' && !isInactive && <a href={show.ticketUrl} className="reserve-seat-button" target="_blank" rel="noopener noreferrer">
+                    {show.reservationMode === 'Internal' && show.internalReservationUrl && show.status !== 'SoldOut' && !isInactive && <Link to={show.internalReservationUrl} className="reserve-seat-button">
+                      <span>{language === 'sq' ? 'Rezervo vendin' : 'Reserve seat'}</span>
+                      <ArrowRightIcon />
+                    </Link>}
+                    {show.reservationMode !== 'Internal' && show.ticketUrl && show.status !== 'SoldOut' && !isInactive && <a href={show.ticketUrl} className="reserve-seat-button" target="_blank" rel="noopener noreferrer">
                       <span>{language === 'sq' ? 'Rezervo vendin' : 'Reserve seat'}</span>
                       <ArrowRightIcon />
                     </a>}
@@ -141,7 +145,7 @@ export function ReservePage() {
           </div>
         ) : (
           <article className="reserve-empty-card">
-            <img src={emptyShowsImage} alt="" aria-hidden="true" />
+            <img src={resolveMediaUrl(pageCopy?.featuredImageUrl) || emptyShowsImage} alt="" aria-hidden="true" />
             <div className="reserve-empty-copy">
               <h3>{t('reservePage.emptyTitle')}</h3>
               <p>{t('reservePage.emptyText')}</p>

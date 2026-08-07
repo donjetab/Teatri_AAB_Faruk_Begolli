@@ -28,13 +28,18 @@ public sealed class AdminContentController(AppDbContext db, IClock clock) : Cont
         var languages = await db.Languages.Where(x => x.IsActive).ToDictionaryAsync(x => x.Code, token);
         if (request.Translations.Any(x => !languages.ContainsKey(x.LanguageCode)))
             return ValidationProblem("One or more language codes are invalid.");
+        if (!IsValidPageOrWebDestination(request.ReservationUrl))
+            return ValidationProblem("Choose an internal website page or enter a complete HTTP/HTTPS reservation URL.");
         info.Address = request.Address.Trim();
         info.Phone = request.Phone.Trim();
         info.Email = request.Email.Trim().ToLowerInvariant();
         info.FacebookUrl = Clean(request.FacebookUrl);
         info.InstagramUrl = Clean(request.InstagramUrl);
+        info.FacebookDisplayName = Clean(request.FacebookDisplayName);
+        info.InstagramDisplayName = Clean(request.InstagramDisplayName);
         info.ReservationUrl = NormalizeReservationUrl(request.ReservationUrl);
         info.LogoMediaAssetId = request.LogoMediaAssetId;
+        info.FooterLogoMediaAssetId = request.FooterLogoMediaAssetId;
         info.FaviconMediaAssetId = request.FaviconMediaAssetId;
         info.SocialSharingMediaAssetId = request.SocialSharingMediaAssetId;
         foreach (var item in request.Translations)
@@ -183,6 +188,7 @@ public sealed class AdminContentController(AppDbContext db, IClock clock) : Cont
         var query = db.TheatreInformation
             .Include(x => x.Translations).ThenInclude(x => x.Language)
             .Include(x => x.LogoMediaAsset)
+            .Include(x => x.FooterLogoMediaAsset)
             .Include(x => x.FaviconMediaAsset)
             .Include(x => x.SocialSharingMediaAsset)
             .AsSplitQuery();
@@ -190,16 +196,22 @@ public sealed class AdminContentController(AppDbContext db, IClock clock) : Cont
     }
 
     private static WebsiteInformationDto ToWebsiteDto(TheatreInformation x) => new(
-        x.Id, x.Address, x.Phone, x.Email, x.FacebookUrl, x.InstagramUrl, x.ReservationUrl,
+        x.Id, x.Address, x.Phone, x.Email, x.FacebookUrl, x.InstagramUrl, x.FacebookDisplayName, x.InstagramDisplayName, x.ReservationUrl,
         x.LogoMediaAssetId, x.LogoMediaAsset?.FileUrl,
+        x.FooterLogoMediaAssetId, x.FooterLogoMediaAsset?.FileUrl,
         x.FaviconMediaAssetId, x.FaviconMediaAsset?.FileUrl,
         x.SocialSharingMediaAssetId, x.SocialSharingMediaAsset?.FileUrl,
         x.Translations.Select(t => new LocalizedWebsiteInformationDto(t.Language.Code, t.TheatreName, t.AddressDisplayText, t.FooterCopyrightText)).ToList(), x.UpdatedAt);
     private static AdminHomepageDto ToHomepageDto(TheatreInformation x) => new(x.Id, x.HeroBackgroundMediaAssetId, x.AboutPreviewMediaAssetId, x.ReservationBannerMediaAssetId, x.PitfFeatureMediaAssetId, x.HeroIsVisible, x.ReservationBannerIsVisible, x.PitfFeatureIsVisible, x.LatestNewsCount, x.PrimaryButtonLink ?? "#/sq/shfaqjet", x.AboutButtonLink ?? "#/sq/per-ne", NormalizeReservationUrl(x.ReservationUrl), x.PitfDestinationUrl ?? "https://pitf.teatriaab.com/", x.Translations.Select(t => new LocalizedHomepageDto(t.Language.Code, t.HeroSlogan, t.HeroSupportingText, ValueOrDefault(t.HeroButtonText, t.Language.Code, "Shiko programin", "View program"), ValueOrDefault(t.AboutTitle, t.Language.Code, "Për Ne", "About"), t.AboutShort, ValueOrDefault(t.AboutButtonText, t.Language.Code, "Mëso më shumë", "Learn more"), t.ReservationCallToActionTitle, t.ReservationCallToActionText, ValueOrDefault(t.ReservationButtonText, t.Language.Code, "Rezervo biletën", "Reserve ticket"), ValueOrDefault(t.PitfFeatureTitle, t.Language.Code, "Prishtina International Theatre Festival", "Prishtina International Theatre Festival"), t.PitfShortDescription, ValueOrDefault(t.PitfFeatureButtonText, t.Language.Code, "Programi PITF", "PITF program"))).ToList(), x.UpdatedAt);
     private static string ValueOrDefault(string? value, string languageCode, string sq, string en) =>
         string.IsNullOrWhiteSpace(value) ? (languageCode == "sq" ? sq : en) : value;
-    private static string? NormalizeReservationUrl(string? value) =>
-        string.IsNullOrWhiteSpace(value) || value.Equals("https://example.com/reservations", StringComparison.OrdinalIgnoreCase)
-            ? "#/sq/rezervo"
-            : value.Trim();
+    private static string NormalizeReservationUrl(string? value) => "#/sq/rezervo";
+    private static bool IsValidPageOrWebDestination(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value)) return true;
+        var destination = value.Trim();
+        if (destination.StartsWith("#/", StringComparison.Ordinal) || destination.StartsWith("/", StringComparison.Ordinal)) return true;
+        return Uri.TryCreate(destination, UriKind.Absolute, out var uri)
+            && (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps);
+    }
 }

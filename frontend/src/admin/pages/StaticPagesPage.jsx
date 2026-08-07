@@ -8,12 +8,20 @@ import { resolveMediaUrl } from '../../api/client'
 import aboutHero from '../../assets/teatri/perne-bg.jpg'
 import aboutIntro from '../../assets/teatri/AAB.jpg'
 import aboutParallax from '../../assets/teatri/AAB-THEATER-SCENE.jpg'
+import showsHeader from '../../assets/shows-header.jpg'
+import newsHeader from '../../assets/news-header.jpg'
+import galleryHeader from '../../assets/gallery-header.jpg'
+import contactHeader from '../../assets/Kolegji-AAB.jpg'
+import pitfHeader from '../../assets/pitf-header.jpg'
+import reserveHeader from '../../assets/teatri/perne-bg.jpg'
+import reserveEmptyImage from '../../assets/teatri-pitf-2024.jpg'
 
 const sectionLabels = {
   about: 'About', contact: 'Contact', 'shows-introduction': 'Shows', 'news-introduction': 'News',
   reservations: 'Reservations', 'pitf-introduction': 'PITF', 'gallery-introduction': 'Gallery',
 }
 const sectionOrder = ['about', 'contact', 'shows-introduction', 'reservations', 'pitf-introduction', 'gallery-introduction', 'news-introduction']
+const pageHeaderFallbacks = { contact: contactHeader, 'shows-introduction': showsHeader, reservations: reserveHeader, 'pitf-introduction': pitfHeader, 'gallery-introduction': galleryHeader, 'news-introduction': newsHeader }
 
 function PageList({ items, selectedId, onSelect }) {
   const render = item => <button type="button" className={selectedId === item.id ? 'active' : ''} key={item.id} onClick={() => onSelect(item.id)}><span><strong>{sectionLabels[item.pageKey]}</strong><small>{item.translations.find(x => x.languageCode === 'sq')?.title}</small></span></button>
@@ -75,6 +83,8 @@ export function StaticPagesPage() {
         <div className="panel-heading"><div><h2>{sectionLabels[form.pageKey]}</h2><p>Public page content</p></div><LanguageTabs active={language} onChange={code => { setLanguage(code); setSearchParams({ page: String(form.id), language: code }) }} /></div>
         <div className="form-grid">
           <TextHeaderFields translation={translation} change={change} />
+
+          {!isAbout && <div className="full page-image-fields"><MediaPicker label="Header background" value={form.socialSharingMediaAssetId} currentUrl={form.socialSharingImageUrl || pageHeaderFallbacks[form.pageKey]} onSelect={media => chooseImage('socialSharingMediaAssetId', 'socialSharingImageUrl', media)} />{form.pageKey === 'reservations' && <MediaPicker label="No upcoming performances image" value={form.featuredMediaAssetId} currentUrl={form.featuredImageUrl || reserveEmptyImage} onSelect={media => chooseImage('featuredMediaAssetId', 'featuredImageUrl', media)} />}</div>}
 
           {isAbout && <>
             <div className="full about-copy-editor"><div className="admin-rich-field"><span>About paragraphs</span><RichTextEditor key={`${form.id}-${language}`} value={translation.content} onChange={value => change('content', value)} /></div><MediaPicker label="Picture beside the paragraphs" value={form.featuredMediaAssetId} currentUrl={form.featuredImageUrl || aboutIntro} onSelect={media => chooseImage('featuredMediaAssetId', 'featuredImageUrl', media)} /></div>
