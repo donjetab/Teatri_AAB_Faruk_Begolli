@@ -16,6 +16,7 @@ const fallbackShowPosters = {
   'dy-gjitare-enderrimtare': '/demo-media/uploads/shows/dy-gjitare-enderrimtare/dy-gjitare-enderrimtare%20-%20poster.png',
   'profesor-jam-talent': '/demo-media/uploads/shows/profesor-jam-talent/profesor%20jam%20talent%20-%20poster.png',
   'venera-ne-gezof': '/demo-media/uploads/shows/venera-ne-gezof/venera%20ne%20gezof%20-%20poster.png',
+  bretkosa: '/demo-media/uploads/shows/bretkosa/poster.png',
 }
 
 const FALLBACK_MEDIA_VERSION = '20260810-2'
