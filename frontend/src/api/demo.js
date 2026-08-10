@@ -18,7 +18,12 @@ const fallbackShowPosters = {
   'venera-ne-gezof': '/demo-media/uploads/shows/venera-ne-gezof/venera%20ne%20gezof%20-%20poster.png',
 }
 
-const withFallbackPoster = show => show && ({ ...show, posterUrl: show.posterUrl || fallbackShowPosters[show.slug] || null })
+const FALLBACK_MEDIA_VERSION = '20260810-2'
+const versionFallbackMedia = url => url && `${url}${url.includes('?') ? '&' : '?'}v=${FALLBACK_MEDIA_VERSION}`
+const withFallbackPoster = show => show && ({
+  ...show,
+  posterUrl: versionFallbackMedia(fallbackShowPosters[show.slug] || show.posterUrl || null),
+})
 
 function loadDemoData(signal) {
   demoDataPromise ??= fetch(`${import.meta.env.BASE_URL}demo-data.json`, { signal })
@@ -73,14 +78,14 @@ export async function getDemoPerformances(language, signal) {
   const localized = data[language] ?? data.sq
   if (localized.performances) return localized.performances.map(performance => ({
     ...performance,
-    posterUrl: performance.posterUrl || fallbackShowPosters[performance.showSlug] || null,
+    posterUrl: versionFallbackMedia(fallbackShowPosters[performance.showSlug] || performance.posterUrl || null),
   }))
   return (localized.reserve?.activeShows ?? []).map((show) => ({
     id: show.id,
     showId: show.id,
     showTitle: show.title,
     showSlug: show.slug,
-    posterUrl: localized.shows?.find(item => item.slug === show.slug)?.posterUrl || fallbackShowPosters[show.slug] || null,
+    posterUrl: versionFallbackMedia(fallbackShowPosters[show.slug] || localized.shows?.find(item => item.slug === show.slug)?.posterUrl || null),
     startDateTimeUtc: `${show.date}T${show.time}:00+02:00`,
     venue: show.venue,
     venueAddress: null,
@@ -135,7 +140,7 @@ export async function getDemoPitf(language, signal) {
         editionNumber,
         year,
         name: english ? `PITF ${year}` : `PITF ${year}`,
-        imageUrl: `/demo-media/uploads/pitf-editions/${editionNumber}.png`,
+        imageUrl: versionFallbackMedia(`/demo-media/uploads/pitf-editions/${editionNumber}.png`),
         destinationUrl: null,
       }
     }),
