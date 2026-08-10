@@ -3,26 +3,26 @@ import { useTranslation } from 'react-i18next'
 import { getLocalizedPath } from '../../routes/localizedRoutes'
 import { ShowCard } from './ShowCard'
 
-export function UpcomingShows({ shows, language, reservationUrl }) {
+export function UpcomingShows({ shows, language }) {
   const { t } = useTranslation()
 
   return (
     <section className="shows-section" aria-labelledby="shows-title">
       <div className="shows-grid">
-        <article className="shows-title-card">
+        <Link to={getLocalizedPath('reserve', language)} className="shows-title-card" aria-label={t('home.openReservations')}>
           <h2 id="shows-title">
             <span>{t('home.upcomingShows.line1')}</span>
             <strong>{t('home.upcomingShows.line2')}</strong>
           </h2>
-          <Link to={getLocalizedPath('shows', language)} className="shows-all-link">
+          <span className="shows-all-link">
             <span>{t('home.viewAllShows')}</span>
             <span aria-hidden="true">→</span>
-          </Link>
-        </article>
+          </span>
+        </Link>
 
         {shows.length > 0 ? (
           shows.map((show) => (
-            <ShowCard key={show.id} show={show} language={language} reservationUrl={reservationUrl} />
+            <ShowCard key={show.id} show={show} language={language} />
           ))
         ) : (
           <article className="shows-empty" aria-live="polite">

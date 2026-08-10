@@ -1,10 +1,12 @@
 using System.Security.Claims;
+using System.Text.RegularExpressions;
 using AngleSharp.Html.Dom;
 using Ganss.Xss;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Theatre.Api.Data;
+using Theatre.Api.Data.Seed;
 using Theatre.Api.DTOs;
 using Theatre.Api.Models;
 using Theatre.Api.Services;
@@ -301,23 +303,27 @@ public sealed class AdminNewsController(AppDbContext db, IClock clock, IWebHostE
         foreach (var incoming in request.Translations)
         {
             if (!languages.TryGetValue(incoming.LanguageCode, out var language)) continue;
-            if (string.IsNullOrWhiteSpace(incoming.Title) || string.IsNullOrWhiteSpace(incoming.Slug) ||
+            if (string.IsNullOrWhiteSpace(incoming.Title) ||
                 string.IsNullOrWhiteSpace(incoming.Summary) ||
                 (type == NewsArticleType.Authored && !isVideoLedArticle && string.IsNullOrWhiteSpace(incoming.Content)))
                 return ValidationProblem(type == NewsArticleType.Authored
-                    ? $"Title, slug and summary are required in {incoming.LanguageCode.ToUpperInvariant()}. Content is also required unless the main media is a video."
-                    : $"Title, slug and summary are required in {incoming.LanguageCode.ToUpperInvariant()}.");
+                    ? $"Title and summary are required in {incoming.LanguageCode.ToUpperInvariant()}. Content is also required unless the main media is a video."
+                    : $"Title and summary are required in {incoming.LanguageCode.ToUpperInvariant()}.");
 
-            var slug = incoming.Slug.Trim().ToLowerInvariant();
-            if (await db.NewsArticleTranslations.AnyAsync(
-                    x => (!existingId.HasValue || x.NewsArticleId != existingId.Value) &&
-                         x.LanguageId == language.Id && x.Slug == slug, token))
-                return Conflict(new ProblemDetails { Title = "Duplicate slug", Detail = $"The {incoming.LanguageCode.ToUpperInvariant()} slug is already used.", Status = 409 });
+            var baseSlug = ContentSlugNormalizer.Slugify(incoming.Title);
+            var slug = baseSlug;
+            for (var suffix = 2; await db.NewsArticleTranslations.AnyAsync(
+                     x => (!existingId.HasValue || x.NewsArticleId != existingId.Value) &&
+                          x.LanguageId == language.Id && x.Slug == slug, token); suffix++)
+            {
+                var ending = $"-{suffix}";
+                slug = $"{baseSlug[..Math.Min(baseSlug.Length, 220 - ending.Length)].TrimEnd('-')}{ending}";
+            }
             var translation = item.Translations.FirstOrDefault(x => x.LanguageId == language.Id);
             if (translation is null) { translation = new NewsArticleTranslation { LanguageId = language.Id, Language = language }; item.Translations.Add(translation); }
             translation.Title = incoming.Title.Trim(); translation.Slug = slug;
             translation.Summary = incoming.Summary.Trim(); translation.Content = Sanitize(incoming.Content);
-            translation.MetaTitle = Clean(incoming.MetaTitle); translation.MetaDescription = Clean(incoming.MetaDescription);
+            translation.MetaTitle = SeoText(incoming.Title, 60); translation.MetaDescription = SeoText(incoming.Summary, 160);
         }
         item.ArticleType = type; item.CoverMediaAssetId = request.CoverMediaAssetId;
         item.CardThumbnailMediaAssetId = request.CardThumbnailMediaAssetId;
@@ -406,4 +412,12 @@ public sealed class AdminNewsController(AppDbContext db, IClock clock, IWebHostE
                 link.Id, link.Title, link.Url, link.SourceName, link.PublishedAt, link.DisplayOrder))
             .ToList());
     private static string? Clean(string? value) => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+    private static string SeoText(string value, int maximumLength)
+    {
+        var text = Regex.Replace(Regex.Replace(value, "<[^>]+>", " "), @"\s+", " ").Trim();
+        if (text.Length <= maximumLength) return text;
+        var cut = text.LastIndexOf(' ', maximumLength - 3);
+        if (cut < maximumLength / 2) cut = maximumLength - 3;
+        return text[..cut].TrimEnd(' ', ',', ';', ':', '-', '.') + "...";
+    }
 }

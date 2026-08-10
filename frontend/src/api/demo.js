@@ -1,4 +1,24 @@
+import galleryOne from '../assets/teatri/AAB-THEATER-CHAIRS.jpg'
+import galleryTwo from '../assets/teatri/AAB-THEATER-FARUK-BEGOLLI.jpg'
+import galleryThree from '../assets/teatri/AAB-THEATER-SCENE.jpg'
+import galleryFour from '../assets/teatri/AAB-THEATER-VIEW-FROM-SCENE.jpg'
+import galleryFive from '../assets/teatri/THEATER-AAB.jpg'
+import gallerySix from '../assets/teatri/CHAIRS.jpg'
+
 let demoDataPromise
+
+const fallbackShowPosters = {
+  'mersieri-dhe-kamieri': '/demo-media/uploads/shows/mersieri-dhe-kamieri/mersier%20dhe%20kamieri%20-%20poster.png',
+  tjetri: '/demo-media/uploads/dev/news/2024-03-10-tjetri-ne-teatrin-aab-faruk-begolli/10.03.2024.jpg',
+  brinat: '/demo-media/uploads/shows/brinat/brinat%20-%20poster.png',
+  'hana-dhe-dielli': '/demo-media/uploads/shows/hana-dhe-dielli/hana%20dhe%20dielli%20-%20poster.png',
+  'per-caj-te-hillary': '/demo-media/uploads/shows/per-caj-te-hillary/per%20caj%20te%20hillary%20-%20poster.jpg',
+  'dy-gjitare-enderrimtare': '/demo-media/uploads/shows/dy-gjitare-enderrimtare/dy-gjitare-enderrimtare%20-%20poster.png',
+  'profesor-jam-talent': '/demo-media/uploads/shows/profesor-jam-talent/profesor%20jam%20talent%20-%20poster.png',
+  'venera-ne-gezof': '/demo-media/uploads/shows/venera-ne-gezof/venera%20ne%20gezof%20-%20poster.png',
+}
+
+const withFallbackPoster = show => show && ({ ...show, posterUrl: show.posterUrl || fallbackShowPosters[show.slug] || null })
 
 function loadDemoData(signal) {
   demoDataPromise ??= fetch(`${import.meta.env.BASE_URL}demo-data.json`, { signal })
@@ -25,12 +45,12 @@ export async function getDemoShows(language, signal) {
   const data = await loadDemoData(signal)
   const shows = data[language]?.shows ?? data.sq.shows
 
-  return Array.isArray(shows) ? shows : shows.value
+  return (Array.isArray(shows) ? shows : shows.value).map(withFallbackPoster)
 }
 
 export async function getDemoShow(language, slug, signal) {
   const data = await loadDemoData(signal)
-  return data[language]?.showDetails?.[slug] ?? data.sq.showDetails[slug]
+  return withFallbackPoster(data[language]?.showDetails?.[slug] ?? data.sq.showDetails[slug])
 }
 
 export async function getDemoNews(language, signal) {
@@ -51,13 +71,16 @@ export async function getDemoReserve(language, signal) {
 export async function getDemoPerformances(language, signal) {
   const data = await loadDemoData(signal)
   const localized = data[language] ?? data.sq
-  if (localized.performances) return localized.performances
+  if (localized.performances) return localized.performances.map(performance => ({
+    ...performance,
+    posterUrl: performance.posterUrl || fallbackShowPosters[performance.showSlug] || null,
+  }))
   return (localized.reserve?.activeShows ?? []).map((show) => ({
     id: show.id,
     showId: show.id,
     showTitle: show.title,
     showSlug: show.slug,
-    posterUrl: localized.shows?.find(item => item.slug === show.slug)?.posterUrl ?? null,
+    posterUrl: localized.shows?.find(item => item.slug === show.slug)?.posterUrl || fallbackShowPosters[show.slug] || null,
     startDateTimeUtc: `${show.date}T${show.time}:00+02:00`,
     venue: show.venue,
     venueAddress: null,
@@ -68,6 +91,55 @@ export async function getDemoPerformances(language, signal) {
     reservationMode: 'Internal',
     internalReservationUrl: `/${language}/${language === 'sq' ? 'rezervo' : 'reserve'}/${show.id}`,
   }))
+}
+
+const fallbackGalleryImages = [
+  galleryOne,
+  galleryTwo,
+  galleryThree,
+  galleryFour,
+  galleryFive,
+  gallerySix,
+].map((fileUrl, index) => ({
+  id: index + 1,
+  fileUrl,
+  altText: index === 0 ? 'Teatri AAB Faruk Begolli' : `Teatri AAB Faruk Begolli, pamja ${index + 1}`,
+}))
+
+export async function getDemoGallery(language, signal) {
+  await loadDemoData(signal)
+  return fallbackGalleryImages.map(image => ({
+    ...image,
+    altText: language === 'en'
+      ? `AAB Faruk Begolli Theatre, view ${image.id}`
+      : image.altText,
+  }))
+}
+
+export async function getDemoPitf(language, signal) {
+  await loadDemoData(signal)
+  const english = language === 'en'
+  return {
+    title: 'PITF',
+    description: english
+      ? 'Prishtina International Theatre Festival was founded at AAB Faruk Begolli Theatre in June 2017. The festival brings artists and audiences together through original international theatre.\n\nEach edition continues the theatre’s commitment to cultural exchange and new stage experiences.'
+      : 'Festivali Ndërkombëtar i Teatrit “Prishtina International Theatre Festival” është themeluar në ambientet e Teatrit AAB “Faruk Begolli” në qershor të vitit 2017. Festivali bashkon artistë dhe publik përmes teatrit ndërkombëtar dhe krijimtarisë origjinale.\n\nÇdo edicion vazhdon përkushtimin e teatrit ndaj shkëmbimit kulturor dhe përvojave të reja skenike.',
+    imageUrl: '/demo-media/uploads/dev/pitf/pitf-2024-cover.jpg',
+    buttonText: null,
+    buttonUrl: null,
+    editions: Array.from({ length: 10 }, (_, index) => {
+      const editionNumber = 10 - index
+      const year = 2016 + editionNumber
+      return {
+        id: editionNumber,
+        editionNumber,
+        year,
+        name: english ? `PITF ${year}` : `PITF ${year}`,
+        imageUrl: `/demo-media/uploads/pitf-editions/${editionNumber}.png`,
+        destinationUrl: null,
+      }
+    }),
+  }
 }
 
 export async function getDemoPerformanceSeats(language, performanceId, signal) {

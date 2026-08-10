@@ -3,9 +3,11 @@ import StarterKit from '@tiptap/starter-kit'
 import Link from '@tiptap/extension-link'
 import Underline from '@tiptap/extension-underline'
 import { useAdminDialog } from './AdminDialog'
+import { useAdminLanguage } from '../AdminLanguageContext'
 
 export function RichTextEditor({ value, onChange }) {
   const dialog = useAdminDialog()
+  const { t } = useAdminLanguage()
   const editor = useEditor({
     editable: true,
     shouldRerenderOnTransaction: true,
@@ -25,7 +27,7 @@ export function RichTextEditor({ value, onChange }) {
     editorProps: {
       attributes: {
         spellcheck: 'true',
-        'aria-label': 'Article content',
+        'aria-label': t('Article content'),
       },
     },
     onUpdate: ({ editor: current }) => {
@@ -70,7 +72,7 @@ export function RichTextEditor({ value, onChange }) {
 
   return (
     <div className="rich-editor">
-      <div className="rich-toolbar" role="toolbar" aria-label="Article formatting">
+      <div className="rich-toolbar" role="toolbar" aria-label={t('Article formatting')}>
         <button type="button" aria-pressed={editor.isActive('bold')} className={editor.isActive('bold') ? 'active' : ''} onMouseDown={preserveSelection(() => editor.chain().focus().toggleBold().run())}><strong>B</strong></button>
         <button type="button" aria-pressed={editor.isActive('italic')} className={editor.isActive('italic') ? 'active' : ''} onMouseDown={preserveSelection(() => editor.chain().focus().toggleItalic().run())}><em>I</em></button>
         <button type="button" aria-pressed={editor.isActive('underline')} className={editor.isActive('underline') ? 'active' : ''} onMouseDown={preserveSelection(() => editor.chain().focus().toggleUnderline().run())}><u>U</u></button>

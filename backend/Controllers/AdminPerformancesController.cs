@@ -278,5 +278,5 @@ public sealed class AdminPerformancesController(AppDbContext db, IClock clock, I
         x.LocationId, x.Location == null ? null : x.Location.Translations.Where(t => t.Language.Code == "sq").Select(t => t.Name).FirstOrDefault(),
         x.Hall, x.StartDateTimeUtc, x.EndDateTimeUtc, x.TicketUrl, x.ContactPhone, x.ReservationMode.ToString(), x.SeatingTemplateId, x.Status.ToString(), x.IsPublished,
         x.InternalNotes, x.MaxSeatsPerReservation, x.ReservationOpensAtUtc, x.ReservationClosesAtUtc,
-        x.ReservationsEnabled, x.ReservationUnavailableMessage, x.CreatedAt, x.UpdatedAt);
+        x.ReservationsEnabled, x.ReservationUnavailableMessage, x.Show.IsGuestPerformance, x.CreatedAt, x.UpdatedAt);
 }

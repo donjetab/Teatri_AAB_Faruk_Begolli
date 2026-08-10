@@ -14,6 +14,7 @@ export function PitfPreview({ pitf, title, description, buttonText, destinationU
   const language = languages.includes(languageParam) ? languageParam : defaultLanguage
   const buttonTarget = getManagedDestination(destinationUrl, language, 'pitf')
   const featureImage = resolveMediaUrl(image?.url) || pitfHomepageImage
+  const heading = title || pitf?.title || ''
   if (!pitf) {
     return null
   }
@@ -35,7 +36,7 @@ export function PitfPreview({ pitf, title, description, buttonText, destinationU
 
         <div className="pitf-copy">
           <h2 id="pitf-title">
-            <span>{title || pitf.title}</span>
+            {heading.split(/\s+/).filter(Boolean).map((word, index) => <span className="pitf-title-word" key={`${word}-${index}`}><i>{word[0]}</i>{word.slice(1)}</span>)}
           </h2>
           <p>{description || pitf.shortDescription}</p>
           {buttonTarget.startsWith('http') ? <a href={buttonTarget} target="_blank" rel="noreferrer" className="home-button">

@@ -1,5 +1,12 @@
 import { apiClient } from './client'
+import { getDemoGallery, isCanceledRequest } from './demo'
 
-export function getGalleryImages(language, signal) {
-  return apiClient.get(`/api/${language}/gallery`, { signal }).then(response => response.data)
+export async function getGalleryImages(language, signal) {
+  try {
+    const response = await apiClient.get(`/api/${language}/gallery`, { signal })
+    return response.data
+  } catch (error) {
+    if (isCanceledRequest(error)) throw error
+    return getDemoGallery(language, signal)
+  }
 }

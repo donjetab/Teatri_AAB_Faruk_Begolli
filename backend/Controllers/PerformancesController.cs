@@ -41,7 +41,8 @@ public sealed class PerformancesController(AppDbContext db) : ControllerBase
                     : x.Location.Translations.Where(t => t.LanguageId == requestedLanguageId.Value).Select(t => t.Address).FirstOrDefault()
                         ?? x.Location.Translations.Where(t => t.LanguageId == defaultLanguageId).Select(t => t.Address).FirstOrDefault(),
                 x.Hall, x.Status.ToString(), x.TicketUrl, x.ContactPhone ?? fallbackPhone, x.ReservationMode.ToString(),
-                x.ReservationMode == ReservationMode.Internal ? $"/{languageCode}/{(languageCode == "sq" ? "rezervo" : "reserve")}/{x.Id}" : null))
+                x.ReservationMode == ReservationMode.Internal ? $"/{languageCode}/{(languageCode == "sq" ? "rezervo" : "reserve")}/{x.Id}" : null,
+                x.Show.IsGuestPerformance))
             .ToListAsync(token);
         return Ok(items);
     }

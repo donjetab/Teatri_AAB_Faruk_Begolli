@@ -7,12 +7,20 @@ public sealed record AdminLoginRequest([Required, EmailAddress] string Email, [R
 public sealed record ChangePasswordRequest([Required] string CurrentPassword, [Required, MinLength(12)] string NewPassword);
 public sealed record DashboardMetricDto(string Key, int Value, string Label);
 public sealed record DashboardItemDto(int Id, string Title, string? Subtitle, DateTimeOffset? Date, string Status);
+public sealed record DashboardReservationPerformanceDto(
+    int Id, string Title, string? Venue, DateTimeOffset StartsAt,
+    int TotalSeats, int TakenSeats, int ReservationCount, bool IsOpen);
+public sealed record DashboardSubscriberDto(int Id, string Email, DateTimeOffset SubscribedAt);
+public sealed record DashboardTodayBookingDto(int Id, int PerformanceId, string CustomerName, string Phone, string ShowTitle, DateTimeOffset PerformanceStartsAt, DateTimeOffset ReservedAt, int SeatCount, string ConfirmationStatus, string Status);
 public sealed record AdminDashboardDto(
     IReadOnlyList<DashboardMetricDto> Metrics,
+    IReadOnlyList<DashboardReservationPerformanceDto> ReservationPerformances,
     IReadOnlyList<DashboardItemDto> UpcomingPerformances,
     IReadOnlyList<DashboardItemDto> RecentlyEditedPlays,
     IReadOnlyList<DashboardItemDto> RecentNews,
     IReadOnlyList<DashboardItemDto> RecentMessages,
+    IReadOnlyList<DashboardSubscriberDto> RecentSubscribers,
+    IReadOnlyList<DashboardTodayBookingDto> TodayBookings,
     IReadOnlyList<DashboardItemDto> RecentActivity);
 
 public sealed record LocalizedWebsiteInformationDto(

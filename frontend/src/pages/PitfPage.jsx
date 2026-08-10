@@ -17,6 +17,7 @@ export function PitfPage() {
   const { language = 'sq' } = useParams()
   const [homeMeta, setHomeMeta] = useState(null)
   const [pitf, setPitf] = useState(null)
+  const [pitfLoading, setPitfLoading] = useState(true)
   const [pageCopy, setPageCopy] = useState(null)
   const [editionsVisible, setEditionsVisible] = useState(false)
   const editionsRef = useRef(null)
@@ -26,6 +27,7 @@ export function PitfPage() {
     const load = () => {
       controller?.abort()
       controller = new AbortController()
+      setPitfLoading(true)
       Promise.all([getHome(language, controller.signal), getPitf(language, controller.signal)])
         .then(([home, page]) => { setHomeMeta(home); setPitf(page) })
         .catch(error => {
@@ -33,6 +35,7 @@ export function PitfPage() {
             setHomeMeta(null); setPitf(null)
           }
         })
+        .finally(() => { if (!controller.signal.aborted) setPitfLoading(false) })
     }
     const refreshWhenVisible = () => {
       if (document.visibilityState === 'visible') load()
@@ -74,6 +77,11 @@ export function PitfPage() {
     <section ref={editionsRef} className={`pitf-editions-section${editionsVisible ? ' is-visible' : ''}`} aria-labelledby="pitf-editions-title">
       <header className="pitf-editions-heading"><p>{t('pitfPage.editionsEyebrow')}</p><h2 id="pitf-editions-title">{t('pitfPage.editionsTitle')}</h2></header>
       <ol className="pitf-editions-grid">
+        {pitfLoading && Array.from({ length: 5 }, (_, index) => (
+          <li className="pitf-edition pitf-edition-skeleton" key={index} style={{ '--edition-index': index }} aria-hidden="true">
+            <div><span className="pitf-edition-image" /><span className="pitf-edition-marker" /><strong>&nbsp;</strong><time>&nbsp;</time></div>
+          </li>
+        ))}
         {editions.map((edition, index) => {
           const content = <><div className="pitf-edition-image">{edition.imageUrl ? <img src={resolveMediaUrl(edition.imageUrl)} alt={edition.name} loading="lazy" /> : <span>{edition.name}</span>}</div><span className="pitf-edition-marker" aria-hidden="true" /><strong>{edition.editionNumber.toString().padStart(2, '0')}</strong><time dateTime={edition.year.toString()}>{edition.year}</time></>
           return <li className="pitf-edition" key={edition.id} style={{ '--edition-index': index }}>{edition.destinationUrl ? <a href={edition.destinationUrl} target="_blank" rel="noopener noreferrer" aria-label={`${edition.name}, ${edition.year}`}>{content}</a> : <div>{content}</div>}</li>

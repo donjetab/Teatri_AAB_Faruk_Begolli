@@ -41,12 +41,14 @@ export function ReservePage() {
   const { language = 'sq' } = useParams()
   const [selectedDate, setSelectedDate] = useState('')
   const [activeShows, setActiveShows] = useState([])
+  const [performancesLoading, setPerformancesLoading] = useState(true)
   const [pageCopy, setPageCopy] = useState(null)
 
   useEffect(() => { const controller = new AbortController(); getStaticPage(language, 'reservations', controller.signal).then(setPageCopy).catch(() => setPageCopy(null)); return () => controller.abort() }, [language])
 
   useEffect(() => {
     const controller = new AbortController()
+    setPerformancesLoading(true)
     getUpcomingPerformances(language, controller.signal)
       .then(setActiveShows)
       .catch((error) => {
@@ -54,6 +56,7 @@ export function ReservePage() {
           setActiveShows([])
         }
       })
+      .finally(() => setPerformancesLoading(false))
     return () => controller.abort()
   }, [language])
   const hasActiveShows = activeShows.length > 0
@@ -94,7 +97,11 @@ export function ReservePage() {
           </header>
         )}
 
-        {hasActiveShows ? (
+        {performancesLoading ? (
+          <article className="reserve-performances-loading" aria-live="polite" aria-label={t('states.loading')}>
+            <i /><div><span /><span /><span /></div>
+          </article>
+        ) : hasActiveShows ? (
           <div className="reserve-show-list">
             {visibleShows.map((show) => {
               const date = new Date(show.startDateTimeUtc)
@@ -108,7 +115,7 @@ export function ReservePage() {
                 ? `${date.getDate()} ${albanianMonths[date.getMonth()]} ${date.getFullYear()}, ${new Intl.DateTimeFormat('sq-AL', { hour: '2-digit', minute: '2-digit' }).format(date)}`
                 : new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' }).format(date)
               return (
-                <article className="reserve-show-card" key={show.id}>
+                <article className={`reserve-show-card${show.isGuestPerformance ? ' guest-play' : ''}`} key={show.id}>
                   {poster && <img className="reserve-show-poster" src={poster} alt="" />}
                   <div className={`reserve-show-date${isPostponed ? ' postponed' : isCancelled ? ' cancelled' : ''}`}>
                     <strong>{date.getDate()}</strong>
@@ -116,6 +123,7 @@ export function ReservePage() {
                     <small>{isPostponed ? (language === 'sq' ? 'E shtyrë' : 'Postponed') : isCancelled ? (language === 'sq' ? 'E anuluar' : 'Cancelled') : language === 'sq' ? albanianWeekdays[date.getDay()] : new Intl.DateTimeFormat('en-GB', { weekday: 'long' }).format(date)}</small>
                   </div>
                   <div className="reserve-show-info">
+                    {show.isGuestPerformance && <span className="reserve-guest-label">{language === 'sq' ? 'Shfaqje mysafire' : 'Guest play'}</span>}
                     <h3>{show.showTitle}</h3>
                     <p><DetailIcon type="location" />{show.venue ? `${show.venue}${show.venueAddress ? `, ${show.venueAddress}` : ''}${show.hall ? ` · ${show.hall}` : ''}` : show.hall || (language === 'sq' ? 'Lokacioni do të njoftohet' : 'Venue to be announced')}</p>
                     <p><DetailIcon type="time" />{isPostponed ? (language === 'sq' ? `Ishte planifikuar për ${originalSchedule}. Data e re do të njoftohet.` : `Originally scheduled for ${originalSchedule}. A new date will be announced.`) : isCancelled ? (language === 'sq' ? `Ishte planifikuar për ${originalSchedule}.` : `Originally scheduled for ${originalSchedule}.`) : new Intl.DateTimeFormat(language === 'sq' ? 'sq-AL' : 'en-GB', { hour: '2-digit', minute: '2-digit' }).format(date)}</p>
@@ -125,6 +133,9 @@ export function ReservePage() {
                       <i aria-hidden="true" />
                       {show.status === 'SoldOut' ? (language === 'sq' ? 'E shitur' : 'Sold out') : isPostponed ? (language === 'sq' ? 'Shfaqja është shtyrë' : 'Performance postponed') : isCancelled ? (language === 'sq' ? 'Shfaqja është anuluar' : 'Performance cancelled') : (language === 'sq' ? 'E hapur për rezervim' : 'Open for booking')}
                     </span>
+                    <Link className="reserve-details-link" to={`/${language}/${language === 'sq' ? 'shfaqjet' : 'shows'}/${show.showSlug}`}>
+                      {language === 'sq' ? 'Shiko detajet e shfaqjes' : 'View play details'} →
+                    </Link>
                     {show.reservationMode === 'Internal' && show.internalReservationUrl && show.status !== 'SoldOut' && !isInactive && <Link to={show.internalReservationUrl} className="reserve-seat-button">
                       <span>{language === 'sq' ? 'Rezervo vendin' : 'Reserve seat'}</span>
                       <ArrowRightIcon />

@@ -289,6 +289,9 @@ namespace Theatre.Api.Migrations
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("datetimeoffset");
 
+                    b.Property<int>("DisplayOrder")
+                        .HasColumnType("int");
+
                     b.Property<DateOnly?>("EventDate")
                         .HasColumnType("date");
 
@@ -315,6 +318,8 @@ namespace Theatre.Api.Migrations
                     b.HasIndex("AlbumType");
 
                     b.HasIndex("CoverMediaAssetId");
+
+                    b.HasIndex("DisplayOrder");
 
                     b.HasIndex("EventDate");
 

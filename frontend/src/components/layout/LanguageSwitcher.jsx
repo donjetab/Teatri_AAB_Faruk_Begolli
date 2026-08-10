@@ -32,18 +32,18 @@ export function LanguageSwitcher({ language }) {
   }
 
   return (
-    <div className="language-switcher" aria-label={t('a11y.languageSwitcher')}>
-      {languages.map((item) => (
-        <button
-          key={item}
-          type="button"
-          className={item === language ? 'language-option active' : 'language-option'}
-          onClick={() => changeLanguage(item)}
-          aria-pressed={item === language}
-        >
+    <button
+      type="button"
+      className={`language-switcher language-${language}`}
+      role="switch"
+      aria-checked={language === 'en'}
+      aria-label={t('a11y.languageSwitcher')}
+      onClick={() => changeLanguage(language === 'sq' ? 'en' : 'sq')}
+    >
+      <span className="language-switch-slider" aria-hidden="true" />
+      {languages.map((item) => <span key={item} className={item === language ? 'language-option active' : 'language-option'}>
           {item.toUpperCase()}
-        </button>
-      ))}
-    </div>
+        </span>)}
+    </button>
   )
 }

@@ -141,29 +141,69 @@
 }
 
 .language-switcher {
-  display: inline-flex;
+  --language-option-width: 35px;
+  --language-option-height: 28px;
+  position: relative;
+  display: inline-grid;
+  grid-template-columns: repeat(2, var(--language-option-width));
+  grid-template-rows: var(--language-option-height);
   align-items: center;
-  gap: 2px;
-  border: 1px solid rgba(255, 255, 255, 0.651);
+  justify-items: stretch;
+  border: 1px solid rgba(255, 255, 255, 0.48);
   border-radius: 999px;
   padding: 3px;
+  background: rgba(8, 7, 7, 0.72);
+  box-shadow: inset 0 1px 5px rgba(0, 0, 0, 0.42);
+  color: inherit;
+  cursor: pointer;
+  box-sizing: border-box;
+  line-height: 1;
+  appearance: none;
 }
 
 .language-option {
-  border: 0;
+  position: relative;
+  z-index: 1;
+  width: var(--language-option-width);
+  height: var(--language-option-height);
+  display: grid;
+  place-items: center;
   border-radius: 999px;
-  padding: 5px 8px 4px;
-  background: transparent;
+  padding: 1px 0 0 1px;
   color: var(--color-muted);
-  cursor: pointer;
   font-family: var(--font-display);
   font-size: 13px;
   letter-spacing: 1px;
+  transition: color 220ms ease;
+}
+
+.language-switcher:hover .language-option {
+  color: var(--color-white);
 }
 
 .language-option.active {
-  background: var(--color-burgundy);
   color: var(--color-white);
+}
+
+.language-switch-slider {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: var(--language-option-width);
+  height: var(--language-option-height);
+  border-radius: 999px;
+  background: linear-gradient(145deg, #b52435, var(--color-burgundy));
+  box-shadow: 0 4px 12px rgba(120, 20, 29, 0.42), inset 0 1px rgba(255, 255, 255, 0.15);
+  transition: transform 240ms cubic-bezier(.2, .8, .2, 1);
+}
+
+.language-switcher.language-en .language-switch-slider {
+  transform: translateX(var(--language-option-width));
+}
+
+.language-switcher:focus-visible {
+  outline: 2px solid rgba(255, 255, 255, 0.7);
+  outline-offset: 2px;
 }
 
 .reserve-button {
@@ -1647,6 +1687,16 @@
   display: flex;
   flex-direction: column;
   justify-content: space-between;
+  color: var(--color-white);
+  text-decoration: none;
+  transition: border-color 180ms ease, transform 180ms ease, box-shadow 180ms ease;
+}
+
+.shows-title-card:hover,
+.shows-title-card:focus-visible {
+  border-color: var(--color-burgundy);
+  transform: translateY(-10px);
+  box-shadow: 0 18px 34px rgba(0, 0, 0, 0.34);
 }
 
 .shows-title-card h2 {
@@ -1991,12 +2041,19 @@
   text-transform: uppercase;
 }
 
-.pitf-copy h2 span {
-  display: block;
+.pitf-copy h2 .pitf-title-word {
+  display: inline-block;
+  white-space: nowrap;
 }
 
-.pitf-copy h2 span::first-letter {
+.pitf-copy h2 .pitf-title-word:not(:last-child)::after {
+  content: "\00a0";
+}
+
+.pitf-copy h2 .pitf-title-word i {
   color: var(--color-burgundy);
+  font: inherit;
+  font-style: normal;
 }
 
 .pitf-copy p {
@@ -4098,8 +4155,211 @@
 .reservation-hold-notice b { display: inline-grid; width: 19px; height: 19px; place-items: center; margin-right: .75rem; border: 1px solid #d53038; border-radius: 50%; color: #d53038; }
 .reservation-hold-notice strong { color: #e15359; font-weight: 600; }
 @media (max-width: 1080px) {
+  .internal-reservation-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
   .public-reservation-sidebar { position: static; display: grid; }
 }
+
+@media (max-width: 700px) {
+  .internal-reservation-page {
+    width: 100%;
+    padding: calc(var(--header-height) + 1.5rem) 14px 5rem;
+    overflow-x: hidden;
+  }
+
+  .internal-reservation-header {
+    width: 100%;
+    margin-bottom: 1.5rem;
+  }
+
+  .internal-reservation-header > a {
+    margin-bottom: 1.25rem;
+  }
+
+  .internal-reservation-header h1 {
+    overflow-wrap: anywhere;
+    font-size: clamp(2.3rem, 13vw, 3.4rem);
+  }
+
+  .internal-performance-meta {
+    gap: .55rem;
+    font-size: .82rem;
+    line-height: 1.45;
+  }
+
+  .internal-reservation-grid,
+  .public-seating-panel,
+  .public-reservation-sidebar,
+  .selected-seat-summary,
+  .public-reservation-form {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .internal-reservation-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 1rem;
+  }
+
+  .public-seating-panel {
+    padding: 1rem;
+    overflow: hidden;
+  }
+
+  .public-seat-legend {
+    justify-content: flex-start;
+    gap: .55rem .8rem;
+    margin: .9rem 0 1rem;
+    font-size: .68rem;
+  }
+
+  .public-seat-legend span::before {
+    width: 14px;
+    height: 14px;
+  }
+
+  .public-schema-scroll {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: auto;
+    overscroll-behavior-inline: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .public-schema-scroll .seating-schema-shell,
+  .public-schema-scroll .seating-schema {
+    min-width: 590px;
+  }
+
+  .public-reservation-sidebar {
+    display: block;
+    overflow: visible;
+  }
+
+  .selected-seat-summary,
+  .public-reservation-form {
+    padding: 1.2rem 1rem;
+  }
+
+  .selected-seat-summary h2,
+  .public-reservation-form h2 {
+    font-size: 1.55rem;
+  }
+
+  .public-phone-row {
+    grid-template-columns: minmax(88px, .7fr) minmax(0, 1.3fr);
+  }
+
+  .reservation-success {
+    margin: 1rem auto;
+    padding: 2rem 1rem;
+  }
+
+  .reservation-success h1 {
+    font-size: clamp(2.5rem, 15vw, 4rem);
+  }
+}
+
+@media (max-width: 380px) {
+  .public-phone-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+.reserve-performances-loading {
+  display: grid;
+  grid-template-columns: minmax(170px, 290px) 1fr;
+  min-height: 260px;
+  overflow: hidden;
+  border: 1px solid rgba(159, 80, 88, .28);
+  border-radius: 24px;
+  background: linear-gradient(110deg, rgba(72, 10, 18, .66), rgba(33, 5, 9, .92));
+}
+
+.reserve-performances-loading > i,
+.reserve-performances-loading span {
+  background: linear-gradient(100deg, rgba(255,255,255,.035) 20%, rgba(255,255,255,.1) 45%, rgba(255,255,255,.035) 70%);
+  background-size: 220% 100%;
+  animation: reserveLoadingShimmer 1.25s ease-in-out infinite;
+}
+
+.reserve-performances-loading > i {
+  min-height: 260px;
+  border-right: 1px solid rgba(255,255,255,.08);
+}
+
+.reserve-performances-loading > div {
+  display: grid;
+  align-content: center;
+  gap: 1rem;
+  padding: clamp(1.5rem, 4vw, 3rem);
+}
+
+.reserve-performances-loading span {
+  display: block;
+  height: 18px;
+  border-radius: 999px;
+}
+
+.reserve-performances-loading span:first-child { width: min(360px, 72%); height: 34px; }
+.reserve-performances-loading span:nth-child(2) { width: min(520px, 90%); }
+.reserve-performances-loading span:last-child { width: min(250px, 55%); }
+
+@keyframes reserveLoadingShimmer {
+  to { background-position: -220% 0; }
+}
+
+@media (max-width: 700px) {
+  .reserve-performances-loading {
+    grid-template-columns: 1fr;
+    min-height: 360px;
+  }
+
+  .reserve-performances-loading > i {
+    min-height: 190px;
+    border-right: 0;
+    border-bottom: 1px solid rgba(255,255,255,.08);
+  }
+}
+
+.reserve-show-card.guest-play {
+  border-color: rgba(94, 142, 156, 0.72);
+  background: linear-gradient(110deg, #071d23, #102d34);
+  box-shadow: inset 0 0 3.5rem rgba(72, 139, 156, 0.08);
+}
+
+.reserve-show-card.guest-play .reserve-show-date {
+  border-color: rgba(94, 142, 156, 0.55);
+}
+
+.reserve-show-card.guest-play .reserve-show-date small {
+  background: #326b78;
+}
+
+.reserve-guest-label {
+  display: inline-flex;
+  margin-bottom: 0.75rem;
+  padding: 0.35rem 0.75rem;
+  border: 1px solid rgba(127, 190, 205, 0.55);
+  border-radius: 999px;
+  color: #9dd6e1;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.reserve-details-link {
+  margin: 0.2rem 0 1rem;
+  color: #e7cf76;
+  font-size: 0.82rem;
+  text-decoration: none;
+}
+
+.reserve-details-link:hover { color: #fff0a8; }
 @media (max-width: 700px) {
   .public-seat-legend { justify-content: flex-start; margin: 0 0 1rem; }
 }
@@ -5286,14 +5546,24 @@
   }
 
   .language-switcher {
-    display: inline-flex;
+    --language-option-width: 27px;
+    --language-option-height: 23px;
+    display: inline-grid;
     padding: 2px;
   }
 
   .language-option {
-    padding: 4px 6px 3px;
+    width: var(--language-option-width);
+    height: var(--language-option-height);
+    padding: 1px 0 0;
     font-size: 10px;
     letter-spacing: 0.5px;
+  }
+
+  .language-switch-slider {
+    top: 2px;
+    left: 2px;
+    height: var(--language-option-height);
   }
 
   .reserve-button {

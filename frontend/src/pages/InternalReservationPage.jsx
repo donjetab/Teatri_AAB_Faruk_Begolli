@@ -6,6 +6,14 @@ import { SeatingSchema } from '../components/seating/SeatingSchema'
 import { canSelectPublicSeat } from '../utils/reservationRules'
 
 const countryCodes = ['+383', '+355', '+389', '+381', '+382', '+385', '+386', '+39', '+43', '+49', '+41', '+44', '+33', '+1', '+90']
+const albanianMonths = ['janar', 'shkurt', 'mars', 'prill', 'maj', 'qershor', 'korrik', 'gusht', 'shtator', 'tetor', 'nëntor', 'dhjetor']
+const albanianWeekdays = ['E diel', 'E hënë', 'E martë', 'E mërkurë', 'E enjte', 'E premte', 'E shtunë']
+const formatPerformanceDate = (value, language) => {
+  const date = new Date(value)
+  if (language !== 'sq') return new Intl.DateTimeFormat('en-GB', { dateStyle: 'full', timeStyle: 'short' }).format(date)
+  const time = new Intl.DateTimeFormat('sq-AL', { hour: '2-digit', minute: '2-digit', hour12: false }).format(date)
+  return `${albanianWeekdays[date.getDay()]}, ${date.getDate()} ${albanianMonths[date.getMonth()]} ${date.getFullYear()} në ${time}`
+}
 const errorText = (error, fallback) => error.response?.data?.detail || fallback
 const savedHold = key => {
   try {
@@ -115,10 +123,10 @@ export function InternalReservationPage() {
   }
   const backPath = `/${language}/${language === 'sq' ? 'rezervo' : 'reserve'}`
 
-  if (success && layout) return <article className="internal-reservation-page"><section className="reservation-success" role="status"><span className="reservation-success-mark">✓</span><p className="reservation-eyebrow">{t('reservePage.internal.successEyebrow')}</p><h1>{t('reservePage.internal.successTitle')}</h1><p>{t('reservePage.internal.successText')}</p><div className="reservation-success-details"><div><span>{t('reservePage.internal.play')}</span><strong>{layout.showTitle}</strong></div><div><span>{t('reservePage.internal.performance')}</span><strong>{new Intl.DateTimeFormat(language === 'sq' ? 'sq-AL' : 'en-GB', { dateStyle: 'full', timeStyle: 'short' }).format(new Date(layout.startsAt))}</strong></div><div><span>{t('reservePage.internal.venue')}</span><strong>{layout.venue}</strong></div><div><span>{t('reservePage.internal.reservedSeats')}</span><strong>{success.seats.map(selectionLabel).join(', ')}</strong></div><div><span>{t('reservePage.internal.customer')}</span><strong>{success.customer.fullName} · {success.customer.countryPrefix} {success.customer.phone}{success.customer.email ? ` · ${success.customer.email}` : ''}</strong></div></div><p className="reservation-confirmation-note">{t('reservePage.internal.confirmationNote')}</p><Link className="reserve-seat-button" to={backPath}>{t('reservePage.internal.backToPerformances')}</Link></section></article>
+  if (success && layout) return <article className="internal-reservation-page"><section className="reservation-success" role="status"><span className="reservation-success-mark">✓</span><p className="reservation-eyebrow">{t('reservePage.internal.successEyebrow')}</p><h1>{t('reservePage.internal.successTitle')}</h1><p>{t('reservePage.internal.successText')}</p><div className="reservation-success-details"><div><span>{t('reservePage.internal.play')}</span><strong>{layout.showTitle}</strong></div><div><span>{t('reservePage.internal.performance')}</span><strong>{formatPerformanceDate(layout.startsAt, language)}</strong></div><div><span>{t('reservePage.internal.venue')}</span><strong>{layout.venue}</strong></div><div><span>{t('reservePage.internal.reservedSeats')}</span><strong>{success.seats.map(selectionLabel).join(', ')}</strong></div><div><span>{t('reservePage.internal.customer')}</span><strong>{success.customer.fullName} · {success.customer.countryPrefix} {success.customer.phone}{success.customer.email ? ` · ${success.customer.email}` : ''}</strong></div></div><p className="reservation-confirmation-note">{t('reservePage.internal.confirmationNote')}</p><Link className="reserve-seat-button" to={backPath}>{t('reservePage.internal.backToPerformances')}</Link></section></article>
 
   return <article className="internal-reservation-page">
-    <header className="internal-reservation-header"><Link to={backPath} onClick={() => void releaseHold()}>← {t('reservePage.internal.back')}</Link><p className="reservation-eyebrow">{t('reservePage.internal.eyebrow')}</p><h1>{layout?.showTitle ?? t('reservePage.internal.title')}</h1>{layout && <div className="internal-performance-meta"><span>{new Intl.DateTimeFormat(language === 'sq' ? 'sq-AL' : 'en-GB', { dateStyle: 'full', timeStyle: 'short' }).format(new Date(layout.startsAt))}</span><span>{layout.venue}</span></div>}</header>
+    <header className="internal-reservation-header"><Link to={backPath} onClick={() => void releaseHold()}>← {t('reservePage.internal.back')}</Link><p className="reservation-eyebrow">{t('reservePage.internal.eyebrow')}</p><h1>{layout?.showTitle ?? t('reservePage.internal.title')}</h1>{layout && <div className="internal-performance-meta"><span>{formatPerformanceDate(layout.startsAt, language)}</span><span>{layout.venue}</span></div>}</header>
     {loading && !layout ? <section className="reservation-public-state" aria-live="polite"><i /><i /><i /><p>{t('states.loading')}</p></section>
       : !layout ? <section className="reservation-public-state error"><h2>{t('reservePage.internal.unavailableTitle')}</h2><p>{message || t('reservePage.internal.unavailable')}</p><button onClick={() => load(null)}>{t('reservePage.internal.tryAgain')}</button></section>
         : <><div className="internal-reservation-grid">

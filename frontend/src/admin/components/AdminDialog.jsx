@@ -1,8 +1,10 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react'
+import { useAdminLanguage } from '../AdminLanguageContext'
 
 const AdminDialogContext = createContext(null)
 
 export function AdminDialogProvider({ children }) {
+  const { t } = useAdminLanguage()
   const [dialog, setDialog] = useState(null)
   const [value, setValue] = useState('')
   const resolver = useRef(null)
@@ -36,14 +38,14 @@ export function AdminDialogProvider({ children }) {
       <section className="admin-dialog" role="dialog" aria-modal="true" aria-labelledby="admin-dialog-title">
         <div className={`admin-dialog-icon ${dialog.danger ? 'danger' : ''}`}>{dialog.danger ? '!' : '◇'}</div>
         <div>
-          <span className="admin-dialog-eyebrow">{dialog.eyebrow ?? (dialog.danger ? 'Please confirm' : 'Admin action')}</span>
-          <h2 id="admin-dialog-title">{dialog.title}</h2>
-          {dialog.message && <p>{dialog.message}</p>}
+          <span className="admin-dialog-eyebrow">{t(dialog.eyebrow ?? (dialog.danger ? 'Please confirm' : 'Admin action'))}</span>
+          <h2 id="admin-dialog-title">{t(dialog.title)}</h2>
+          {dialog.message && <p>{t(dialog.message)}</p>}
         </div>
-        {dialog.type === 'prompt' && <label>{dialog.label}<input autoFocus type={dialog.inputType ?? 'text'} value={value} onChange={event => setValue(event.target.value)} onKeyDown={event => { if (event.key === 'Enter') { event.preventDefault(); close(value) } }} /></label>}
+        {dialog.type === 'prompt' && <label>{t(dialog.label)}<input autoFocus type={dialog.inputType ?? 'text'} value={value} onChange={event => setValue(event.target.value)} onKeyDown={event => { if (event.key === 'Enter') { event.preventDefault(); close(value) } }} /></label>}
         <div className="admin-dialog-actions">
-          <button type="button" className="admin-text-button" onClick={() => close(dialog.type === 'confirm' ? false : null)}>Cancel</button>
-          <button type="button" className={dialog.danger ? 'admin-danger-button' : 'admin-primary-button'} onClick={() => close(dialog.type === 'confirm' ? true : value)}>{dialog.confirmLabel ?? (dialog.type === 'confirm' ? 'Confirm' : 'Save')}</button>
+          <button type="button" className="admin-text-button" onClick={() => close(dialog.type === 'confirm' ? false : null)}>{t('Cancel')}</button>
+          <button type="button" className={dialog.danger ? 'admin-danger-button' : 'admin-primary-button'} onClick={() => close(dialog.type === 'confirm' ? true : value)}>{t(dialog.confirmLabel ?? (dialog.type === 'confirm' ? 'Confirm' : 'Save'))}</button>
         </div>
       </section>
     </div>}

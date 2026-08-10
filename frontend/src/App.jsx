@@ -45,6 +45,7 @@ import { BackupsSystemPage } from './admin/pages/BackupsSystemPage'
 import { SettingsPage } from './admin/pages/SettingsPage'
 import { SeoIssuesPage } from './admin/pages/SeoIssuesPage'
 import './admin/admin.css'
+import { AdminLanguageProvider } from './admin/AdminLanguageContext'
 
 function ShellPlaceholder() {
   const { t } = useTranslation()
@@ -62,7 +63,7 @@ function App() {
     <AdminAuthProvider><Routes>
       <Route path="/admin/login" element={<LoginPage />} />
       <Route element={<ProtectedAdminRoute />}>
-        <Route path="/admin" element={<AdminLayout />}>
+        <Route path="/admin" element={<AdminLanguageProvider><AdminLayout /></AdminLanguageProvider>}>
           <Route index element={<DashboardPage />} />
           <Route path="website-information" element={<WebsiteInformationPage />} />
           <Route path="homepage" element={<HomepageManagementPage />} />

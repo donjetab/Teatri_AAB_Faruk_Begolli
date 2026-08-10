@@ -9,7 +9,7 @@ public sealed record AdminGalleryMediaDto(
 public sealed record AdminGalleryAlbumDto(
     int Id, string TitleSq, string TitleEn, string AlbumType,
     string? RelatedContent, DateOnly? EventDate, bool IsPublished,
-    bool IsVisibleInGeneralGallery, DateTimeOffset UpdatedAt,
+    bool IsVisibleInGeneralGallery, int DisplayOrder, DateTimeOffset UpdatedAt,
     IReadOnlyList<AdminGalleryMediaDto> Media);
 
 public sealed record AdminGalleryListDto(
@@ -19,3 +19,5 @@ public sealed record AdminGalleryListDto(
 public sealed record AddGeneralGalleryMediaRequest([Range(1, int.MaxValue)] int MediaAssetId);
 public sealed record ReorderGeneralGalleryRequest(IReadOnlyList<int> MediaAssetIds);
 public sealed record FeatureGeneralGalleryMediaRequest(bool IsFeatured);
+public sealed record SetGalleryAlbumVisibilityRequest(bool IsVisible);
+public sealed record ReorderGalleryAlbumsRequest(IReadOnlyList<int> AlbumIds);

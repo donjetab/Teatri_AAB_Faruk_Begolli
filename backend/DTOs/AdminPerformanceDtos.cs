@@ -7,7 +7,7 @@ public sealed record AdminPerformanceDto(
     DateTimeOffset StartDateTimeUtc, DateTimeOffset? EndDateTimeUtc, string? TicketUrl,
     string? ContactPhone, string ReservationMode, int? SeatingTemplateId, string Status, bool IsPublished, string? InternalNotes,
     int? MaxSeatsPerReservation, DateTimeOffset? ReservationOpensAtUtc, DateTimeOffset? ReservationClosesAtUtc,
-    bool ReservationsEnabled, string? ReservationUnavailableMessage,
+    bool ReservationsEnabled, string? ReservationUnavailableMessage, bool IsGuestPerformance,
     DateTimeOffset CreatedAt, DateTimeOffset UpdatedAt);
 
 public sealed record SaveAdminPerformanceRequest(

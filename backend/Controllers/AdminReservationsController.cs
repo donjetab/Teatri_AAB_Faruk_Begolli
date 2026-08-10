@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using System.Text;
 using System.Text.Json;
+using ClosedXML.Excel;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -156,7 +157,7 @@ public sealed class AdminReservationsController(AppDbContext db, IReservationSer
         if (reservationTo.HasValue) { var to = new DateTimeOffset(reservationTo.Value.ToDateTime(TimeOnly.MinValue), TimeSpan.Zero).AddDays(1); q = q.Where(x => x.Reservations.Any(r => r.ReservedAt < to)); }
         var total = await q.CountAsync(token); var desc = string.Equals(sortDirection, "desc", StringComparison.OrdinalIgnoreCase);
         q = sortBy?.ToLowerInvariant() switch { "phone" => desc ? q.OrderByDescending(x => x.NormalizedPhone) : q.OrderBy(x => x.NormalizedPhone), "email" => desc ? q.OrderByDescending(x => x.Email) : q.OrderBy(x => x.Email), "firstreservation" => desc ? q.OrderByDescending(x => x.Reservations.Min(r => r.ReservedAt)) : q.OrderBy(x => x.Reservations.Min(r => r.ReservedAt)), "lastreservation" => desc ? q.OrderByDescending(x => x.Reservations.Max(r => r.ReservedAt)) : q.OrderBy(x => x.Reservations.Max(r => r.ReservedAt)), _ => desc ? q.OrderByDescending(x => x.FullName) : q.OrderBy(x => x.FullName) };
-        page = Math.Max(1, page); pageSize = Math.Clamp(pageSize, 10, 100);
+        page = Math.Max(1, page); pageSize = Math.Clamp(pageSize, 1, 100);
         var items = await q.Skip((page - 1) * pageSize).Take(pageSize).Select(x => new CustomerListItemDto(x.Id, x.FullName, x.NormalizedPhone, x.Email, x.CreatedAt, x.Reservations.Min(r => (DateTimeOffset?)r.ReservedAt), x.Reservations.Max(r => (DateTimeOffset?)r.ReservedAt), x.Reservations.Count, x.Reservations.SelectMany(r => r.SeatAllocations).Count(), x.AnonymizedAt)).ToListAsync(token);
         return Ok(new CustomerListDto(items, total, page, pageSize));
     }
@@ -217,7 +218,7 @@ public sealed class AdminReservationsController(AppDbContext db, IReservationSer
 
     [HttpGet("export")]
     [Authorize(Policy = "ExportCustomerData")]
-    public async Task<FileContentResult> Export([FromQuery] int? performanceId, [FromQuery] bool confirmedOnly, [FromQuery] string? search, [FromQuery] string? seat, [FromQuery] string? section, [FromQuery] string? row, [FromQuery] DateOnly? reservationDate, [FromQuery] string? confirmationStatus, [FromQuery] string? status, [FromQuery] string? source, CancellationToken token)
+    public async Task<FileContentResult> Export([FromQuery] int? performanceId, [FromQuery] bool confirmedOnly, [FromQuery] bool seatBased, [FromQuery] string? search, [FromQuery] string? seat, [FromQuery] string? section, [FromQuery] string? row, [FromQuery] DateOnly? reservationDate, [FromQuery] string? confirmationStatus, [FromQuery] string? status, [FromQuery] string? source, CancellationToken token)
     {
         var q = db.Reservations.AsNoTracking().Include(x => x.Customer).Include(x => x.Performance).ThenInclude(x => x.Show).ThenInclude(x => x.Translations).Include(x => x.SeatAllocations).ThenInclude(x => x.PerformanceSeat).AsQueryable();
         if (performanceId.HasValue) q = q.Where(x => x.PerformanceId == performanceId); if (confirmedOnly) q = q.Where(x => x.ConfirmationStatus == ConfirmationStatus.Confirmed && x.Status == ReservationStatus.Active);
@@ -225,8 +226,100 @@ public sealed class AdminReservationsController(AppDbContext db, IReservationSer
         if (!string.IsNullOrWhiteSpace(seat)) q = q.Where(x => x.SeatAllocations.Any(a => a.PerformanceSeat.SeatLabel.Contains(seat))); if (!string.IsNullOrWhiteSpace(section)) q = q.Where(x => x.SeatAllocations.Any(a => a.PerformanceSeat.SectionName.Contains(section))); if (!string.IsNullOrWhiteSpace(row)) q = q.Where(x => x.SeatAllocations.Any(a => a.PerformanceSeat.RowLabel.Contains(row)));
         if (reservationDate.HasValue) { var from = new DateTimeOffset(reservationDate.Value.ToDateTime(TimeOnly.MinValue), TimeSpan.Zero); q = q.Where(x => x.ReservedAt >= from && x.ReservedAt < from.AddDays(1)); }
         if (Enum.TryParse<ConfirmationStatus>(confirmationStatus, true, out var confirmation)) q = q.Where(x => x.ConfirmationStatus == confirmation); if (Enum.TryParse<ReservationStatus>(status, true, out var state)) q = q.Where(x => x.Status == state); if (Enum.TryParse<ReservationSource>(source, true, out var origin)) q = q.Where(x => x.Source == origin);
-        var rows = (await q.OrderByDescending(x => x.ReservedAt).ToListAsync(token)).Select(Map); var csv = new StringBuilder("ReservationId,Customer,Phone,Email,Play,PerformanceDate,Seats,ReservedAt,Confirmation,Status,Source,Comment\r\n"); foreach (var x in rows) csv.AppendLine(string.Join(',', new[] { x.Id.ToString(), x.CustomerName, x.Phone, x.Email ?? "", x.ShowTitle, x.PerformanceDate.ToString("O"), string.Join("; ", x.Seats), x.ReservedAt.ToString("O"), x.ConfirmationStatus, x.Status, x.Source, x.AdminComment ?? "" }.Select(Csv))); return File(Encoding.UTF8.GetPreamble().Concat(Encoding.UTF8.GetBytes(csv.ToString())).ToArray(), "text/csv", "reservations.csv");
+        var rows = (await q.OrderByDescending(x => x.ReservedAt).ToListAsync(token)).Select(Map).ToList();
+        var exportRows = new List<(string[] Cells, int Style)>();
+        foreach (var x in rows)
+        {
+            var seats = x.SeatDetails.Where(s => s.IsActive).ToList();
+            if (seats.Count == 0) seats = x.SeatDetails.ToList();
+            if (seatBased)
+            {
+                foreach (var selectedSeat in seats)
+                    exportRows.Add(ReservationExportRow(x, selectedSeat.Section, selectedSeat.Row, selectedSeat.Label));
+            }
+            else
+            {
+                exportRows.Add(ReservationExportRow(x,
+                    string.Join("; ", seats.Select(s => s.Section).Distinct()),
+                    string.Join("; ", seats.Select(s => s.Row).Distinct()),
+                    string.Join("; ", seats.Select(s => s.Label))));
+            }
+        }
+        var suffix = seatBased ? "seat-based" : "reservation-based";
+        return File(CreateReservationWorkbook(exportRows), "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", $"reservations-{suffix}.xlsx");
     }
+
+    private static (string[] Cells, int Style) ReservationExportRow(ReservationListItemDto x, string section, string row, string seat)
+    {
+        var style = x.Status.Equals("Cancelled", StringComparison.OrdinalIgnoreCase) ? 3
+            : x.Status.Equals("Released", StringComparison.OrdinalIgnoreCase) ? 5
+            : x.ConfirmationStatus.Equals("Confirmed", StringComparison.OrdinalIgnoreCase) ? 2
+            : x.ConfirmationStatus.Equals("Unconfirmed", StringComparison.OrdinalIgnoreCase) ? 4 : 0;
+        return (new[] { x.Id.ToString(), x.CustomerName, x.Phone, x.Email ?? "", x.ShowTitle,
+            x.PerformanceDate.ToLocalTime().ToString("dd MMM yyyy, HH:mm"), section, row, seat,
+            x.ReservedAt.ToLocalTime().ToString("dd MMM yyyy, HH:mm"), x.ConfirmationStatus, x.Status,
+            x.Source == "PublicWebsite" ? "Public website" : "Admin-created", x.AdminComment ?? "" }, style);
+    }
+
+    private static byte[] CreateReservationWorkbook(IReadOnlyList<(string[] Cells, int Style)> rows)
+    {
+        var headers = new[] { "Reservation ID", "Customer", "Phone", "Email", "Play", "Performance date", "Section", "Row", "Seat(s)", "Reserved at", "Confirmation", "Status", "Source", "Admin comment" };
+        using var workbook = new XLWorkbook();
+        var sheet = workbook.Worksheets.Add("Reservations");
+        for (var column = 0; column < headers.Length; column++) sheet.Cell(1, column + 1).Value = headers[column];
+
+        var header = sheet.Range(1, 1, 1, headers.Length);
+        header.Style.Font.Bold = true;
+        header.Style.Font.FontColor = XLColor.White;
+        header.Style.Fill.BackgroundColor = XLColor.FromHtml("#78141D");
+        header.Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
+        sheet.Row(1).Height = 24;
+
+        var fills = new Dictionary<int, (string Background, string Text)>
+        {
+            [2] = ("#DCFCE7", "#166534"),
+            [3] = ("#FEE2E2", "#B91C1C"),
+            [4] = ("#FEF3C7", "#92400E"),
+            [5] = ("#F3F4F6", "#6B7280")
+        };
+        for (var rowIndex = 0; rowIndex < rows.Count; rowIndex++)
+        {
+            var excelRow = rowIndex + 2;
+            for (var column = 0; column < rows[rowIndex].Cells.Length; column++)
+                sheet.Cell(excelRow, column + 1).Value = CleanExcelText(rows[rowIndex].Cells[column]);
+            if (fills.TryGetValue(rows[rowIndex].Style, out var colors))
+            {
+                var range = sheet.Range(excelRow, 1, excelRow, headers.Length);
+                range.Style.Fill.BackgroundColor = XLColor.FromHtml(colors.Background);
+                range.Style.Font.FontColor = XLColor.FromHtml(colors.Text);
+                if (rows[rowIndex].Style == 3) range.Style.Font.Bold = true;
+                if (rows[rowIndex].Style == 5) range.Style.Font.Italic = true;
+            }
+        }
+
+        var lastRow = Math.Max(1, rows.Count + 1);
+        var report = sheet.Range(1, 1, lastRow, headers.Length);
+        report.Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
+        report.Style.Border.InsideBorder = XLBorderStyleValues.Thin;
+        report.Style.Border.OutsideBorderColor = XLColor.FromHtml("#D1D5DB");
+        report.Style.Border.InsideBorderColor = XLColor.FromHtml("#D1D5DB");
+        report.Style.Alignment.Vertical = XLAlignmentVerticalValues.Top;
+        report.Style.Alignment.WrapText = true;
+        report.SetAutoFilter();
+        sheet.SheetView.FreezeRows(1);
+
+        var widths = new[] { 14d, 24d, 18d, 28d, 30d, 24d, 15d, 12d, 25d, 24d, 16d, 14d, 18d, 38d };
+        for (var column = 0; column < widths.Length; column++) sheet.Column(column + 1).Width = widths[column];
+        sheet.PageSetup.PageOrientation = XLPageOrientation.Landscape;
+        sheet.PageSetup.FitToPages(1, 0);
+        sheet.PageSetup.Margins.SetLeft(0.25).SetRight(0.25).SetTop(0.5).SetBottom(0.5);
+
+        using var output = new MemoryStream();
+        workbook.SaveAs(output);
+        return output.ToArray();
+    }
+
+    private static string CleanExcelText(string value) => new(value.Where(character => character is '\t' or '\n' or '\r' || character >= ' ').Take(32767).ToArray());
 
     private async Task<int> PerformanceForSeats(int[] ids, CancellationToken token) { var performances = await db.PerformanceSeats.Where(x => ids.Contains(x.Id)).Select(x => x.Layout.PerformanceId).Distinct().ToListAsync(token); if (performances.Count != 1) throw new ValidationException("All seats must belong to one performance."); return performances[0]; }
     private IQueryable<ReservationAdminAudit> AuditQuery() => db.ReservationAdminAudits.AsNoTracking().Include(x => x.AdminUser).OrderByDescending(x => x.CreatedAt);

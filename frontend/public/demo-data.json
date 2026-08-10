@@ -6670,10 +6670,10 @@
       "activeShows": [
         {
           "id": 1,
-          "title": "Bretkosa",
-          "slug": "bretkosa",
+          "title": "Profesor, jam talent...",
+          "slug": "profesor-jam-talent",
           "date": "2026-09-10",
-          "venue": "Teatri Kombëtar",
+          "venue": "Teatri AAB \"Faruk Begolli\"",
           "time": "19:30",
           "phone": "048 999 000",
           "phoneUrl": "tel:+38348999000",
@@ -13366,10 +13366,10 @@
       "activeShows": [
         {
           "id": 1,
-          "title": "Bretkosa",
-          "slug": "bretkosa",
+          "title": "Professor, I am a talent...",
+          "slug": "profesor-jam-talent",
           "date": "2026-09-10",
-          "venue": "National Theatre",
+          "venue": "AAB Theatre \"Faruk Begolli\"",
           "time": "19:30",
           "phone": "048 999 000",
           "phoneUrl": "tel:+38348999000",

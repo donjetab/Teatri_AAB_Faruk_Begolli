@@ -12,6 +12,22 @@ namespace Theatre.Api.Controllers;
 [Route("api/admin/gallery")]
 public sealed class AdminGalleryController(AppDbContext db, IClock clock) : ControllerBase
 {
+    [HttpGet("show-folders"), ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
+    public async Task<ActionResult<IReadOnlyList<AdminGalleryAlbumDto>>> GetShowFolders(CancellationToken token)
+    {
+        var albums = await db.GalleryAlbums.AsNoTracking()
+            .Where(x => x.AlbumType == GalleryAlbumType.Show)
+            .Include(x => x.Translations).ThenInclude(x => x.Language)
+            .Include(x => x.GalleryAlbumMedia).ThenInclude(x => x.MediaAsset).ThenInclude(x => x.Translations)
+            .Include(x => x.Show).ThenInclude(x => x!.Translations).ThenInclude(x => x.Language)
+            .OrderBy(x => x.DisplayOrder)
+            .ThenBy(x => x.Id)
+            .AsSplitQuery()
+            .ToListAsync(token);
+
+        return Ok(albums.Select(ToAlbumDto).ToList());
+    }
+
     [HttpGet("general")]
     public async Task<ActionResult<IReadOnlyList<AdminGalleryMediaDto>>> GetGeneral(CancellationToken token)
     {
@@ -26,14 +42,14 @@ public sealed class AdminGalleryController(AppDbContext db, IClock clock) : Cont
         return Ok(media);
     }
 
-    [HttpGet]
+    [HttpGet, ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
     public async Task<ActionResult<AdminGalleryListDto>> Get(
         [FromQuery] string? search, [FromQuery] string? status,
         [FromQuery] int page = 1, [FromQuery] int pageSize = 20,
         CancellationToken token = default)
     {
         page = Math.Max(1, page);
-        pageSize = Math.Clamp(pageSize, 1, 50);
+        pageSize = Math.Clamp(pageSize, 1, 100);
         var all = db.GalleryAlbums.AsNoTracking();
         var published = await all.CountAsync(x => x.IsPublished, token);
         var drafts = await all.CountAsync(x => !x.IsPublished, token);
@@ -57,39 +73,72 @@ public sealed class AdminGalleryController(AppDbContext db, IClock clock) : Cont
             .Include(x => x.Show).ThenInclude(x => x!.Translations).ThenInclude(x => x.Language)
             .Include(x => x.NewsArticle).ThenInclude(x => x!.Translations).ThenInclude(x => x.Language)
             .Include(x => x.PitfEdition).ThenInclude(x => x!.Translations).ThenInclude(x => x.Language)
-            .OrderByDescending(x => x.EventDate).ThenByDescending(x => x.UpdatedAt)
+            .OrderBy(x => x.AlbumType == GalleryAlbumType.General ? 0 : 1).ThenBy(x => x.DisplayOrder).ThenByDescending(x => x.UpdatedAt)
             .Skip((page - 1) * pageSize).Take(pageSize)
             .AsSplitQuery()
             .ToListAsync(token);
 
-        var items = albums.Select(album =>
-        {
-            var related = album.Show?.Translations.FirstOrDefault(x => x.Language.Code == "sq")?.Title
-                ?? album.NewsArticle?.Translations.FirstOrDefault(x => x.Language.Code == "sq")?.Title
-                ?? album.PitfEdition?.Translations.FirstOrDefault(x => x.Language.Code == "sq")?.Title;
-            return new AdminGalleryAlbumDto(
-                album.Id,
-                album.Translations.FirstOrDefault(x => x.Language.Code == "sq")?.Title ?? "Galeri",
-                album.Translations.FirstOrDefault(x => x.Language.Code == "en")?.Title ?? "Gallery",
-                album.AlbumType.ToString(),
-                related,
-                album.EventDate,
-                album.IsPublished,
-                album.IsVisibleInGeneralGallery,
-                album.UpdatedAt,
-                album.GalleryAlbumMedia.OrderBy(x => x.DisplayOrder).Select(media =>
-                    new AdminGalleryMediaDto(
-                        media.MediaAssetId,
-                        media.MediaAsset.FileUrl,
-                        media.MediaAsset.FileName,
-                        media.MediaAsset.Translations.FirstOrDefault()?.AltText,
-                        media.DisplayOrder,
-                        media.IsCover,
-                        media.IsFeatured,
-                        media.MediaAsset.PhotographerCredit)).ToList());
-        }).ToList();
+        var items = albums.Select(ToAlbumDto).ToList();
 
         return Ok(new AdminGalleryListDto(items, page, pageSize, total, published, drafts, totalImages));
+    }
+
+    private static AdminGalleryAlbumDto ToAlbumDto(GalleryAlbum album)
+    {
+        var related = album.Show?.Translations.FirstOrDefault(x => x.Language.Code == "sq")?.Title
+            ?? album.NewsArticle?.Translations.FirstOrDefault(x => x.Language.Code == "sq")?.Title
+            ?? album.PitfEdition?.Translations.FirstOrDefault(x => x.Language.Code == "sq")?.Title;
+        return new AdminGalleryAlbumDto(
+            album.Id,
+            album.Translations.FirstOrDefault(x => x.Language.Code == "sq")?.Title ?? "Galeri",
+            album.Translations.FirstOrDefault(x => x.Language.Code == "en")?.Title ?? "Gallery",
+            album.AlbumType.ToString(),
+            related,
+            album.EventDate,
+            album.IsPublished,
+            album.IsVisibleInGeneralGallery,
+            album.DisplayOrder,
+            album.UpdatedAt,
+            album.GalleryAlbumMedia
+                .Where(media => album.Show == null || media.MediaAssetId != album.Show.PosterMediaAssetId)
+                .OrderBy(x => x.DisplayOrder).Select(media =>
+                new AdminGalleryMediaDto(
+                    media.MediaAssetId,
+                    media.MediaAsset.FileUrl,
+                    media.MediaAsset.FileName,
+                    media.MediaAsset.Translations.FirstOrDefault()?.AltText,
+                    media.DisplayOrder,
+                    media.IsCover,
+                    media.IsFeatured,
+                    media.MediaAsset.PhotographerCredit)).ToList());
+    }
+
+    [HttpPut("albums/{id:int}/visibility")]
+    public async Task<IActionResult> SetAlbumVisibility(int id, SetGalleryAlbumVisibilityRequest request, CancellationToken token)
+    {
+        var album = await db.GalleryAlbums.FirstOrDefaultAsync(x => x.Id == id && x.AlbumType == GalleryAlbumType.Show, token);
+        if (album is null) return NotFound();
+        album.IsVisibleInGeneralGallery = request.IsVisible;
+        album.UpdatedAt = clock.UtcNow;
+        await db.SaveChangesAsync(token);
+        return NoContent();
+    }
+
+    [HttpPut("albums/order")]
+    public async Task<IActionResult> ReorderAlbums(ReorderGalleryAlbumsRequest request, CancellationToken token)
+    {
+        var albums = await db.GalleryAlbums.Where(x => x.AlbumType == GalleryAlbumType.Show).ToListAsync(token);
+        var currentIds = albums.Select(x => x.Id).Order().ToArray();
+        if (!currentIds.SequenceEqual(request.AlbumIds.Distinct().Order()))
+            return ValidationProblem("The order must contain every play gallery exactly once.");
+        for (var index = 0; index < request.AlbumIds.Count; index++)
+        {
+            var album = albums.First(x => x.Id == request.AlbumIds[index]);
+            album.DisplayOrder = index;
+            album.UpdatedAt = clock.UtcNow;
+        }
+        await db.SaveChangesAsync(token);
+        return NoContent();
     }
 
     [HttpPost("general/media")]

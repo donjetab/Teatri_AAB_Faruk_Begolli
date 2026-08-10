@@ -1,4 +1,12 @@
 import { apiClient } from './client'
+import { getDemoPitf, isCanceledRequest } from './demo'
 
-export const getPitf = (language, signal) =>
-  apiClient.get(`/api/${language}/pitf`, { signal }).then(response => response.data)
+export async function getPitf(language, signal) {
+  try {
+    const response = await apiClient.get(`/api/${language}/pitf`, { signal })
+    return response.data
+  } catch (error) {
+    if (isCanceledRequest(error)) throw error
+    return getDemoPitf(language, signal)
+  }
+}

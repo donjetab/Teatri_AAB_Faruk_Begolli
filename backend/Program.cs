@@ -163,8 +163,10 @@ if (app.Environment.IsDevelopment())
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     await db.Database.MigrateAsync();
     await LegacyGalleryImporter.ImportAsync(db, app.Environment);
+    await LegacyShowGalleryImporter.ImportAsync(db, app.Environment);
     if (app.Configuration.GetValue("Seed:EnableDevelopmentSeed", false))
         await DevelopmentDataSeeder.SeedAsync(db, app.Environment);
+    await ContentSlugNormalizer.NormalizeAsync(db);
 
     var bootstrapEmail = app.Configuration["AdminBootstrap:Email"]?.Trim().ToLowerInvariant();
     var bootstrapPassword = app.Configuration["AdminBootstrap:Password"];

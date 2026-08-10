@@ -430,6 +430,7 @@ internal sealed class GalleryAlbumConfiguration : IEntityTypeConfiguration<Galle
             .OnDelete(DeleteBehavior.Cascade);
 
         builder.HasIndex(x => x.EventDate);
+        builder.HasIndex(x => x.DisplayOrder);
         builder.HasIndex(x => x.AlbumType);
         builder.HasIndex(x => x.ShowId);
         builder.HasIndex(x => x.NewsArticleId);

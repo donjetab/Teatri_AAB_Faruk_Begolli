@@ -294,6 +294,7 @@ public sealed class MediaAssetTranslation
 public sealed class GalleryAlbum
 {
     public int Id { get; set; }
+    public int DisplayOrder { get; set; }
     public GalleryAlbumType AlbumType { get; set; } = GalleryAlbumType.General;
     public DateOnly? EventDate { get; set; }
     public int? CoverMediaAssetId { get; set; }

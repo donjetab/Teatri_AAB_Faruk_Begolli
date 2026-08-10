@@ -18,13 +18,16 @@ export function GalleryPage() {
   const [visibleCount, setVisibleCount] = useState(INITIAL_IMAGE_COUNT)
   const [selectedImageIndex, setSelectedImageIndex] = useState(null)
   const [uploadedImages, setUploadedImages] = useState([])
+  const [galleryLoading, setGalleryLoading] = useState(true)
   useEffect(() => { const controller = new AbortController(); getStaticPage(language, 'gallery-introduction', controller.signal).then(setPageCopy).catch(() => setPageCopy(null)); return () => controller.abort() }, [language])
 
   useEffect(() => {
     const controller = new AbortController()
+    setGalleryLoading(true)
     getGalleryImages(i18n.language?.startsWith('en') ? 'en' : 'sq', controller.signal)
       .then(items => setUploadedImages(items.map(item => ({ src: resolveMediaUrl(item.fileUrl), showSlug: 'theatre', index: item.id, altText: item.altText }))))
       .catch(error => { if (error.name !== 'CanceledError' && error.code !== 'ERR_CANCELED') setUploadedImages([]) })
+      .finally(() => { if (!controller.signal.aborted) setGalleryLoading(false) })
     return () => controller.abort()
   }, [i18n.language])
 
@@ -74,7 +77,10 @@ export function GalleryPage() {
       </section>
 
       <section className="gallery-page-content" aria-label={t('galleryPage.imagesLabel')}>
-        <div className="gallery-page-grid">
+        <div className={`gallery-page-grid${galleryLoading ? ' is-loading' : ''}`} aria-busy={galleryLoading}>
+          {galleryLoading && Array.from({ length: 8 }, (_, index) => (
+            <span className="gallery-page-skeleton" key={index} aria-hidden="true" />
+          ))}
           {images.slice(0, visibleCount).map((image, index) => (
             <button
               type="button"

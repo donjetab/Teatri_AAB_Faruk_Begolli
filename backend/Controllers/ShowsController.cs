@@ -34,7 +34,7 @@ public sealed class ShowsController(AppDbContext db) : ControllerBase
 
         var shows = await db.Shows
             .AsNoTracking()
-            .Where(x => x.Status == ShowStatus.Published)
+            .Where(x => x.Status == ShowStatus.Published && !x.IsGuestPerformance)
             .Select(x => new
             {
                 x.Id,
@@ -72,9 +72,7 @@ public sealed class ShowsController(AppDbContext db) : ControllerBase
                 return new ShowListItemDto(
                     x.Id,
                     translation.Title,
-                    translation.Slug.EndsWith("-en", StringComparison.Ordinal)
-                        ? translation.Slug[..^3]
-                        : translation.Slug,
+                    translation.Slug,
                     translation.FullDescription,
                     x.PosterUrl,
                     x.Director,
@@ -119,7 +117,7 @@ public sealed class ShowsController(AppDbContext db) : ControllerBase
             .Include(x => x.Performances)
             .FirstOrDefaultAsync(x =>
                 x.Status == ShowStatus.Published &&
-                x.Translations.Any(t => t.Slug == slug || t.Slug == slug + "-en"),
+                x.Translations.Any(t => t.Slug == slug),
                 cancellationToken);
 
         if (show is null)
@@ -159,9 +157,7 @@ public sealed class ShowsController(AppDbContext db) : ControllerBase
         return Ok(new ShowDetailDto(
             show.Id,
             translation.Title,
-            translation.Slug.EndsWith("-en", StringComparison.Ordinal)
-                ? translation.Slug[..^3]
-                : translation.Slug,
+            translation.Slug,
             translation.FullDescription,
             show.PosterMediaAsset?.FileUrl,
             show.TrailerUrl,

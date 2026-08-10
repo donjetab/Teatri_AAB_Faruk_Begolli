@@ -30,12 +30,14 @@ public sealed class AdminShowsController(AppDbContext db, IClock clock, IAdminDe
     public async Task<ActionResult<AdminShowListResponseDto>> List(
         [FromQuery] string? search, [FromQuery] int? categoryId, [FromQuery] string? status,
         [FromQuery] string? lifecycleStatus, [FromQuery] int? year, [FromQuery] bool? featured,
+        [FromQuery] bool? guest,
         [FromQuery] string sort = "production", [FromQuery] int page = 1, [FromQuery] int pageSize = 20,
         CancellationToken token = default)
     {
         page = Math.Max(1, page);
         pageSize = Math.Clamp(pageSize, 1, 100);
         var query = db.Shows.AsNoTracking().AsQueryable();
+        if (guest.HasValue) query = query.Where(x => x.IsGuestPerformance == guest.Value);
         if (!string.IsNullOrWhiteSpace(search))
         {
             var term = search.Trim();
@@ -150,12 +152,17 @@ public sealed class AdminShowsController(AppDbContext db, IClock clock, IAdminDe
         var album = show.GalleryAlbums.FirstOrDefault();
         if (album is null)
         {
+            var nextGalleryOrder = (await db.GalleryAlbums
+                .Where(x => x.AlbumType == GalleryAlbumType.Show)
+                .Select(x => (int?)x.DisplayOrder)
+                .MaxAsync(token) ?? -1) + 1;
             album = new GalleryAlbum
             {
                 AlbumType = GalleryAlbumType.Show,
                 ShowId = show.Id,
                 IsPublished = true,
-                IsVisibleInGeneralGallery = false,
+                IsVisibleInGeneralGallery = true,
+                DisplayOrder = nextGalleryOrder,
                 CreatedAt = clock.UtcNow,
                 UpdatedAt = clock.UtcNow
             };
@@ -395,8 +402,8 @@ public sealed class AdminShowsController(AppDbContext db, IClock clock, IAdminDe
             translation.Slug = await UniqueSlugAsync(item.Title, language.Id, show.Id, token);
             translation.ShortDescription = item.ShortDescription.Trim();
             translation.FullDescription = item.FullDescription.Trim();
-            translation.MetaTitle = Clean(item.MetaTitle);
-            translation.MetaDescription = Clean(item.MetaDescription);
+            translation.MetaTitle = SeoText(item.Title, 60);
+            translation.MetaDescription = SeoText(item.ShortDescription, 160);
         }
     }
 
@@ -434,6 +441,14 @@ public sealed class AdminShowsController(AppDbContext db, IClock clock, IAdminDe
         x.UseLocalGalleryFallback);
     private static string Title(Show show) => show.Translations.FirstOrDefault(x => x.Language.Code == "sq")?.Title ?? $"Show {show.Id}";
     private static string? Clean(string? value) => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+    private static string SeoText(string value, int maximumLength)
+    {
+        var text = Regex.Replace(value, @"\s+", " ").Trim();
+        if (text.Length <= maximumLength) return text;
+        var cut = text.LastIndexOf(' ', maximumLength - 3);
+        if (cut < maximumLength / 2) cut = maximumLength - 3;
+        return text[..cut].TrimEnd(' ', ',', ';', ':', '-', '.') + "...";
+    }
     private static string Slugify(string value)
     {
         var normalized = value.Trim().ToLowerInvariant().Normalize(NormalizationForm.FormD);
