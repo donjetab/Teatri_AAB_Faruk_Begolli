@@ -13,13 +13,13 @@ const fallbackShowPosters = {
   brinat: '/demo-media/uploads/shows/brinat/brinat%20-%20poster.png',
   'hana-dhe-dielli': '/demo-media/uploads/shows/hana-dhe-dielli/hana%20dhe%20dielli%20-%20poster.png',
   'per-caj-te-hillary': '/demo-media/uploads/shows/per-caj-te-hillary/per%20caj%20te%20hillary%20-%20poster.jpg',
-  'dy-gjitare-enderrimtare': '/demo-media/uploads/shows/dy-gjitare-enderrimtare/dy-gjitare-enderrimtare%20-%20poster.png',
+  'dy-gjitare-enderrimtare': '/demo-media/uploads/shows/dy-gjitare-enderrimtare/dy-gjitare-enderrimtare%20-%20poster.jpg',
   'profesor-jam-talent': '/demo-media/uploads/shows/profesor-jam-talent/profesor%20jam%20talent%20-%20poster.png',
   'venera-ne-gezof': '/demo-media/uploads/shows/venera-ne-gezof/venera%20ne%20gezof%20-%20poster.png',
   bretkosa: '/demo-media/uploads/shows/bretkosa/poster-optimized.jpg',
 }
 
-const FALLBACK_MEDIA_VERSION = '20260810-3'
+const FALLBACK_MEDIA_VERSION = '20260810-4'
 const versionFallbackMedia = url => url && `${url}${url.includes('?') ? '&' : '?'}v=${FALLBACK_MEDIA_VERSION}`
 const withFallbackPoster = show => show && ({
   ...show,
