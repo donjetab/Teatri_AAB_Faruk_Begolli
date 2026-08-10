@@ -36,6 +36,14 @@ export function resolveMediaUrl(url) {
     return bundledMediaByApiPath[url]
   }
 
+  if (/^\/demo-media\//i.test(url)) {
+    return `${import.meta.env.BASE_URL}${url.slice(1)}`
+  }
+
+  if (import.meta.env.PROD && !import.meta.env.VITE_API_BASE_URL && /^\/?uploads\//i.test(url)) {
+    return `${import.meta.env.BASE_URL}demo-media/${url.replace(/^\/+/, '')}`
+  }
+
   // Only files under /uploads are served by ASP.NET. Every other relative
   // path is a Vite/public asset and must stay on the frontend host, including
   // paths prefixed by the configured /Teatri_AAB_Faruk_Begolli/ base.
