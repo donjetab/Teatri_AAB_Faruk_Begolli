@@ -26,6 +26,15 @@ const withFallbackPoster = show => show && ({
   posterUrl: versionFallbackMedia(fallbackShowPosters[show.slug] || show.posterUrl || null),
 })
 
+const withFallbackShowMedia = show => {
+  const localized = withFallbackPoster(show)
+  if (!localized || localized.slug !== 'bretkosa') return localized
+  return {
+    ...localized,
+    trailerUrl: localized.trailerUrl || versionFallbackMedia('/demo-media/uploads/shows/bretkosa/trailer.mp4'),
+  }
+}
+
 function loadDemoData(signal) {
   demoDataPromise ??= fetch(`${import.meta.env.BASE_URL}demo-data.json`, { signal })
     .then((response) => {
@@ -60,7 +69,7 @@ export async function getDemoShows(language, signal) {
 
 export async function getDemoShow(language, slug, signal) {
   const data = await loadDemoData(signal)
-  return withFallbackPoster(data[language]?.showDetails?.[slug] ?? data.sq.showDetails[slug])
+  return withFallbackShowMedia(data[language]?.showDetails?.[slug] ?? data.sq.showDetails[slug])
 }
 
 export async function getDemoNews(language, signal) {
@@ -134,7 +143,7 @@ export async function getDemoPitf(language, signal) {
     description: english
       ? 'Prishtina International Theatre Festival was founded at AAB Faruk Begolli Theatre in June 2017. The festival brings artists and audiences together through original international theatre.\n\nEach edition continues the theatre’s commitment to cultural exchange and new stage experiences.'
       : 'Festivali Ndërkombëtar i Teatrit “Prishtina International Theatre Festival” është themeluar në ambientet e Teatrit AAB “Faruk Begolli” në qershor të vitit 2017. Festivali bashkon artistë dhe publik përmes teatrit ndërkombëtar dhe krijimtarisë origjinale.\n\nÇdo edicion vazhdon përkushtimin e teatrit ndaj shkëmbimit kulturor dhe përvojave të reja skenike.',
-    imageUrl: '/demo-media/uploads/dev/pitf/pitf-2024-cover.jpg',
+    imageUrl: null,
     buttonText: null,
     buttonUrl: null,
     editions: Array.from({ length: 10 }, (_, index) => {
