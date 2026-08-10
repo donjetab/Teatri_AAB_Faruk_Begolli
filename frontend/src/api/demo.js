@@ -44,7 +44,11 @@ function loadDemoData(signal) {
 
 export async function getDemoHome(language, signal) {
   const data = await loadDemoData(signal)
-  return data[language]?.home ?? data.sq.home
+  const home = data[language]?.home ?? data.sq.home
+  return {
+    ...home,
+    upcomingShows: (home.upcomingShows ?? []).map(withFallbackPoster),
+  }
 }
 
 export async function getDemoShows(language, signal) {
