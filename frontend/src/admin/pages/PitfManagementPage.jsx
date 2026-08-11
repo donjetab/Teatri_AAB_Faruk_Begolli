@@ -47,7 +47,7 @@ export function PitfManagementPage() {
     } catch (e) { setError(e.response?.data?.detail ?? 'PITF page content could not be saved.') }
     finally { setBusy(false) }
   }
-  const saveEdition = async (edition, index) => {
+  const saveEdition = async (edition) => {
     const editionKey = edition.id ?? edition.clientKey
     const sqName = edition.translations.find(item => item.languageCode === 'sq')?.name.trim()
     const enName = edition.translations.find(item => item.languageCode === 'en')?.name.trim()

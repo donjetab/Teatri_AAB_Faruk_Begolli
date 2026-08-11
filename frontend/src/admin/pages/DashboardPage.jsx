@@ -17,7 +17,7 @@ export function DashboardPage() {
   const [error, setError] = useState('')
   useEffect(() => { adminApi.dashboard().then(setData).catch(() => setError('Dashboard data could not be loaded.')) }, [])
   const metrics = data ? metricKeys.map(key => data.metrics.find(item => item.key === key)).filter(Boolean) : []
-  return <><PageHeader eyebrow="Overview" title="Good morning" description="What is happening at the theatre, at a glance." actions={<a className="admin-outline-button" href="#/sq" target="_blank" rel="noreferrer">{t('Open website')} ↗</a>} />
+  return <><PageHeader eyebrow="Overview" title="Welcome" description="What is happening at the theatre, at a glance." actions={<a className="admin-outline-button" href="#/sq" target="_blank" rel="noreferrer">{t('Open website')} ↗</a>} />
     {error && <div className="admin-form-error">{t(error)}</div>}{!data ? <LoadingSkeleton rows={8} /> : <>
       <section className="metric-grid dashboard-metrics">{metrics.map(m => <Link to={m.key === 'unreadMessages' ? '/admin/messages' : m.key === 'subscribers' ? '/admin/subscribers' : m.key === 'bookingsToday' ? '/admin/reservations' : m.key.includes('Play') || m.key.includes('play') ? '/admin/shows' : '/admin/performances'} className={`metric-card metric-${m.key}`} key={m.key}><i>{metricIcons[m.key]}</i><div><span>{t(m.label)}</span><strong>{m.value.toLocaleString(locale)}</strong></div><b>{t('View')} →</b></Link>)}</section>
 

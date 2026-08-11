@@ -1,7 +1,5 @@
-import { Navigate, Route, Routes, useParams } from 'react-router-dom'
-import { useTranslation } from 'react-i18next'
+import { Navigate, Route, Routes } from 'react-router-dom'
 import { AppLayout } from './components/layout/AppLayout'
-import { EmptyState } from './components/ui/EmptyState'
 import { AboutPage } from './pages/AboutPage'
 import { HomePage } from './pages/HomePage'
 import { ShowsPage } from './pages/ShowsPage'
@@ -25,7 +23,6 @@ import { TranslationsPage } from './admin/pages/TranslationsPage'
 import { ReservationsPage } from './admin/pages/ReservationsPage'
 import { CustomersPage } from './admin/pages/CustomersPage'
 import { SeatingTemplatesPage } from './admin/pages/SeatingTemplatesPage'
-import { SectionPlaceholderPage } from './admin/pages/SectionPlaceholderPage'
 import { ChangePasswordPage } from './admin/pages/ChangePasswordPage'
 import { AdminShowsPage } from './admin/pages/ShowsPage'
 import { ShowEditorPage } from './admin/pages/ShowEditorPage'
@@ -46,17 +43,6 @@ import { SettingsPage } from './admin/pages/SettingsPage'
 import { SeoIssuesPage } from './admin/pages/SeoIssuesPage'
 import './admin/admin.css'
 import { AdminLanguageProvider } from './admin/AdminLanguageContext'
-
-function ShellPlaceholder() {
-  const { t } = useTranslation()
-  const { language } = useParams()
-
-  return (
-    <section className="body-placeholder" aria-label={t('shell.title')}>
-      <EmptyState message={language ? t('shell.title') : undefined} />
-    </section>
-  )
-}
 
 function App() {
   return (

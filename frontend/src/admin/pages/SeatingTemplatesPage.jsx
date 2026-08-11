@@ -47,8 +47,6 @@ const applyFixedOrientations = value => {
     return {
       ...section,
       rows: section.rows.map(row => {
-        const maximum = sectionName === 'A' ? { A1: 10, A2: 21, A3: 32 }[row.label.toUpperCase()] : null
-        const ordered = maximum ? [...row.seats].sort((a, b) => Number(a.y) - Number(b.y)) : []
         const verticallyOrdered = sectionName === 'C' ? [...row.seats].sort((a, b) => Number(a.displayOrder) - Number(b.displayOrder)) : []
         const fixedX = sectionName === 'A' ? { A1: 220, A2: 158, A3: 96 }[row.label.toUpperCase()] : sectionName === 'C' ? { C1: 980, C2: 1042, C3: 1104 }[row.label.toUpperCase()] : null
         const fixedY = sectionName === 'B' ? { B1: 190, B2: 138, B3: 86 }[row.label.toUpperCase()] : null
@@ -95,7 +93,6 @@ export function SeatingTemplatesPage() {
     return { ...current, sections: sections.map(section => section.name === sectionName ? { ...section, rows: section.rows.map(row => row.label === rowLabel ? { ...row, seats: [...row.seats, moved] } : row) } : section) }
   })
   const save = async () => { const saved = performanceMode ? await adminApi.savePerformanceLayout(performanceId, draft) : await adminApi.saveSeatingTemplate(draft.id, draft); await load(saved.id); setToast(performanceMode ? 'Performance seating layout and seat names saved to the database.' : 'Seating template and seat names saved to the database. Future performances will use this version.') }
-  const reset = async () => { if (!window.confirm('Reset this theatre to the saved reference layout?')) return; const saved = await adminApi.resetSeatingTemplate(draft.id); await load(saved.id); setToast('Reference layout restored.') }
   const renameSection = (index, name) => setDraft(current => ({ ...current, sections: current.sections.map((section, i) => i === index ? { ...section, name } : section) }))
   const renameRow = (sectionIndex, rowIndex, label) => setDraft(current => ({ ...current, sections: current.sections.map((section, i) => i === sectionIndex ? { ...section, rows: section.rows.map((row, j) => j === rowIndex ? { ...row, label } : row) } : section) }))
 

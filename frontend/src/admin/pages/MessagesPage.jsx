@@ -21,11 +21,10 @@ export function MessagesPage() {
   }
   const save = async () => { const updated = await adminApi.saveMessage(selected.id, { status: selected.status, internalNotes: selected.internalNotes }); setSelected(updated); setToast('Message updated.'); load() }
   const remove = async () => {
-    if (!await dialog.confirm({ title: 'Delete spam message?', message: 'This contact message will be permanently removed.', confirmLabel: 'Delete message', danger: true })) return
+    if (!await dialog.confirm({ title: 'Permanently delete message?', message: 'This contact message will be permanently removed. This cannot be undone.', confirmLabel: 'Delete permanently', danger: true })) return
     try {
-      if (selected.status === 'Spam') await adminApi.saveMessage(selected.id, { status: 'Spam', internalNotes: selected.internalNotes })
-      await adminApi.deleteMessage(selected.id); setSelected(null); setToast('Spam deleted.'); await load()
-    } catch (error) { setToast(error.response?.data?.detail ?? error.response?.data?.title ?? 'Spam could not be deleted.') }
+      await adminApi.deleteMessage(selected.id); setSelected(null); setToast('Message deleted.'); await load()
+    } catch (error) { setToast(error.response?.data?.detail ?? error.response?.data?.title ?? 'Message could not be deleted.') }
   }
   const replyUrl = selected ? `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(selected.email)}&su=${encodeURIComponent(selected.subject.toLowerCase().startsWith('re:') ? selected.subject : `Re: ${selected.subject}`)}&body=${encodeURIComponent(`Hello ${selected.name},\n\nThank you for contacting Teatri AAB “Faruk Begolli”.\n\n\n\nKind regards,\nTeatri AAB “Faruk Begolli”`)}` : ''
 
@@ -38,7 +37,7 @@ export function MessagesPage() {
       <div className="message-sender"><div><strong>{selected.name}</strong><a href={`mailto:${selected.email}`}>{selected.email}</a></div><time>{new Date(selected.createdAt).toLocaleString(locale)}</time></div>
       <div className="message-body">{selected.message}</div>
       <form className="admin-form" onSubmit={event => { event.preventDefault(); save() }}><div className="form-grid"><label>{t('Status')}<select value={selected.status} onChange={e => setSelected({ ...selected, status: e.target.value })}>{['New','Read','Resolved','Archived','Spam'].map(x => <option key={x} value={x}>{t(x)}</option>)}</select></label><label className="full">{t('Internal notes')}<textarea rows="4" value={selected.internalNotes ?? ''} onChange={e => setSelected({ ...selected, internalNotes: e.target.value })} placeholder={t('Visible only to administrators')} /></label></div>
-        <div className="admin-modal-actions">{selected.status === 'Spam' && <button type="button" className="admin-danger-button" onClick={remove}>{t('Delete spam')}</button>}<a className="admin-outline-button message-reply-button" href={replyUrl} target="_blank" rel="noopener noreferrer">{t('Reply in Gmail')} ↗</a><button className="admin-primary-button">{t('Save message')}</button></div>
+        <div className="admin-modal-actions"><button type="button" className="admin-danger-button" onClick={remove}>{t('Delete permanently')}</button><a className="admin-outline-button message-reply-button" href={replyUrl} target="_blank" rel="noopener noreferrer">{t('Reply in Gmail')} ↗</a><button className="admin-primary-button">{t('Save message')}</button></div>
       </form>
     </section></div>}
     <Toast message={toast} onClose={() => setToast('')} />

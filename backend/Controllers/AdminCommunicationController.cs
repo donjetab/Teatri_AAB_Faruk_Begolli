@@ -49,12 +49,11 @@ public sealed class AdminCommunicationController(AppDbContext db, IClock clock) 
     }
 
     [HttpDelete("messages/{id:int}")]
-    public async Task<IActionResult> DeleteSpam(int id, CancellationToken token)
+    public async Task<IActionResult> DeleteMessage(int id, CancellationToken token)
     {
         var item = await db.ContactMessages.FirstOrDefaultAsync(x => x.Id == id, token);
         if (item is null) return NotFound();
-        if (item.Status != ContactMessageStatus.Spam) return Conflict(new ProblemDetails { Title = "Mark as spam first", Detail = "Only messages marked as spam can be permanently deleted.", Status = 409 });
-        db.ContactMessages.Remove(item); Activity("Deleted spam", "ContactMessage", id.ToString(), "Deleted spam contact submission");
+        db.ContactMessages.Remove(item); Activity("Deleted", "ContactMessage", id.ToString(), "Permanently deleted contact submission");
         await db.SaveChangesAsync(token); return NoContent();
     }
 

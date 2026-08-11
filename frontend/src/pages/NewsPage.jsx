@@ -3,10 +3,8 @@ import { Link, useLocation, useParams, useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { getStaticPage } from '../api/staticPages'
 import { getNews } from '../api/news'
-import { getHome } from '../api/home'
 import { resolveMediaUrl } from '../api/client'
 import { getLocalizedPath } from '../routes/localizedRoutes'
-import { ReservationBanner } from '../components/home/ReservationBanner'
 import newsHeader from '../assets/news-header.jpg'
 import smoke from '../assets/smoke_3.png'
 import theatreIcon from '../assets/acting-icon-gold.png'
@@ -45,7 +43,6 @@ export function NewsPage() {
   const location = useLocation()
   const [searchParams, setSearchParams] = useSearchParams()
   const [articles, setArticles] = useState([])
-  const [home, setHome] = useState(null)
   const [status, setStatus] = useState('loading')
   const [pageCopy, setPageCopy] = useState(null)
   const query = searchParams.get('q') ?? ''
@@ -67,7 +64,6 @@ export function NewsPage() {
           setStatus('error')
         }
       })
-    getHome(language, controller.signal).then(setHome).catch(() => setHome(null))
     return () => controller.abort()
   }, [language])
 
@@ -264,7 +260,6 @@ export function NewsPage() {
           </>
         )}
       </section>
-      {/* {home && <ReservationBanner home={home} />} */}
     </article>
   )
 }

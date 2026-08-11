@@ -13,7 +13,7 @@ const sq = {
   'Super Admin': 'Super Administrator', 'Content Editor': 'Redaktor i përmbajtjes', Cancel: 'Anulo', Confirm: 'Konfirmo', Save: 'Ruaj',
   'Please confirm': 'Ju lutemi konfirmoni', 'Admin action': 'Veprim administrativ', Active: 'Aktiv', Confirmed: 'Konfirmuar',
   Unconfirmed: 'Pakonfirmuar', Cancelled: 'Anuluar', Released: 'Liruar', Published: 'Publikuar', Scheduled: 'Planifikuar',
-  'Good morning': 'Mirëmëngjes', 'What is happening at the theatre, at a glance.': 'Çfarë po ndodh në teatër, me një vështrim.',
+  Welcome: 'Mirë se erdhe', 'What is happening at the theatre, at a glance.': 'Çfarë po ndodh në teatër, me një vështrim.',
   'Bookings today': 'Rezervimet sot', 'Upcoming performances': 'Terminet e ardhshme', 'New messages': 'Mesazhe të reja',
   'Published plays': 'Shfaqje të publikuara', 'Draft plays': 'Shfaqje në draft', View: 'Shiko', Today: 'Sot', Yesterday: 'Dje',
   'New bookings today': 'Rezervimet e reja sot', 'Reservations received today and the performances they belong to.': 'Rezervimet e pranuara sot dhe terminet përkatëse.',

@@ -42,7 +42,6 @@ export const adminApi = {
   performances: (params) => apiClient.get('/api/admin/performances', { params }).then((r) => r.data),
   performance: (id) => apiClient.get(`/api/admin/performances/${id}`).then((r) => r.data),
   performanceConflicts: (params) => apiClient.get('/api/admin/performances/conflicts', { params }).then((r) => r.data),
-  performance: (id) => apiClient.get(`/api/admin/performances/${id}`).then((r) => r.data),
   createPerformance: (data) => apiClient.post('/api/admin/performances', data).then((r) => r.data),
   createVenue: (data) => apiClient.post('/api/admin/performances/venues', data).then((r) => r.data),
   venues: () => apiClient.get('/api/admin/performances/venues').then((r) => r.data),

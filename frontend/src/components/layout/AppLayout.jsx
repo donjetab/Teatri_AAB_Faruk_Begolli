@@ -103,16 +103,6 @@ function upsertLink(rel, attributes) {
   link.href = attributes.href
 }
 
-function setMetaDescription(description) {
-  let meta = document.head.querySelector('meta[name="description"]')
-  if (!meta) {
-    meta = document.createElement('meta')
-    meta.name = 'description'
-    document.head.appendChild(meta)
-  }
-  meta.content = description
-}
-
 export function AppLayout() {
   const { i18n, t } = useTranslation()
   const params = useParams()
